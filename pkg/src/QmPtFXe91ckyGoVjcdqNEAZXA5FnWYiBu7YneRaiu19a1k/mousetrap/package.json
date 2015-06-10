@@ -1,0 +1,17 @@
+{
+  "Name": "mousetrap",
+  "Files": [
+    "LICENSE",
+    "README.md",
+    "package.json",
+    "trap_others.go",
+    "trap_windows.go",
+    "trap_windows_1.4.go"
+  ],
+  "Version": "",
+  "Dependencies": null,
+  "Bin": "",
+  "Build": "",
+  "Test": "",
+  "Language": ""
+}

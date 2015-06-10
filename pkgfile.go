@@ -46,7 +46,7 @@ func SavePackageFile(pkg *Package, fname string) error {
 	}
 	defer fi.Close()
 
-	out, err := json.MarshalIndent(pkg, "", "\t")
+	out, err := json.MarshalIndent(pkg, "", "  ")
 	if err != nil {
 		return err
 	}

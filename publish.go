@@ -42,6 +42,10 @@ type filetree struct {
 	children map[string]*filetree
 }
 
+func newFiletree() *filetree {
+	return &filetree{make(map[string]*filetree)}
+}
+
 func newFiletreeFromFiles(files []string) (*filetree, error) {
 	root := &filetree{make(map[string]*filetree)}
 	for _, f := range files {
@@ -58,7 +62,7 @@ func (ft *filetree) insert(path []string) error {
 	if len(path) > 1 {
 		child, ok := ft.children[path[0]]
 		if !ok {
-			child = &filetree{make(map[string]*filetree)}
+			child = newFiletree()
 			ft.children[path[0]] = child
 		}
 
@@ -71,7 +75,7 @@ func (ft *filetree) insert(path []string) error {
 			return fmt.Errorf("path already exists: %s", path[0])
 		}
 
-		ft.children[path[0]] = nil
+		ft.children[path[0]] = newFiletree()
 		return nil
 	}
 
@@ -91,7 +95,7 @@ func (pm *PM) addTree(nd *filetree, cwd string) (string, error) {
 	cur := pm.blankDir
 	for f, v := range nd.children {
 		var hash string
-		if v == nil {
+		if v == nil || len(v.children) == 0 {
 			// file here
 			fi, err := os.Open(path.Join(cwd, f))
 			if err != nil {
