@@ -60,6 +60,7 @@ func main() {
 	}
 
 	var global bool
+	var lang string
 
 	var GxCommand = &cobra.Command{
 		Use:   "gx",
@@ -268,6 +269,7 @@ func main() {
 
 			pkg := new(Package)
 			pkg.Name = pkgname
+			pkg.Language = lang
 			err = SavePackageFile(pkg, PkgFileName)
 			if err != nil {
 				fmt.Printf("save error: %s\n", err)
@@ -357,6 +359,8 @@ func main() {
 	GxCommand.AddCommand(GetCommand)
 	GxCommand.AddCommand(RmCommand)
 	GxCommand.AddCommand(InitCommand)
+	InitCommand.Flags().StringVar(&lang, "lang", "", "specify the primary language of the package")
+
 	GxCommand.AddCommand(ImportCommand)
 	GxCommand.AddCommand(InstallCommand)
 	InstallCommand.Flags().BoolVar(&global, "global", false, "install to global scope")
