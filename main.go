@@ -16,7 +16,7 @@ const PkgFileName = "package.json"
 type PM struct {
 	shell *sh.Shell
 
-	// hash of the 'empty' ipfs dir
+	// hash of the 'empty' ipfs dir to avoid extra calls to object new
 	blankDir string
 }
 

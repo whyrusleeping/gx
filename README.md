@@ -11,6 +11,12 @@ gx currently requires that users have a running ipfs daemon on their machine.
 This requirement may be lifted in the future when better infrastructure is set
 up.
 
+## Installation
+To install (for now) you need to git clone it down, and then run `make` or
+`make install` to install the binary to your `$GOPATH`
+
+## Usage
+
 Creating and publishing new generic package:
 
 ```bash
@@ -30,17 +36,17 @@ hash:
 $ gx import QmaDFJvcHAnxpnMwcEh6VStYN4v4PB4S16j4pAuC2KSHVr
 ```
 
-This downloads the package specified by the hash into the `pkg` directory in your
+This downloads the package specified by the hash into the `vendor` directory in your
 workspace. It also adds an entry referencing the package to the local `package.json`.
 
-## The pkg directory
+## The vendor directory
 
-The `pkg` (package) directory contains all of the downloaded dependencies of your
-package.  You do not need to add the contents of the `pkg` directory to version
+The `vendor` (package) directory contains all of the downloaded dependencies of your
+package.  You do not need to add the contents of the `vendor` directory to version
 control, simply running `gx install` in the root directory of your project will
 fetch and download the appropriate versions of required packages. 
 
-Note: This is not to say that you can't add the `pkg` directory to version control,
+Note: This is not to say that you can't add the `vendor` directory to version control,
 by all means do if you want a single `git clone` or `svn co` to bring all deps
 with it!
 
