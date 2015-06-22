@@ -16,7 +16,7 @@ func (pm *PM) GetPackage(hash string) (*Package, error) {
 		return nil, err
 	}
 
-	return pm.getPackageLocalDaemon(hash, path.Join(dir, "pkg", "src"))
+	return pm.getPackageLocalDaemon(hash, path.Join(dir, "vendor", "src"))
 }
 
 // retreive the given package from the local ipfs daemon

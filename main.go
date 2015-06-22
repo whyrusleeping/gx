@@ -61,6 +61,7 @@ func main() {
 
 	var global bool
 	var lang string
+	var verbose bool
 
 	var GxCommand = &cobra.Command{
 		Use:   "gx",
@@ -187,7 +188,7 @@ func main() {
 				fmt.Println("error: ", err)
 				return
 			}
-			location := cwd + "/pkg/src"
+			location := cwd + "/vendor/src"
 			if global {
 				location = os.Getenv("GOPATH") + "/src"
 			}
@@ -303,7 +304,7 @@ func main() {
 				return
 			}
 
-			err = pm.InstallDeps(npkg, cwd+"/pkg/src")
+			err = pm.InstallDeps(npkg, cwd+"/vendor/src")
 			if err != nil {
 				fmt.Println("error: ", err)
 				return
@@ -339,7 +340,7 @@ func main() {
 			switch pkg.Language {
 			case "go":
 				env := os.Getenv("GOPATH")
-				os.Setenv("GOPATH", env+":"+cwd+"/pkg")
+				os.Setenv("GOPATH", env+":"+cwd+"/vendor")
 				cmd := exec.Command("go", "build")
 				cmd.Env = os.Environ()
 				out, err := cmd.CombinedOutput()
@@ -353,6 +354,8 @@ func main() {
 			}
 		},
 	}
+
+	GxCommand.Flags().BoolVar(&verbose, "v", false, "verbose output")
 
 	GxCommand.AddCommand(AddCommand)
 	GxCommand.AddCommand(PublishCommand)
