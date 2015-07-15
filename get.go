@@ -7,6 +7,19 @@ import (
 	"path"
 )
 
+type ErrAlreadyInstalled struct {
+	pkg string
+}
+
+func IsErrAlreadyInstalled(err error) bool {
+	_, ok := err.(ErrAlreadyInstalled)
+	return ok
+}
+
+func (eai ErrAlreadyInstalled) Error() string {
+	return fmt.Sprintf("package %s already installed", eai.pkg)
+}
+
 func (pm *PM) GetPackage(hash string) (*Package, error) {
 	// TODO: support using gateways for package fetching
 	// TODO: download packages into global package store
@@ -24,7 +37,11 @@ func (pm *PM) getPackageLocalDaemon(hash, target string) (*Package, error) {
 	pkgdir := path.Join(target, hash)
 	_, err := os.Stat(pkgdir)
 	if err == nil {
-		return nil, fmt.Errorf("package %s already installed", hash)
+		return findPackageInDir(pkgdir)
+	}
+
+	if !os.IsNotExist(err) {
+		return nil, err
 	}
 
 	err = pm.shell.Get(hash, pkgdir)

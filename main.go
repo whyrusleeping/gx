@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"sort"
 
 	cobra "QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa/cobra"
 	sh "github.com/whyrusleeping/ipfs-shell"
@@ -62,52 +61,11 @@ func main() {
 	var global bool
 	var lang string
 	var verbose bool
+	var pkgname string
 
 	var GxCommand = &cobra.Command{
 		Use:   "gx",
 		Short: "gx is a packaging tool that uses ipfs",
-	}
-
-	var AddCommand = &cobra.Command{
-		Use:   "add",
-		Short: "add a file as a package requirement",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) < 1 {
-				fmt.Println("add requires a file name")
-				return
-			}
-
-			pkg, err := LoadPackageFile(PkgFileName)
-			if err != nil {
-				fmt.Println("error: ", err)
-				return
-			}
-
-			// ensure no duplicates
-			set := make(map[string]struct{})
-			for _, fi := range pkg.Files {
-				set[fi] = struct{}{}
-			}
-
-			for _, fi := range args {
-				fi = path.Clean(fi)
-				set[fi] = struct{}{}
-			}
-
-			var out []string
-			for fi, _ := range set {
-				out = append(out, fi)
-			}
-
-			sort.Strings(out)
-
-			pkg.Files = out
-			err = SavePackageFile(pkg, PkgFileName)
-			if err != nil {
-				fmt.Printf("error writing package file: %s\n", err)
-				return
-			}
-		},
 	}
 
 	var PublishCommand = &cobra.Command{
@@ -201,35 +159,6 @@ func main() {
 		},
 	}
 
-	var RmCommand = &cobra.Command{
-		Use:   "rm",
-		Short: "remove a file from the local package",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				fmt.Println("rm requires a file name")
-				return
-			}
-			pkg, err := LoadPackageFile(PkgFileName)
-			if err != nil {
-				fmt.Println("error: ", err)
-				return
-			}
-
-			var out []string
-			for _, fi := range pkg.Files {
-				if fi != args[0] {
-					out = append(out, fi)
-				}
-			}
-			pkg.Files = out
-			err = SavePackageFile(pkg, PkgFileName)
-			if err != nil {
-				fmt.Printf("error writing package file: %s\n", err)
-				return
-			}
-		},
-	}
-
 	var GetCommand = &cobra.Command{
 		Use:   "get",
 		Short: "download a package",
@@ -271,6 +200,7 @@ func main() {
 			pkg := new(Package)
 			pkg.Name = pkgname
 			pkg.Language = lang
+			pkg.Version = "1.0.0"
 			err = SavePackageFile(pkg, PkgFileName)
 			if err != nil {
 				fmt.Printf("save error: %s\n", err)
@@ -300,13 +230,13 @@ func main() {
 
 			npkg, err := pm.GetPackage(target)
 			if err != nil {
-				fmt.Println("error: ", err)
+				fmt.Println("(getpackage) error: ", err)
 				return
 			}
 
 			err = pm.InstallDeps(npkg, cwd+"/vendor/src")
 			if err != nil {
-				fmt.Println("error: ", err)
+				fmt.Println("(installdeps) error: ", err)
 				return
 			}
 
@@ -357,14 +287,14 @@ func main() {
 
 	GxCommand.Flags().BoolVar(&verbose, "v", false, "verbose output")
 
-	GxCommand.AddCommand(AddCommand)
 	GxCommand.AddCommand(PublishCommand)
 	GxCommand.AddCommand(GetCommand)
-	GxCommand.AddCommand(RmCommand)
 	GxCommand.AddCommand(InitCommand)
 	InitCommand.Flags().StringVar(&lang, "lang", "", "specify the primary language of the package")
 
 	GxCommand.AddCommand(ImportCommand)
+	ImportCommand.Flags().StringVar(&pkgname, "name", "", "specify the name to be used for the imported package")
+
 	GxCommand.AddCommand(InstallCommand)
 	InstallCommand.Flags().BoolVar(&global, "global", false, "install to global scope")
 

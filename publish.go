@@ -5,22 +5,57 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
+
+	gi "github.com/sabhiram/go-git-ignore"
 )
 
 func (pm *PM) PublishPackage(dir string, pkg *Package) (string, error) {
-	files := pkg.Files
-	found := false
-	for _, f := range files {
-		if f == PkgFileName {
-			found = true
-			break
-		}
+	gitig, err := gi.CompileIgnoreFile(path.Join(dir, ".gitignore"))
+	if err != nil && !os.IsNotExist(err) {
+		return "", err
 	}
 
-	if !found {
-		files = append(files, PkgFileName)
+	gxig, err := gi.CompileIgnoreFile(path.Join(dir, ".gxignore"))
+	if err != nil && !os.IsNotExist(err) {
+		return "", err
 	}
+
+	var files []string
+	filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
+		rel := p[len(dir):]
+		if dir[len(dir)-1] != '/' {
+			rel = rel[1:]
+		}
+
+		// respect gitignore
+		if gitig != nil && gitig.MatchesPath(rel) {
+			return nil
+		}
+		// respect gxignore
+
+		if gxig != nil && gxig.MatchesPath(rel) {
+			return nil
+		}
+
+		// dont publish the git repo
+		if strings.HasPrefix(rel, ".git") {
+			return nil
+		}
+
+		// dont publish vendored code
+		if strings.HasPrefix(rel, "vendor") {
+			return nil
+		}
+
+		files = append(files, rel)
+		return nil
+	})
 
 	// we cant guarantee that the 'empty dir' object exists already
 	blank, err := pm.shell.NewObject("unixfs-dir")
@@ -88,7 +123,7 @@ func (pm *PM) addFiles(root string, files []string) (string, error) {
 		return "", err
 	}
 
-	return pm.addTree(tree, root)
+	return pm.addTree(tree, "")
 }
 
 func (pm *PM) addTree(nd *filetree, cwd string) (string, error) {

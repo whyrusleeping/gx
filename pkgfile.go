@@ -6,21 +6,20 @@ import (
 )
 
 type Package struct {
-	Name         string
-	Files        []string
-	Version      string
-	Dependencies []*Dependency
-	Bin          string
-	Build        string
-	Test         string
-	Language     string
+	Name         string        `json:"name,omitempty"`
+	Version      string        `json:"version,omitempty"`
+	Dependencies []*Dependency `json:"dependencies,omitempty"`
+	Bin          string        `json:"bin,omitempty"`
+	Build        string        `json:"build,omitempty"`
+	Test         string        `json:"test,omitempty"`
+	Language     string        `json:"language,omitempty"`
 }
 
 // Dependency represents a dependency of a package
 type Dependency struct {
-	Author string
-	Name   string
-	Hash   string
+	Author string `json:"author,omitempty"`
+	Name   string `json:"name,omitempty"`
+	Hash   string `json:"hash"`
 }
 
 func LoadPackageFile(fname string) (*Package, error) {
