@@ -1,10 +1,8 @@
-CWD = $(shell pwd)
+CWD := $(shell pwd)
 
 all:
-	GOPATH=$(GOPATH):$(CWD)/vendor
-	go build
+	GOPATH=$(GOPATH):$(CWD)/vendor go build
 
 install:
-	GOPATH=$(GOPATH):$(CWD)/vendor
-	go install
+	GOPATH=$(GOPATH):$(CWD)/vendor go install
 
