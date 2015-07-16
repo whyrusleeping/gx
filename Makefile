@@ -5,4 +5,3 @@ all:
 
 install:
 	GOPATH=$(GOPATH):$(CWD)/vendor go install
-

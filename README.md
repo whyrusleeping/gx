@@ -21,7 +21,6 @@ Creating and publishing new generic package:
 
 ```bash
 $ gx init
-$ gx add ./*
 $ gx publish
 ```
 
@@ -38,6 +37,16 @@ $ gx import QmaDFJvcHAnxpnMwcEh6VStYN4v4PB4S16j4pAuC2KSHVr
 
 This downloads the package specified by the hash into the `vendor` directory in your
 workspace. It also adds an entry referencing the package to the local `package.json`.
+
+## ipfs
+
+gx requires that you be running an ipfs daemon locally. If you run the daemon
+on a port other than the default 5001, you can tell gx about it by setting the
+`GX_IPFS_ADDR` environment variable to the address youre using, for example:
+
+```
+export GX_IPFS_ADDR=localhost:7777
+```
 
 ## The vendor directory
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -24,10 +23,13 @@ func (pm *PM) PublishPackage(dir string, pkg *Package) (string, error) {
 
 	var files []string
 	filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+
+		// ignore directories
 		if info.IsDir() {
 			return nil
 		}
 
+		// get relative path
 		rel := p[len(dir):]
 		if dir[len(dir)-1] != '/' {
 			rel = rel[1:]
@@ -37,8 +39,8 @@ func (pm *PM) PublishPackage(dir string, pkg *Package) (string, error) {
 		if gitig != nil && gitig.MatchesPath(rel) {
 			return nil
 		}
-		// respect gxignore
 
+		// respect gxignore
 		if gxig != nil && gxig.MatchesPath(rel) {
 			return nil
 		}
@@ -134,7 +136,7 @@ func (pm *PM) addTree(nd *filetree, cwd string) (string, error) {
 			// file here
 			fi, err := os.Open(path.Join(cwd, f))
 			if err != nil {
-				log.Printf("open failed: %s", err)
+				fmt.Printf("open failed: %s", err)
 				return "", err
 			}
 

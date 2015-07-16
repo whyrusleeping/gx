@@ -41,6 +41,14 @@ func (pm *PM) CheckDaemon() error {
 	return err
 }
 
+func getDaemonAddr() string {
+	da := os.Getenv("GX_IPFS_ADDR")
+	if len(da) == 0 {
+		return "localhost:5001"
+	}
+	return da
+}
+
 func main() {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -49,7 +57,7 @@ func main() {
 	}
 
 	pm := &PM{
-		shell: sh.NewShell("localhost:5001"),
+		shell: sh.NewShell(getDaemonAddr()),
 	}
 
 	err = pm.CheckDaemon()
@@ -60,8 +68,6 @@ func main() {
 
 	var global bool
 	var lang string
-	var verbose bool
-	var pkgname string
 
 	var GxCommand = &cobra.Command{
 		Use:   "gx",
@@ -74,26 +80,28 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
-				fmt.Println("error: ", err)
+				Error(err.Error())
 				return
 			}
 
 			hash, err := pm.PublishPackage(cwd, pkg)
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				Error(err.Error())
 				return
 			}
-			fmt.Printf("package %s published with hash: %s\n", pkg.Name, hash)
+			Log("package %s published with hash: %s", pkg.Name, hash)
 
 			// write out version hash
 			fi, err := os.Create(".gxlastpubver")
 			if err != nil {
-				fmt.Printf("failed to create version file: %s\n", err)
+				Error("failed to create version file: %s", err)
 				return
 			}
+
+			LogV("writing published version to .gxlastpubver")
 			_, err = fi.Write([]byte(hash))
 			if err != nil {
-				fmt.Printf("failed to write version file: %s\n", err)
+				Error("failed to write version file: %s\n", err)
 				return
 			}
 		},
@@ -104,13 +112,15 @@ func main() {
 		Short: "import a package as a dependency",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
-				fmt.Println("import requires a package name")
+				Error("import requires a package name")
 				return
 			}
 
+			name := cmd.Flag("name").Value.String()
+
 			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
-				fmt.Println("error: ", err)
+				Error(err.Error())
 				return
 			}
 
@@ -118,10 +128,20 @@ func main() {
 
 			ndep, err := pm.GetPackage(depname)
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				Error(err.Error())
 				return
 			}
 
+			if len(name) == 0 {
+				name = ndep.Name
+			}
+
+			for _, cdep := range pkg.Dependencies {
+				if cdep.Hash == depname {
+					Error("package already imported")
+					return
+				}
+			}
 			pkg.Dependencies = append(pkg.Dependencies,
 				&Dependency{
 					Name: ndep.Name,
@@ -131,7 +151,7 @@ func main() {
 
 			err = SavePackageFile(pkg, PkgFileName)
 			if err != nil {
-				fmt.Printf("error writing pkgfile: %s\n", err)
+				Error("writing pkgfile: %s", err)
 				return
 			}
 		},
@@ -143,7 +163,7 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
-				fmt.Println("error: ", err)
+				Error(err.Error())
 				return
 			}
 			location := cwd + "/vendor/src"
@@ -153,7 +173,7 @@ func main() {
 
 			err = pm.InstallDeps(pkg, location)
 			if err != nil {
-				fmt.Println(err)
+				Error(err.Error())
 				return
 			}
 		},
@@ -164,7 +184,7 @@ func main() {
 		Short: "download a package",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
-				fmt.Println("no package specified")
+				Error("no package specified")
 				return
 			}
 
@@ -172,7 +192,7 @@ func main() {
 
 			_, err := pm.getPackageLocalDaemon(pkg, cwd)
 			if err != nil {
-				fmt.Printf("error fetching package: %s\n", err)
+				Error("fetching package: %s", err)
 				return
 			}
 		},
@@ -230,13 +250,13 @@ func main() {
 
 			npkg, err := pm.GetPackage(target)
 			if err != nil {
-				fmt.Println("(getpackage) error: ", err)
+				Error("(getpackage) : ", err)
 				return
 			}
 
 			err = pm.InstallDeps(npkg, cwd+"/vendor/src")
 			if err != nil {
-				fmt.Println("(installdeps) error: ", err)
+				Error("(installdeps) : ", err)
 				return
 			}
 
@@ -248,12 +268,12 @@ func main() {
 
 			err = SavePackageFile(pkg, PkgFileName)
 			if err != nil {
-				fmt.Printf("error writing package file: %s\n", err)
+				Error("writing package file: %s\n", err)
 				return
 			}
 
-			fmt.Println("now update your source with:")
-			fmt.Printf("sed -i s/%s/%s/ ./*\n", existing, target)
+			Log("now update your source with:")
+			Log("sed -i s/%s/%s/ ./*\n", existing, target)
 		},
 	}
 
@@ -263,7 +283,7 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
-				fmt.Println("error: ", err)
+				Error(err.Error())
 				return
 			}
 
@@ -275,17 +295,17 @@ func main() {
 				cmd.Env = os.Environ()
 				out, err := cmd.CombinedOutput()
 				if err != nil {
-					fmt.Printf("build error: %s\n", err)
+					Error("build: %s", err)
 				}
 				fmt.Print(string(out))
 			default:
-				fmt.Println("language unrecognized or unspecified")
+				Error("language unrecognized or unspecified")
 				return
 			}
 		},
 	}
 
-	GxCommand.Flags().BoolVar(&verbose, "v", false, "verbose output")
+	GxCommand.Flags().BoolVar(&Verbose, "v", false, "verbose output")
 
 	GxCommand.AddCommand(PublishCommand)
 	GxCommand.AddCommand(GetCommand)
@@ -293,7 +313,7 @@ func main() {
 	InitCommand.Flags().StringVar(&lang, "lang", "", "specify the primary language of the package")
 
 	GxCommand.AddCommand(ImportCommand)
-	ImportCommand.Flags().StringVar(&pkgname, "name", "", "specify the name to be used for the imported package")
+	ImportCommand.Flags().String("name", "", "specify the name to be used for the imported package")
 
 	GxCommand.AddCommand(InstallCommand)
 	InstallCommand.Flags().BoolVar(&global, "global", false, "install to global scope")
@@ -302,6 +322,6 @@ func main() {
 	GxCommand.AddCommand(UpdateCommand)
 	err = GxCommand.Execute()
 	if err != nil {
-		fmt.Println(err)
+		Error(err.Error())
 	}
 }
