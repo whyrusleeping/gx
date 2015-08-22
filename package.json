@@ -1,22 +1,11 @@
 {
-  "Name": "gx",
-  "Files": [
-    "README.md",
-    "get.go",
-    "main.go",
-    "pkgfile.go",
-    "publish.go"
-  ],
-  "Version": "",
-  "Dependencies": [
+  "name": "gx",
+  "version": "2.0.0",
+  "dependencies": [
     {
-      "Author": "",
-      "Name": "cobra",
-      "Hash": "QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa"
+      "name": "cobra",
+      "hash": "QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa"
     }
   ],
-  "Bin": "",
-  "Build": "",
-  "Test": "",
-  "Language": "go"
+  "language": "go"
 }

@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path"
 
+	"github.com/blang/semver"
 	cobra "github.com/spf13/cobra"
 	sh "github.com/whyrusleeping/ipfs-shell"
 )
@@ -338,12 +339,67 @@ func main() {
 				out, err := cmd.CombinedOutput()
 				if err != nil {
 					Error("build: %s", err)
+					return
 				}
 				fmt.Print(string(out))
 			default:
 				Error("language unrecognized or unspecified")
 				return
 			}
+		},
+	}
+
+	var VersionCommand = &cobra.Command{
+		Use:   "version",
+		Short: "view of modify this packages version",
+		Run: func(cmd *cobra.Command, args []string) {
+			pkg, err := LoadPackageFile(PkgFileName)
+			if err != nil {
+				Error(err.Error())
+				return
+			}
+
+			if len(args) == 0 {
+				fmt.Println(pkg.Version)
+				return
+			}
+
+			defer func() {
+				err := SavePackageFile(pkg, PkgFileName)
+				if err != nil {
+					Error(err.Error())
+					return
+				}
+			}()
+
+			// if argument is a semver, set version to it
+			_, err = semver.Make(args[0])
+			if err == nil {
+				pkg.Version = args[0]
+				return
+			}
+
+			v, err := semver.Make(pkg.Version)
+			if err != nil {
+				Error(err.Error())
+				return
+			}
+			switch args[0] {
+			case "major":
+				v.Major++
+				v.Minor = 0
+				v.Patch = 0
+			case "minor":
+				v.Minor++
+				v.Patch = 0
+			case "patch":
+				v.Patch++
+			default:
+				Error("argument was not a semver field: '%s'", args[0])
+				return
+			}
+
+			pkg.Version = v.String()
 		},
 	}
 
@@ -361,6 +417,7 @@ func main() {
 	InstallCommand.Flags().BoolVar(&global, "global", false, "install to global scope")
 
 	GxCommand.AddCommand(BuildCommand)
+	GxCommand.AddCommand(VersionCommand)
 	GxCommand.AddCommand(UpdateCommand)
 	err = GxCommand.Execute()
 	if err != nil {
