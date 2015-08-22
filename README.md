@@ -59,6 +59,24 @@ Note: This is not to say that you can't add the `vendor` directory to version co
 by all means do if you want a single `git clone` or `svn co` to bring all deps
 with it!
 
+## Using gx as a Go package manager
+
+If you want (like me) to use gx as a package manager for go, its pretty easy.
+Pre go1.5, youll need to set your `GOPATH` to `$GOPATH:$(pwd)/vendor` and 
+running `go build` or `go install`. Once go1.5 lands, you'll be able to build by
+simply running `go build -vendor` or `go install -vendor`.
+
+To import code from the vendor directory use:
+
+```go
+import "<hash>/packagename"
+```
+
+for example:
+```go
+import "QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa/cobra"
+```
+
 ## TODO:
 - in place package updating
 - registries for naming

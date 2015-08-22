@@ -17,9 +17,10 @@ type Package struct {
 
 // Dependency represents a dependency of a package
 type Dependency struct {
-	Author string `json:"author,omitempty"`
-	Name   string `json:"name,omitempty"`
-	Hash   string `json:"hash"`
+	Author   string `json:"author,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Hash     string `json:"hash"`
+	Linkname string `json:"linkname,omitempty"`
 }
 
 func LoadPackageFile(fname string) (*Package, error) {

@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"path"
 
-	cobra "QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa/cobra"
+	cobra "github.com/spf13/cobra"
 	sh "github.com/whyrusleeping/ipfs-shell"
 )
 
@@ -47,6 +47,30 @@ func getDaemonAddr() string {
 		return "localhost:5001"
 	}
 	return da
+}
+
+var ErrLinkAlreadyExists = fmt.Errorf("named package already exists")
+
+func tryLinkPackage(dir, hash, name string) error {
+	finfo, err := os.Lstat(path.Join(dir, name))
+	if err == nil {
+		if finfo.Mode()&os.ModeSymlink != 0 {
+			return ErrLinkAlreadyExists
+		} else {
+			return fmt.Errorf("link target exists and is not a symlink")
+		}
+	}
+
+	if !os.IsNotExist(err) {
+		return err
+	}
+
+	pkgname, err := packageNameInDir(path.Join(dir, hash))
+	if err != nil {
+		return err
+	}
+
+	return os.Symlink(path.Join(hash, pkgname), path.Join(dir, name))
 }
 
 func main() {
@@ -133,7 +157,21 @@ func main() {
 			}
 
 			if len(name) == 0 {
-				name = ndep.Name
+				name = ndep.Name + "-v" + ndep.Version
+			}
+
+			var linkname string
+
+			err = tryLinkPackage(path.Join(cwd, "vendor", "src"), depname, name)
+			switch err {
+			case nil:
+				Log("package symlinked as '%s'", name)
+				linkname = name
+			case ErrLinkAlreadyExists:
+				Log("a package with the same name already exists, skipping link step...")
+			default:
+				Error(err.Error())
+				return
 			}
 
 			for _, cdep := range pkg.Dependencies {
@@ -142,10 +180,12 @@ func main() {
 					return
 				}
 			}
+
 			pkg.Dependencies = append(pkg.Dependencies,
 				&Dependency{
-					Name: ndep.Name,
-					Hash: depname,
+					Name:     ndep.Name,
+					Hash:     depname,
+					Linkname: linkname,
 				},
 			)
 
@@ -254,14 +294,16 @@ func main() {
 				return
 			}
 
-			err = pm.InstallDeps(npkg, cwd+"/vendor/src")
+			srcdir := path.Join(cwd, "vendor", "src")
+
+			err = pm.InstallDeps(npkg, srcdir)
 			if err != nil {
 				Error("(installdeps) : ", err)
 				return
 			}
 
 			for _, dep := range pkg.Dependencies {
-				if dep.Hash == existing {
+				if dep.Hash == existing || dep.Name == existing {
 					dep.Hash = target
 				}
 			}

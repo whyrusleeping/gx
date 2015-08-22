@@ -53,18 +53,26 @@ func (pm *PM) getPackageLocalDaemon(hash, target string) (*Package, error) {
 }
 
 func findPackageInDir(dir string) (*Package, error) {
-	fs, err := ioutil.ReadDir(dir)
+	name, err := packageNameInDir(dir)
 	if err != nil {
 		return nil, err
 	}
+	return LoadPackageFile(path.Join(dir, name, PkgFileName))
+}
+
+func packageNameInDir(dir string) (string, error) {
+	fs, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return "", err
+	}
 
 	if len(fs) == 0 {
-		return nil, fmt.Errorf("no package found in hashdir: %s", dir)
+		return "", fmt.Errorf("no package found in hashdir: %s", dir)
 	}
 
 	if len(fs) > 1 {
-		return nil, fmt.Errorf("found multiple packages in hashdir: %s", dir)
+		return "", fmt.Errorf("found multiple packages in hashdir: %s", dir)
 	}
 
-	return LoadPackageFile(path.Join(dir, fs[0].Name(), PkgFileName))
+	return fs[0].Name(), nil
 }
