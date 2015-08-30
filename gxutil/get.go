@@ -1,4 +1,4 @@
-package main
+package gxutil
 
 import (
 	"fmt"
@@ -29,11 +29,11 @@ func (pm *PM) GetPackage(hash string) (*Package, error) {
 		return nil, err
 	}
 
-	return pm.getPackageLocalDaemon(hash, path.Join(dir, "vendor", "src"))
+	return pm.GetPackageLocalDaemon(hash, path.Join(dir, "vendor", "src"))
 }
 
 // retreive the given package from the local ipfs daemon
-func (pm *PM) getPackageLocalDaemon(hash, target string) (*Package, error) {
+func (pm *PM) GetPackageLocalDaemon(hash, target string) (*Package, error) {
 	pkgdir := path.Join(target, hash)
 	_, err := os.Stat(pkgdir)
 	if err == nil {

@@ -1,4 +1,4 @@
-package main
+package gxutil
 
 import (
 	"fmt"
@@ -125,7 +125,7 @@ func (pm *PM) addFiles(root string, files []string) (string, error) {
 		return "", err
 	}
 
-	return pm.addTree(tree, "")
+	return pm.addTree(tree, root)
 }
 
 func (pm *PM) addTree(nd *filetree, cwd string) (string, error) {
@@ -136,7 +136,7 @@ func (pm *PM) addTree(nd *filetree, cwd string) (string, error) {
 			// file here
 			fi, err := os.Open(path.Join(cwd, f))
 			if err != nil {
-				fmt.Printf("open failed: %s", err)
+				fmt.Printf("open failed: %s\n", err)
 				return "", err
 			}
 

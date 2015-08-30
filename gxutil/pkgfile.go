@@ -1,4 +1,4 @@
-package main
+package gxutil
 
 import (
 	"encoding/json"

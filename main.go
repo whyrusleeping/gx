@@ -8,71 +8,10 @@ import (
 
 	"github.com/blang/semver"
 	cobra "github.com/spf13/cobra"
-	sh "github.com/whyrusleeping/ipfs-shell"
+	gx "github.com/whyrusleeping/gx/gxutil"
 )
 
-const PkgFileName = "package.json"
-
-type PM struct {
-	shell *sh.Shell
-
-	// hash of the 'empty' ipfs dir to avoid extra calls to object new
-	blankDir string
-}
-
-// InstallDeps recursively installs all dependencies for the given package
-func (pm *PM) InstallDeps(pkg *Package, location string) error {
-	for _, dep := range pkg.Dependencies {
-		pkg, err := pm.getPackageLocalDaemon(dep.Hash, location)
-		if err != nil {
-			return fmt.Errorf("failed to fetch package: %s (%s):%s", dep.Name,
-				dep.Hash, err)
-		}
-
-		err = pm.InstallDeps(pkg, location)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (pm *PM) CheckDaemon() error {
-	_, err := pm.shell.ID()
-	return err
-}
-
-func getDaemonAddr() string {
-	da := os.Getenv("GX_IPFS_ADDR")
-	if len(da) == 0 {
-		return "localhost:5001"
-	}
-	return da
-}
-
-var ErrLinkAlreadyExists = fmt.Errorf("named package already exists")
-
-func tryLinkPackage(dir, hash, name string) error {
-	finfo, err := os.Lstat(path.Join(dir, name))
-	if err == nil {
-		if finfo.Mode()&os.ModeSymlink != 0 {
-			return ErrLinkAlreadyExists
-		} else {
-			return fmt.Errorf("link target exists and is not a symlink")
-		}
-	}
-
-	if !os.IsNotExist(err) {
-		return err
-	}
-
-	pkgname, err := packageNameInDir(path.Join(dir, hash))
-	if err != nil {
-		return err
-	}
-
-	return os.Symlink(path.Join(hash, pkgname), path.Join(dir, name))
-}
+const PkgFileName = gx.PkgFileName
 
 func main() {
 	cwd, err := os.Getwd()
@@ -81,9 +20,7 @@ func main() {
 		return
 	}
 
-	pm := &PM{
-		shell: sh.NewShell(getDaemonAddr()),
-	}
+	pm := gx.NewPM()
 
 	err = pm.CheckDaemon()
 	if err != nil {
@@ -103,7 +40,7 @@ func main() {
 		Use:   "publish",
 		Short: "publish a package",
 		Run: func(cmd *cobra.Command, args []string) {
-			pkg, err := LoadPackageFile(PkgFileName)
+			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
 				Error(err.Error())
 				return
@@ -143,7 +80,7 @@ func main() {
 
 			name := cmd.Flag("name").Value.String()
 
-			pkg, err := LoadPackageFile(PkgFileName)
+			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
 				Error(err.Error())
 				return
@@ -163,12 +100,12 @@ func main() {
 
 			var linkname string
 
-			err = tryLinkPackage(path.Join(cwd, "vendor", "src"), depname, name)
+			err = gx.TryLinkPackage(path.Join(cwd, "vendor", "src"), depname, name)
 			switch err {
 			case nil:
 				Log("package symlinked as '%s'", name)
 				linkname = name
-			case ErrLinkAlreadyExists:
+			case gx.ErrLinkAlreadyExists:
 				Log("a package with the same name already exists, skipping link step...")
 			default:
 				Error(err.Error())
@@ -183,14 +120,14 @@ func main() {
 			}
 
 			pkg.Dependencies = append(pkg.Dependencies,
-				&Dependency{
+				&gx.Dependency{
 					Name:     ndep.Name,
 					Hash:     depname,
 					Linkname: linkname,
 				},
 			)
 
-			err = SavePackageFile(pkg, PkgFileName)
+			err = gx.SavePackageFile(pkg, PkgFileName)
 			if err != nil {
 				Error("writing pkgfile: %s", err)
 				return
@@ -202,7 +139,7 @@ func main() {
 		Use:   "install",
 		Short: "install a package",
 		Run: func(cmd *cobra.Command, args []string) {
-			pkg, err := LoadPackageFile(PkgFileName)
+			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
 				Error(err.Error())
 				return
@@ -231,7 +168,7 @@ func main() {
 
 			pkg := args[0]
 
-			_, err := pm.getPackageLocalDaemon(pkg, cwd)
+			_, err := pm.GetPackageLocalDaemon(pkg, cwd)
 			if err != nil {
 				Error("fetching package: %s", err)
 				return
@@ -249,22 +186,11 @@ func main() {
 			} else {
 				pkgname = path.Base(cwd)
 			}
+
 			fmt.Printf("initializing package %s...\n", pkgname)
-
-			// check for existing packagefile
-			_, err := os.Stat(PkgFileName)
-			if err == nil {
-				fmt.Println("package file already exists in working dir")
-				return
-			}
-
-			pkg := new(Package)
-			pkg.Name = pkgname
-			pkg.Language = lang
-			pkg.Version = "1.0.0"
-			err = SavePackageFile(pkg, PkgFileName)
+			err := gx.InitPkg(cwd, pkgname, lang)
 			if err != nil {
-				fmt.Printf("save error: %s\n", err)
+				fmt.Printf("init error: %s\n", err)
 				return
 			}
 		},
@@ -283,7 +209,7 @@ func main() {
 			target := args[1]
 			// TODO: ensure both args are the 'same' package (same name at least)
 
-			pkg, err := LoadPackageFile(PkgFileName)
+			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
 				fmt.Println("error: ", err)
 				return
@@ -309,7 +235,7 @@ func main() {
 				}
 			}
 
-			err = SavePackageFile(pkg, PkgFileName)
+			err = gx.SavePackageFile(pkg, PkgFileName)
 			if err != nil {
 				Error("writing package file: %s\n", err)
 				return
@@ -324,7 +250,7 @@ func main() {
 		Use:   "build",
 		Short: "build a package",
 		Run: func(cmd *cobra.Command, args []string) {
-			pkg, err := LoadPackageFile(PkgFileName)
+			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
 				Error(err.Error())
 				return
@@ -353,7 +279,7 @@ func main() {
 		Use:   "version",
 		Short: "view of modify this packages version",
 		Run: func(cmd *cobra.Command, args []string) {
-			pkg, err := LoadPackageFile(PkgFileName)
+			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
 				Error(err.Error())
 				return
@@ -365,7 +291,7 @@ func main() {
 			}
 
 			defer func() {
-				err := SavePackageFile(pkg, PkgFileName)
+				err := gx.SavePackageFile(pkg, PkgFileName)
 				if err != nil {
 					Error(err.Error())
 					return
