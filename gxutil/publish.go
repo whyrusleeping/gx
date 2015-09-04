@@ -128,31 +128,49 @@ func (pm *PM) addFiles(root string, files []string) (string, error) {
 	return pm.addTree(tree, root)
 }
 
-func (pm *PM) addTree(nd *filetree, cwd string) (string, error) {
-	cur := pm.blankDir
-	for f, v := range nd.children {
-		var hash string
-		if v == nil || len(v.children) == 0 {
-			// file here
-			fi, err := os.Open(path.Join(cwd, f))
+func (pm *PM) addFile(p string) (string, error) {
+	fi, err := os.Open(p)
+	if err != nil {
+		fmt.Printf("open failed: %s\n", err)
+		return "", err
+	}
+	defer fi.Close()
+
+	return pm.shell.Add(fi)
+}
+
+func (pm *PM) addPathElem(v *filetree, f, cwd string) (string, error) {
+	if v == nil || len(v.children) == 0 {
+
+		// file or symlink here
+		p := path.Join(cwd, f)
+		stat, err := os.Lstat(p)
+		if err != nil {
+			fmt.Printf("file stat failed: %s\n", err)
+			return "", err
+		}
+
+		if stat.Mode()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(p)
 			if err != nil {
-				fmt.Printf("open failed: %s\n", err)
 				return "", err
 			}
 
-			ch, err := pm.shell.Add(fi)
-			if err != nil {
-				fi.Close()
-				return "", err
-			}
-			hash = ch
-			fi.Close()
-		} else {
-			ch, err := pm.addTree(v, path.Join(cwd, f))
-			if err != nil {
-				return "", err
-			}
-			hash = ch
+			return pm.shell.AddLink(target)
+		}
+
+		return pm.addFile(p)
+	}
+
+	return pm.addTree(v, path.Join(cwd, f))
+}
+
+func (pm *PM) addTree(nd *filetree, cwd string) (string, error) {
+	cur := pm.blankDir
+	for f, v := range nd.children {
+		hash, err := pm.addPathElem(v, f, cwd)
+		if err != nil {
+			return "", err
 		}
 		patched, err := pm.shell.Patch(cur, "add-link", f, hash)
 		if err != nil {

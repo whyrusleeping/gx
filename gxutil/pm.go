@@ -29,7 +29,16 @@ func NewPM() *PM {
 
 // InstallDeps recursively installs all dependencies for the given package
 func (pm *PM) InstallDeps(pkg *Package, location string) error {
+	fmt.Printf("installing package: %s-%s\n", pkg.Name, pkg.Version)
 	for _, dep := range pkg.Dependencies {
+
+		// if its already local, skip it
+		pkgdir := path.Join(location, dep.Hash)
+		_, err := findPackageInDir(pkgdir)
+		if err == nil {
+			continue
+		}
+
 		pkg, err := pm.GetPackageLocalDaemon(dep.Hash, location)
 		if err != nil {
 			return fmt.Errorf("failed to fetch package: %s (%s):%s", dep.Name,
