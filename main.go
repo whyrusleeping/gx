@@ -70,7 +70,7 @@ func main() {
 	}
 
 	var ImportCommand = &cobra.Command{
-		Use:   "import",
+		Use:   "import <pkgref>",
 		Short: "import a package as a dependency",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
@@ -158,7 +158,7 @@ func main() {
 	}
 
 	var GetCommand = &cobra.Command{
-		Use:   "get",
+		Use:   "get <pkgref>",
 		Short: "download a package",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
@@ -179,6 +179,16 @@ func main() {
 	var InitCommand = &cobra.Command{
 		Use:   "init",
 		Short: "initialize a package in the current working directory",
+		Example: `
+Initialize a basic package:
+
+  $ gx init
+
+Set the language:
+
+  $ gx init --lang=go
+
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var pkgname string
 			if len(args) > 0 {
@@ -197,8 +207,22 @@ func main() {
 	}
 
 	var UpdateCommand = &cobra.Command{
-		Use:   "update",
+		Use:   "update <oldref> <newref>",
 		Short: "update a package dependency",
+		Example: `
+  Update 'myPkg' to a given version (referencing it by package name):
+
+  $ gx update myPkg QmPZ6gM12JxshKzwSyrhbEmyrsi7UaMrnoQZL6mdrzSfh1
+
+  or reference it by hash:
+
+  $ export OLDHASH=QmdTTcAwxWhHLruoZtowxuqua1e5GVkYzxziiYPDn4vWJb 
+  $ gx update $OLDHASH QmPZ6gM12JxshKzwSyrhbEmyrsi7UaMrnoQZL6mdrzSfh1
+
+  $ export OLDHASH=(readlink vendor/myPkg-v1.3.1)
+  $ gx update $OLDHASH QmPZ6gM12JxshKzwSyrhbEmyrsi7UaMrnoQZL6mdrzSfh1
+
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) < 2 {
 				fmt.Println("update requires two arguments, current and target")
