@@ -100,7 +100,7 @@ func main() {
 
 			var linkname string
 
-			err = gx.TryLinkPackage(path.Join(cwd, "vendor", "src"), depname, name)
+			err = gx.TryLinkPackage(path.Join(cwd, "vendor"), depname, name)
 			switch err {
 			case nil:
 				Log("package symlinked as '%s'", name)
@@ -144,7 +144,7 @@ func main() {
 				Error(err.Error())
 				return
 			}
-			location := cwd + "/vendor/src"
+			location := cwd + "/vendor/"
 			if global {
 				location = os.Getenv("GOPATH") + "/src"
 			}
@@ -221,7 +221,7 @@ func main() {
 				return
 			}
 
-			srcdir := path.Join(cwd, "vendor", "src")
+			srcdir := path.Join(cwd, "vendor")
 
 			err = pm.InstallDeps(npkg, srcdir)
 			if err != nil {

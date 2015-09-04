@@ -29,7 +29,7 @@ func (pm *PM) GetPackage(hash string) (*Package, error) {
 		return nil, err
 	}
 
-	return pm.GetPackageLocalDaemon(hash, path.Join(dir, "vendor", "src"))
+	return pm.GetPackageLocalDaemon(hash, path.Join(dir, "vendor"))
 }
 
 // retreive the given package from the local ipfs daemon
