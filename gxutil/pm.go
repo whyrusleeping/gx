@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 
-	sh "github.com/whyrusleeping/ipfs-shell"
+	sh "github.com/ipfs/go-ipfs-api"
 )
 
 const PkgFileName = "package.json"
@@ -24,7 +24,6 @@ func NewPM() *PM {
 	return &PM{
 		shell: sh.NewShell(getDaemonAddr()),
 	}
-
 }
 
 // InstallDeps recursively installs all dependencies for the given package
