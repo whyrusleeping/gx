@@ -253,9 +253,12 @@ Set the language:
 				return
 			}
 
+			var oldhash string
 			for _, dep := range pkg.Dependencies {
 				if dep.Hash == existing || dep.Name == existing {
+					oldhash = dep.Hash
 					dep.Hash = target
+					break
 				}
 			}
 
@@ -265,8 +268,10 @@ Set the language:
 				return
 			}
 
-			Log("now update your source with:")
-			Log("sed -i s/%s/%s/ ./*\n", existing, target)
+			if oldhash != "" {
+				Log("now update your source with:")
+				Log("sed -i s/%s/%s/ ./*\n", oldhash, target)
+			}
 		},
 	}
 
