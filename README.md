@@ -12,8 +12,10 @@ This requirement may be lifted in the future when better infrastructure is set
 up.
 
 ## Installation
-To install (for now) you need to git clone it down, and then run `make` or
-`make install` to install the binary to your `$GOPATH`
+As simple as:
+```
+$ go get -u github.com/whyrusleeping/gx
+```
 
 ## Usage
 
@@ -64,7 +66,7 @@ with it!
 If you want (like me) to use gx as a package manager for go, its pretty easy.
 Pre go1.5, youll need to set your `GOPATH` to `$GOPATH:$(pwd)/vendor` and 
 running `go build` or `go install`. Once go1.5 lands, you'll be able to build by
-simply running `go build -vendor` or `go install -vendor`.
+simply setting `GO15VENDOREXPERIMENT` to `1` and running `go build` or `go install`.
 
 To import code from the vendor directory use:
 
@@ -78,5 +80,4 @@ import "QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa/cobra"
 ```
 
 ## TODO:
-- in place package updating
 - registries for naming

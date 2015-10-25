@@ -3,43 +3,60 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 
 	"github.com/blang/semver"
-	cobra "github.com/spf13/cobra"
+	cli "github.com/codegangsta/cli"
 	gx "github.com/whyrusleeping/gx/gxutil"
 )
 
 const PkgFileName = gx.PkgFileName
 
 func main() {
-	cwd, err := os.Getwd()
-	if err != nil {
-		fmt.Println("error: ", err)
-		return
-	}
 
 	pm := gx.NewPM()
 
-	err = pm.CheckDaemon()
-	if err != nil {
-		fmt.Printf("%s requires a running ipfs daemon (%s)\n", os.Args[0], err)
-		return
-	}
-
+	var cwd string
 	var global bool
 	var lang string
 
-	var GxCommand = &cobra.Command{
-		Use:   "gx",
-		Short: "gx is a packaging tool that uses ipfs",
+	app := cli.NewApp()
+	app.Author = "whyrusleeping"
+	app.Version = "0.1"
+	app.Flags = []cli.Flag{
+		cli.BoolFlag{
+			Name:  "verbose",
+			Usage: "print verbose logging information",
+		},
+	}
+	app.Before = func(c *cli.Context) error {
+		Verbose = c.Bool("verbose")
+
+		gcwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		cwd = gcwd
+
+		err = pm.CheckDaemon()
+		if err != nil {
+			str := fmt.Sprintf("%s requires a running ipfs daemon", os.Args[0])
+			if Verbose {
+				return fmt.Errorf(str+" (%s)", err)
+			}
+			return fmt.Errorf(str)
+		}
+
+		return nil
 	}
 
-	var PublishCommand = &cobra.Command{
-		Use:   "publish",
-		Short: "publish a package",
-		Run: func(cmd *cobra.Command, args []string) {
+	app.Usage = "gx is a packaging tool that uses ipfs"
+
+	var PublishCommand = cli.Command{
+		Name:  "publish",
+		Usage: "publish a package",
+		Action: func(c *cli.Context) {
 			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
 				Error(err.Error())
@@ -69,16 +86,22 @@ func main() {
 		},
 	}
 
-	var ImportCommand = &cobra.Command{
-		Use:   "import <pkgref>",
-		Short: "import a package as a dependency",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
+	var ImportCommand = cli.Command{
+		Name:  "import",
+		Usage: "import a package as a dependency",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "name",
+				Usage: "specify an alternative name for the package",
+			},
+		},
+		Action: func(c *cli.Context) {
+			if len(c.Args()) == 0 {
 				Error("import requires a package name")
 				return
 			}
 
-			name := cmd.Flag("name").Value.String()
+			name := c.String("name")
 
 			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
@@ -86,7 +109,7 @@ func main() {
 				return
 			}
 
-			depname := args[0]
+			depname := c.Args().First()
 
 			ndep, err := pm.GetPackage(depname)
 			if err != nil {
@@ -135,10 +158,20 @@ func main() {
 		},
 	}
 
-	var InstallCommand = &cobra.Command{
-		Use:   "install",
-		Short: "install a package",
-		Run: func(cmd *cobra.Command, args []string) {
+	var InstallCommand = cli.Command{
+		Name:    "install",
+		Usage:   "install this package",
+		Aliases: []string{"i"},
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "global",
+				Usage: "install package in global namespace",
+			},
+		},
+		Action: func(c *cli.Context) {
+			if len(c.Args()) > 0 {
+				Error("this command currently just installs the package in your current directory")
+			}
 			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
 				Error(err.Error())
@@ -157,16 +190,16 @@ func main() {
 		},
 	}
 
-	var GetCommand = &cobra.Command{
-		Use:   "get <pkgref>",
-		Short: "download a package",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
+	var GetCommand = cli.Command{
+		Name:  "get",
+		Usage: "download a package",
+		Action: func(c *cli.Context) {
+			if len(c.Args()) == 0 {
 				Error("no package specified")
 				return
 			}
 
-			pkg := args[0]
+			pkg := c.Args().First()
 
 			_, err := pm.GetPackageLocalDaemon(pkg, cwd)
 			if err != nil {
@@ -176,23 +209,19 @@ func main() {
 		},
 	}
 
-	var InitCommand = &cobra.Command{
-		Use:   "init",
-		Short: "initialize a package in the current working directory",
-		Example: `
-Initialize a basic package:
-
-  $ gx init
-
-Set the language:
-
-  $ gx init --lang=go
-
-`,
-		Run: func(cmd *cobra.Command, args []string) {
+	var InitCommand = cli.Command{
+		Name:  "init",
+		Usage: "initialize a package in the current working directory",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "lang",
+				Usage: "specify primary language of new package",
+			},
+		},
+		Action: func(c *cli.Context) {
 			var pkgname string
-			if len(args) > 0 {
-				pkgname = args[0]
+			if len(c.Args()) > 0 {
+				pkgname = c.Args().First()
 			} else {
 				pkgname = path.Base(cwd)
 			}
@@ -206,31 +235,33 @@ Set the language:
 		},
 	}
 
-	var UpdateCommand = &cobra.Command{
-		Use:   "update <oldref> <newref>",
-		Short: "update a package dependency",
-		Example: `
-  Update 'myPkg' to a given version (referencing it by package name):
+	/* Update command example
+			Example: `
+	  Update 'myPkg' to a given version (referencing it by package name):
 
-  $ gx update myPkg QmPZ6gM12JxshKzwSyrhbEmyrsi7UaMrnoQZL6mdrzSfh1
+	  $ gx update myPkg QmPZ6gM12JxshKzwSyrhbEmyrsi7UaMrnoQZL6mdrzSfh1
 
-  or reference it by hash:
+	  or reference it by hash:
 
-  $ export OLDHASH=QmdTTcAwxWhHLruoZtowxuqua1e5GVkYzxziiYPDn4vWJb 
-  $ gx update $OLDHASH QmPZ6gM12JxshKzwSyrhbEmyrsi7UaMrnoQZL6mdrzSfh1
+	  $ export OLDHASH=QmdTTcAwxWhHLruoZtowxuqua1e5GVkYzxziiYPDn4vWJb
+	  $ gx update $OLDHASH QmPZ6gM12JxshKzwSyrhbEmyrsi7UaMrnoQZL6mdrzSfh1
 
-  $ export OLDHASH=(readlink vendor/myPkg-v1.3.1)
-  $ gx update $OLDHASH QmPZ6gM12JxshKzwSyrhbEmyrsi7UaMrnoQZL6mdrzSfh1
+	  $ export OLDHASH=(readlink vendor/myPkg-v1.3.1)
+	  $ gx update $OLDHASH QmPZ6gM12JxshKzwSyrhbEmyrsi7UaMrnoQZL6mdrzSfh1
 
-`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) < 2 {
+	`,*/
+
+	var UpdateCommand = cli.Command{
+		Name:  "update",
+		Usage: "update a package dependency",
+		Action: func(c *cli.Context) {
+			if len(c.Args()) < 2 {
 				fmt.Println("update requires two arguments, current and target")
 				return
 			}
 
-			existing := args[0]
-			target := args[1]
+			existing := c.Args()[0]
+			target := c.Args()[1]
 			// TODO: ensure both args are the 'same' package (same name at least)
 
 			pkg, err := gx.LoadPackageFile(PkgFileName)
@@ -275,46 +306,17 @@ Set the language:
 		},
 	}
 
-	var BuildCommand = &cobra.Command{
-		Use:   "build",
-		Short: "build a package",
-		Run: func(cmd *cobra.Command, args []string) {
+	var VersionCommand = cli.Command{
+		Name:  "version",
+		Usage: "view of modify this packages version",
+		Action: func(c *cli.Context) {
 			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
 				Error(err.Error())
 				return
 			}
 
-			switch pkg.Language {
-			case "go":
-				env := os.Getenv("GOPATH")
-				os.Setenv("GOPATH", env+":"+cwd+"/vendor")
-				cmd := exec.Command("go", "build")
-				cmd.Env = os.Environ()
-				out, err := cmd.CombinedOutput()
-				if err != nil {
-					Error("build: %s", err)
-					return
-				}
-				fmt.Print(string(out))
-			default:
-				Error("language unrecognized or unspecified")
-				return
-			}
-		},
-	}
-
-	var VersionCommand = &cobra.Command{
-		Use:   "version",
-		Short: "view of modify this packages version",
-		Run: func(cmd *cobra.Command, args []string) {
-			pkg, err := gx.LoadPackageFile(PkgFileName)
-			if err != nil {
-				Error(err.Error())
-				return
-			}
-
-			if len(args) == 0 {
+			if !c.Args().Present() {
 				fmt.Println(pkg.Version)
 				return
 			}
@@ -327,10 +329,11 @@ Set the language:
 				}
 			}()
 
+			nver := c.Args().First()
 			// if argument is a semver, set version to it
-			_, err = semver.Make(args[0])
+			_, err = semver.Make(nver)
 			if err == nil {
-				pkg.Version = args[0]
+				pkg.Version = nver
 				return
 			}
 
@@ -339,7 +342,7 @@ Set the language:
 				Error(err.Error())
 				return
 			}
-			switch args[0] {
+			switch nver {
 			case "major":
 				v.Major++
 				v.Minor = 0
@@ -350,7 +353,7 @@ Set the language:
 			case "patch":
 				v.Patch++
 			default:
-				Error("argument was not a semver field: '%s'", args[0])
+				Error("argument was not a semver field: '%s'", nver)
 				return
 			}
 
@@ -358,24 +361,18 @@ Set the language:
 		},
 	}
 
-	GxCommand.Flags().BoolVar(&Verbose, "v", false, "verbose output")
+	app.Commands = []cli.Command{
+		InitCommand,
+		InstallCommand,
+		UpdateCommand,
+		VersionCommand,
+		GetCommand,
+		ImportCommand,
+		PublishCommand,
+	}
 
-	GxCommand.AddCommand(PublishCommand)
-	GxCommand.AddCommand(GetCommand)
-	GxCommand.AddCommand(InitCommand)
-	InitCommand.Flags().StringVar(&lang, "lang", "", "specify the primary language of the package")
-
-	GxCommand.AddCommand(ImportCommand)
-	ImportCommand.Flags().String("name", "", "specify the name to be used for the imported package")
-
-	GxCommand.AddCommand(InstallCommand)
-	InstallCommand.Flags().BoolVar(&global, "global", false, "install to global scope")
-
-	GxCommand.AddCommand(BuildCommand)
-	GxCommand.AddCommand(VersionCommand)
-	GxCommand.AddCommand(UpdateCommand)
-	err = GxCommand.Execute()
+	err := app.Run(os.Args)
 	if err != nil {
-		Error(err.Error())
+		fmt.Println(err)
 	}
 }
