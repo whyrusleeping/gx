@@ -15,6 +15,8 @@ type Package struct {
 	Test         string        `json:"test,omitempty"`
 	Language     string        `json:"language,omitempty"`
 	Copyright    string        `json:"copyright,omitempty"`
+
+	Go *GoInfo `json:"go,omitempty"`
 }
 
 // Dependency represents a dependency of a package
@@ -24,6 +26,15 @@ type Dependency struct {
 	Hash     string `json:"hash"`
 	Version  string `json:"version,omitempty"`
 	Linkname string `json:"linkname,omitempty"`
+}
+
+// for go packages, extra info
+type GoInfo struct {
+	DvcsImport string `json:"dvcsimport,omitempty"`
+
+	// GoVersion sets a compiler version requirement, users will be warned if installing
+	// a package using an unsupported compiler
+	GoVersion string `json:"goversion,omitempty"`
 }
 
 func LoadPackageFile(fname string) (*Package, error) {
