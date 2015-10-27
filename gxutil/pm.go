@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/user"
 	"path"
 
 	sh "github.com/ipfs/go-ipfs-api"
@@ -11,7 +12,7 @@ import (
 
 const PkgFileName = "package.json"
 
-var ErrLinkAlreadyExists = fmt.Errorf("named package already exists")
+var ErrLinkAlreadyExists = fmt.Errorf("named package link already exists")
 
 type PM struct {
 	shell *sh.Shell
@@ -65,6 +66,24 @@ func getDaemonAddr() string {
 	return da
 }
 
+func RemoveLink(dir, hash, name string) error {
+	linkpath := path.Join(dir, name)
+	finfo, err := os.Lstat(linkpath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	if finfo.Mode()&os.ModeSymlink == 0 {
+		return fmt.Errorf("%s was not a package link", name)
+	}
+
+	return os.Remove(linkpath)
+}
+
 func TryLinkPackage(dir, hash, name string) error {
 	finfo, err := os.Lstat(path.Join(dir, name))
 	if err == nil {
@@ -95,9 +114,15 @@ func InitPkg(dir, name, lang string) error {
 		return errors.New("package file already exists in working dir")
 	}
 
+	u, err := user.Current()
+	if err != nil {
+		fmt.Errorf("error looking up current user: %s", err)
+	}
+
 	pkg := new(Package)
 	pkg.Name = name
 	pkg.Language = lang
+	pkg.Author = u.Name
 	pkg.Version = "1.0.0"
 	return SavePackageFile(pkg, p)
 }

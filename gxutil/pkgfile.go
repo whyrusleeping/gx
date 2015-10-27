@@ -7,12 +7,14 @@ import (
 
 type Package struct {
 	Name         string        `json:"name,omitempty"`
+	Author       string        `json:"author,omitempty"`
 	Version      string        `json:"version,omitempty"`
 	Dependencies []*Dependency `json:"dependencies,omitempty"`
 	Bin          string        `json:"bin,omitempty"`
 	Build        string        `json:"build,omitempty"`
 	Test         string        `json:"test,omitempty"`
 	Language     string        `json:"language,omitempty"`
+	Copyright    string        `json:"copyright,omitempty"`
 }
 
 // Dependency represents a dependency of a package
@@ -20,6 +22,7 @@ type Dependency struct {
 	Author   string `json:"author,omitempty"`
 	Name     string `json:"name,omitempty"`
 	Hash     string `json:"hash"`
+	Version  string `json:"version,omitempty"`
 	Linkname string `json:"linkname,omitempty"`
 }
 
@@ -52,4 +55,13 @@ func SavePackageFile(pkg *Package, fname string) error {
 	}
 	_, err = fi.Write(out)
 	return err
+}
+
+func (pkg *Package) FindDep(ref string) *Dependency {
+	for _, d := range pkg.Dependencies {
+		if d.Hash == ref || d.Name == ref {
+			return d
+		}
+	}
+	return nil
 }

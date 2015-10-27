@@ -2,25 +2,45 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 var Verbose bool
 
-func Error(format string, args ...interface{}) {
-	log("ERROR: "+format, args...)
+func Error(args ...interface{}) {
+	log("ERROR: ", args)
 }
 
-func Log(format string, args ...interface{}) {
-	log(format, args...)
+func Log(args ...interface{}) {
+	log("", args)
 }
 
-func LogV(format string, args ...interface{}) {
+func VLog(args ...interface{}) {
 	if Verbose {
-		log(format, args...)
+		log("", args)
 	}
 }
 
-func log(format string, args ...interface{}) {
-	fmt.Printf(format+"\n", args...)
+func log(prefix string, args []interface{}) {
+	writelog := func(format string, args ...interface{}) {
+		if format[len(format)-1] != '\n' {
+			format += "\n"
+		}
+		fmt.Printf(format, args...)
+	}
 
+	if len(args) == 0 {
+		writelog(prefix)
+		return
+	}
+
+	switch s := args[0].(type) {
+	case string:
+		writelog(prefix+s, args[1:]...)
+	case fmt.Stringer:
+		writelog(prefix+s.String(), args[1:]...)
+	default:
+		format := strings.Repeat("%s ", len(args))
+		writelog(prefix+format, args...)
+	}
 }
