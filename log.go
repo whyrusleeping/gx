@@ -22,7 +22,12 @@ func VLog(args ...interface{}) {
 }
 
 func log(prefix string, args []interface{}) {
+	prefix = strings.TrimRight(prefix, "\t \n")
 	writelog := func(format string, args ...interface{}) {
+		n := strings.Count(format, "%")
+		if n < len(args) {
+			format += strings.Repeat(" %s", len(args)-n)
+		}
 		if format[len(format)-1] != '\n' {
 			format += "\n"
 		}
