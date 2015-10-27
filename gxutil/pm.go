@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/user"
 	"path"
 
@@ -112,6 +113,18 @@ func InitPkg(dir, name, lang string) error {
 	_, err := os.Stat(p)
 	if err == nil {
 		return errors.New("package file already exists in working dir")
+	}
+
+	switch lang {
+	case "go":
+		_, err := exec.LookPath("gx-go-tool")
+		if err != nil {
+			fmt.Println("gx-go-tool not found in path.")
+			fmt.Println("this tool is recommended when using gx for go packages.")
+			fmt.Println("to install, run: 'go get -u github.com/whyrusleeping/gx-go-tool'")
+			fmt.Println()
+		}
+	default:
 	}
 
 	u, err := user.Current()
