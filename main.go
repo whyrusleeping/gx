@@ -59,29 +59,25 @@ func main() {
 		Action: func(c *cli.Context) {
 			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
-				Error(err)
-				return
+				Fatal(err)
 			}
 
 			hash, err := pm.PublishPackage(cwd, pkg)
 			if err != nil {
-				Error(err)
-				return
+				Fatal(err)
 			}
 			Log("package %s published with hash: %s", pkg.Name, hash)
 
 			// write out version hash
 			fi, err := os.Create(".gxlastpubver")
 			if err != nil {
-				Error("failed to create version file: %s", err)
-				return
+				Fatal("failed to create version file: %s", err)
 			}
 
 			VLog("writing published version to .gxlastpubver")
 			_, err = fi.Write([]byte(hash))
 			if err != nil {
-				Error("failed to write version file: %s", err)
-				return
+				Fatal("failed to write version file: %s", err)
 			}
 		},
 	}
@@ -101,8 +97,7 @@ func main() {
 		},
 		Action: func(c *cli.Context) {
 			if len(c.Args()) == 0 {
-				Error("import requires a package name")
-				return
+				Fatal("import requires a package name")
 			}
 
 			name := c.String("name")
@@ -110,16 +105,14 @@ func main() {
 
 			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
-				Error(err)
-				return
+				Fatal(err)
 			}
 
 			depname := c.Args().First()
 
 			ndep, err := pm.GetPackage(depname)
 			if err != nil {
-				Error(err)
-				return
+				Fatal(err)
 			}
 
 			if len(name) == 0 {
@@ -128,8 +121,7 @@ func main() {
 
 			cdep := pkg.FindDep(depname)
 			if cdep != nil {
-				Error("package %s already imported as %s", cdep.Hash, cdep.Name)
-				return
+				Fatal("package %s already imported as %s", cdep.Hash, cdep.Name)
 			}
 
 			var linkname string
@@ -143,7 +135,7 @@ func main() {
 				case gx.ErrLinkAlreadyExists:
 					Log("a package with the same name already exists, skipping link step...")
 				default:
-					Error(err)
+					Fatal(err)
 					return
 				}
 			}
@@ -159,8 +151,7 @@ func main() {
 
 			err = gx.SavePackageFile(pkg, PkgFileName)
 			if err != nil {
-				Error("writing pkgfile: %s", err)
-				return
+				Fatal("writing pkgfile: %s", err)
 			}
 		},
 	}
@@ -177,12 +168,11 @@ func main() {
 		},
 		Action: func(c *cli.Context) {
 			if len(c.Args()) > 0 {
-				Error("this command currently just installs the package in your current directory")
+				Fatal("this command currently just installs the package in your current directory")
 			}
 			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
-				Error(err)
-				return
+				Fatal(err)
 			}
 			location := cwd + "/vendor/"
 			if global {
@@ -191,8 +181,7 @@ func main() {
 
 			err = pm.InstallDeps(pkg, location)
 			if err != nil {
-				Error(err)
-				return
+				Fatal(err)
 			}
 		},
 	}
@@ -201,17 +190,15 @@ func main() {
 		Name:  "get",
 		Usage: "download a package",
 		Action: func(c *cli.Context) {
-			if len(c.Args()) == 0 {
-				Error("no package specified")
-				return
+			if !c.Args().Present() {
+				Fatal("no package specified")
 			}
 
 			pkg := c.Args().First()
 
 			_, err := pm.GetPackageLocalDaemon(pkg, cwd)
 			if err != nil {
-				Error("fetching package: %s", err)
-				return
+				Fatal("fetching package: %s", err)
 			}
 		},
 	}
@@ -241,8 +228,7 @@ func main() {
 			fmt.Printf("initializing package %s...\n", pkgname)
 			err := gx.InitPkg(cwd, pkgname, lang)
 			if err != nil {
-				fmt.Printf("init error: %s\n", err)
-				return
+				Fatal("init error: %s", err)
 			}
 		},
 	}
@@ -266,8 +252,7 @@ EXAMPLE:
 `,
 		Action: func(c *cli.Context) {
 			if len(c.Args()) < 2 {
-				fmt.Println("update requires two arguments, current and target")
-				return
+				Fatal("update requires two arguments, current and target")
 			}
 
 			existing := c.Args()[0]
@@ -276,22 +261,19 @@ EXAMPLE:
 
 			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
-				fmt.Println("error: ", err)
-				return
+				Fatal("error: ", err)
 			}
 
 			npkg, err := pm.GetPackage(target)
 			if err != nil {
-				Error("(getpackage) : ", err)
-				return
+				Fatal("(getpackage) : ", err)
 			}
 
 			srcdir := path.Join(cwd, "vendor")
 
 			err = pm.InstallDeps(npkg, srcdir)
 			if err != nil {
-				Error("(installdeps) : ", err)
-				return
+				Fatal("(installdeps) : ", err)
 			}
 
 			var oldhash string
@@ -303,8 +285,7 @@ EXAMPLE:
 
 			err = gx.SavePackageFile(pkg, PkgFileName)
 			if err != nil {
-				Error("writing package file: %s", err)
-				return
+				Fatal("writing package file: %s", err)
 			}
 
 			if oldhash != "" {
@@ -325,33 +306,28 @@ EXAMPLE:
 		Action: func(c *cli.Context) {
 			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
-				Error(err.Error())
-				return
+				Fatal(err)
 			}
 
 			if !c.Args().Present() {
-				Log("must specify name of dep to link")
-				return
+				Fatal("must specify name of dep to link")
 			}
 
 			dep := pkg.FindDep(c.Args().First())
 			if dep == nil {
-				Error("no such dep: %s", c.Args().First())
-				return
+				Fatal("no such dep: %s", c.Args().First())
 			}
 
 			err = gx.RemoveLink(path.Join(cwd, "vendor"), dep.Hash, dep.Linkname)
 			if err != nil {
-				Error(err)
-				return
+				Fatal(err)
 			}
 
 			dep.Linkname = ""
 
 			err = gx.SavePackageFile(pkg, PkgFileName)
 			if err != nil {
-				Error(err)
-				return
+				Fatal(err)
 			}
 		},
 	}
@@ -368,19 +344,16 @@ EXAMPLE:
 		Action: func(c *cli.Context) {
 			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
-				Error(err.Error())
-				return
+				Fatal(err)
 			}
 
 			if !c.Args().Present() {
-				Log("must specify name of dep to link")
-				return
+				Fatal("must specify name of dep to link")
 			}
 
 			dep := pkg.FindDep(c.Args().First())
 			if dep == nil {
-				Error("no such dep: %s", c.Args().First())
-				return
+				Fatal("no such dep: %s", c.Args().First())
 			}
 
 			// get name from flag or default
@@ -397,42 +370,37 @@ EXAMPLE:
 
 				err := gx.RemoveLink(path.Join(cwd, "vendor"), dep.Hash, name)
 				if err != nil {
-					Error(err)
-					return
+					Fatal(err)
 				}
 				dep.Linkname = ""
 
 				err = gx.SavePackageFile(pkg, PkgFileName)
 				if err != nil {
-					Error(err)
-					return
+					Fatal(err)
 				}
 			}
 
 			err = gx.TryLinkPackage(path.Join(cwd, "vendor"), dep.Hash, name)
 			if err != nil {
-				Error(err)
-				return
+				Fatal(err)
 			}
 
 			dep.Linkname = name
 
 			err = gx.SavePackageFile(pkg, PkgFileName)
 			if err != nil {
-				Error(err)
-				return
+				Fatal(err)
 			}
 		},
 	}
 
 	var VersionCommand = cli.Command{
 		Name:  "version",
-		Usage: "view of modify this packages version",
+		Usage: "view or modify this packages version",
 		Action: func(c *cli.Context) {
 			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
-				Error(err.Error())
-				return
+				Fatal(err)
 			}
 
 			if !c.Args().Present() {
@@ -443,8 +411,7 @@ EXAMPLE:
 			defer func() {
 				err := gx.SavePackageFile(pkg, PkgFileName)
 				if err != nil {
-					Error(err.Error())
-					return
+					Fatal(err)
 				}
 			}()
 
@@ -458,8 +425,7 @@ EXAMPLE:
 
 			v, err := semver.Make(pkg.Version)
 			if err != nil {
-				Error(err.Error())
-				return
+				Fatal(err)
 			}
 			switch nver {
 			case "major":
@@ -492,10 +458,7 @@ EXAMPLE:
 		UnlinkCommand,
 	}
 
-	err := app.Run(os.Args)
-	if err != nil {
-		fmt.Println(err)
-	}
+	app.RunAndExitOnError()
 }
 
 func promptUser(query string) string {

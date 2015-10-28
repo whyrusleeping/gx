@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -9,6 +10,11 @@ var Verbose bool
 
 func Error(args ...interface{}) {
 	log("ERROR: ", args)
+}
+
+func Fatal(args ...interface{}) {
+	Error(args...)
+	os.Exit(1)
 }
 
 func Log(args ...interface{}) {
