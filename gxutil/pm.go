@@ -20,13 +20,16 @@ var ErrLinkAlreadyExists = fmt.Errorf("named package link already exists")
 type PM struct {
 	shell *sh.Shell
 
+	cfg *Config
+
 	// hash of the 'empty' ipfs dir to avoid extra calls to object new
 	blankDir string
 }
 
-func NewPM() *PM {
+func NewPM(cfg *Config) *PM {
 	return &PM{
 		shell: sh.NewShell(getDaemonAddr()),
+		cfg:   cfg,
 	}
 }
 
@@ -180,7 +183,7 @@ func TryLinkPackage(dir, hash, name string) error {
 	return os.Symlink(path.Join(hash, pkgname), path.Join(dir, name))
 }
 
-func InitPkg(dir, name, lang string) error {
+func (pm *PM) InitPkg(dir, name, lang string) error {
 	// check for existing packagefile
 	p := path.Join(dir, PkgFileName)
 	_, err := os.Stat(p)
@@ -188,15 +191,19 @@ func InitPkg(dir, name, lang string) error {
 		return errors.New("package file already exists in working dir")
 	}
 
-	u, err := user.Current()
-	if err != nil {
-		fmt.Errorf("error looking up current user: %s", err)
+	username := pm.cfg.getUsername()
+	if username == "" {
+		u, err := user.Current()
+		if err != nil {
+			fmt.Errorf("error looking up current user: %s", err)
+		}
+		username = u.Username
 	}
 
 	pkg := new(Package)
 	pkg.Name = name
 	pkg.Language = lang
-	pkg.Author = u.Username
+	pkg.Author = username
 	pkg.Version = "1.0.0"
 
 	switch lang {
@@ -215,8 +222,10 @@ func InitPkg(dir, name, lang string) error {
 		}
 		imp, _ := packagesGoImport(dir)
 
-		pkg.Go = &GoInfo{
-			DvcsImport: imp,
+		if imp != "" {
+			pkg.Go = &GoInfo{
+				DvcsImport: imp,
+			}
 		}
 
 	default:

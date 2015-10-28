@@ -15,7 +15,12 @@ import (
 const PkgFileName = gx.PkgFileName
 
 func main() {
-	pm := gx.NewPM()
+	cfg, err := gx.LoadConfig()
+	if err != nil {
+		Fatal(err)
+	}
+
+	pm := gx.NewPM(cfg)
 
 	var cwd string
 	var global bool
@@ -74,8 +79,10 @@ func main() {
 				Fatal("failed to create version file: %s", err)
 			}
 
+			defer fi.Close()
+
 			VLog("writing published version to .gxlastpubver")
-			_, err = fi.Write([]byte(hash))
+			_, err = fmt.Fprintf(fi, "%s: %s\n", pkg.Version, hash)
 			if err != nil {
 				Fatal("failed to write version file: %s", err)
 			}
@@ -226,7 +233,7 @@ func main() {
 			}
 
 			fmt.Printf("initializing package %s...\n", pkgname)
-			err := gx.InitPkg(cwd, pkgname, lang)
+			err := pm.InitPkg(cwd, pkgname, lang)
 			if err != nil {
 				Fatal("init error: %s", err)
 			}
