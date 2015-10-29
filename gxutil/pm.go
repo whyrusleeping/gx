@@ -56,7 +56,7 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 			return err
 		}
 
-		err = pm.InstallDeps(pkg, location)
+		err = pm.InstallDeps(deppkg, location)
 		if err != nil {
 			return err
 		}
