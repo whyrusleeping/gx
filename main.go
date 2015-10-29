@@ -3,14 +3,18 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/blang/semver"
 	cli "github.com/codegangsta/cli"
 	gx "github.com/whyrusleeping/gx/gxutil"
 )
+
+var pm *gx.PM
 
 const PkgFileName = gx.PkgFileName
 
@@ -20,10 +24,9 @@ func main() {
 		Fatal(err)
 	}
 
-	pm := gx.NewPM(cfg)
+	pm = gx.NewPM(cfg)
 
 	var cwd string
-	var global bool
 
 	app := cli.NewApp()
 	app.Author = "whyrusleeping"
@@ -182,7 +185,7 @@ func main() {
 				Fatal(err)
 			}
 			location := cwd + "/vendor/"
-			if global {
+			if c.Bool("global") {
 				location = os.Getenv("GOPATH") + "/src"
 			}
 
@@ -453,16 +456,63 @@ EXAMPLE:
 		},
 	}
 
+	var CleanCommand = cli.Command{
+		Name:  "clean",
+		Usage: "cleanup unused packages in vendor directory",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "dry-run",
+				Usage: "print out things to be removed without removing them",
+			},
+		},
+		Action: func(c *cli.Context) {
+			pkg, err := gx.LoadPackageFile(PkgFileName)
+			if err != nil {
+				Fatal(err)
+			}
+
+			dry := c.Bool("dry-run")
+
+			good := make(map[string]struct{})
+			for _, dep := range pkg.Dependencies {
+				good[dep.Hash] = struct{}{}
+				if dep.Linkname != "" {
+					good[dep.Linkname] = struct{}{}
+				}
+			}
+
+			vdir := filepath.Join(cwd, "vendor")
+			dirinfos, err := ioutil.ReadDir(vdir)
+			if err != nil {
+				Fatal(err)
+			}
+
+			for _, di := range dirinfos {
+				_, keep := good[di.Name()]
+				if !keep {
+					fmt.Println(di.Name())
+					if !dry {
+						err := os.RemoveAll(filepath.Join(cwd, "vendor", di.Name()))
+						if err != nil {
+							Fatal(err)
+						}
+					}
+				}
+			}
+		},
+	}
+
 	app.Commands = []cli.Command{
-		InitCommand,
-		InstallCommand,
-		UpdateCommand,
-		VersionCommand,
+		CleanCommand,
 		GetCommand,
 		ImportCommand,
-		PublishCommand,
+		InitCommand,
+		InstallCommand,
 		LinkCommand,
+		PublishCommand,
 		UnlinkCommand,
+		UpdateCommand,
+		VersionCommand,
 	}
 
 	app.RunAndExitOnError()
