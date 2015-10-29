@@ -9,7 +9,7 @@ type Package struct {
 	Name         string        `json:"name,omitempty"`
 	Author       string        `json:"author,omitempty"`
 	Version      string        `json:"version,omitempty"`
-	Dependencies []*Dependency `json:"dependencies,omitempty"`
+	Dependencies []*Dependency `json:"gxDependencies,omitempty"`
 	Bin          string        `json:"bin,omitempty"`
 	Build        string        `json:"build,omitempty"`
 	Test         string        `json:"test,omitempty"`
