@@ -3,6 +3,7 @@ package gxutil
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path"
 )
@@ -12,16 +13,10 @@ const CfgFileName = ".gxrc"
 type Config struct {
 	Repos      []string `json:"repos,omitempty"`
 	ExtraRepos []string `json:"extra_repos,omitempty"`
-	User       *User    `json:"user,omitempty"`
+	User       User     `json:"user,omitempty"`
 }
 
 func (c *Config) getUsername() string {
-	if c == nil {
-		return ""
-	}
-	if c.User == nil {
-		return ""
-	}
 	return c.User.Name
 }
 
@@ -65,6 +60,10 @@ func LoadConfig() (*Config, error) {
 }
 
 func mergeConfigs(base, extra map[string]interface{}) map[string]interface{} {
+	if base == nil {
+		return extra
+	}
+
 	for k, v := range extra {
 		bk, ok := base[k]
 		if !ok {
@@ -86,6 +85,35 @@ func mergeConfigs(base, extra map[string]interface{}) map[string]interface{} {
 	return base
 }
 
+func LoadConfigFrom(paths ...string) (*Config, error) {
+	if len(paths) == 0 {
+		return nil, fmt.Errorf("no path specified!")
+	}
+
+	base := paths[0]
+	paths = paths[1:]
+
+	cfg, err := loadFile(base)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
+
+	for _, np := range paths {
+		next, err := loadFile(np)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return nil, err
+			}
+		}
+
+		cfg = mergeConfigs(cfg, next)
+	}
+
+	return mapToCfg(cfg)
+}
+
 func loadFile(fname string) (map[string]interface{}, error) {
 	var cfg map[string]interface{}
 	fi, err := os.Open(fname)
@@ -102,6 +130,10 @@ func loadFile(fname string) (map[string]interface{}, error) {
 }
 
 func mapToCfg(cfg map[string]interface{}) (*Config, error) {
+	if cfg == nil {
+		return new(Config), nil
+	}
+
 	buf := new(bytes.Buffer)
 	err := json.NewEncoder(buf).Encode(cfg)
 	if err != nil {
@@ -115,4 +147,13 @@ func mapToCfg(cfg map[string]interface{}) (*Config, error) {
 	}
 
 	return out, nil
+}
+
+func WriteConfig(cfg *Config, file string) error {
+	fi, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	defer fi.Close()
+	return json.NewEncoder(fi).Encode(cfg)
 }

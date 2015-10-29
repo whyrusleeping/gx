@@ -45,13 +45,13 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 			continue
 		}
 
-		pkg, err := pm.GetPackageLocalDaemon(dep.Hash, location)
+		deppkg, err := pm.GetPackageLocalDaemon(dep.Hash, location)
 		if err != nil {
 			return fmt.Errorf("failed to fetch package: %s (%s):%s", dep.Name,
 				dep.Hash, err)
 		}
 
-		err = pm.CheckRequirements(pkg)
+		err = pm.CheckRequirements(deppkg)
 		if err != nil {
 			return err
 		}
