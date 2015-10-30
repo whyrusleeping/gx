@@ -318,7 +318,7 @@ EXAMPLE:
 				Log("now update your source with:")
 				switch pkg.Language {
 				case "go":
-					Log("gx-go-tool update %s/%s %s/%s", olddep.Hash, olddep.Name, target, olddep.Name)
+					Log("gx-go-tool update %s/%s %s/%s", olddep.Hash, oldhash, target, olddep.Name)
 				default:
 					Log("sed -i s/%s/%s/ ./*\n", oldhash, target)
 				}
