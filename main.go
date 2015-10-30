@@ -119,46 +119,22 @@ func main() {
 			}
 
 			depname := c.Args().First()
-
-			ndep, err := pm.GetPackage(depname)
-			if err != nil {
-				Fatal(err)
-			}
-
-			if len(name) == 0 {
-				name = ndep.Name + "-v" + ndep.Version
-			}
-
 			cdep := pkg.FindDep(depname)
 			if cdep != nil {
 				Fatal("package %s already imported as %s", cdep.Hash, cdep.Name)
 			}
 
-			var linkname string
-
-			if !nolink {
-				err = gx.TryLinkPackage(path.Join(cwd, "vendor"), depname, name)
-				switch err {
-				case nil:
-					Log("package symlinked as '%s'", name)
-					linkname = name
-				case gx.ErrLinkAlreadyExists:
-					Log("a package with the same name already exists, skipping link step...")
-				default:
-					Fatal(err)
-					return
-				}
+			dephash, err := pm.ResolveDepName(depname)
+			if err != nil {
+				Fatal(err)
 			}
 
-			pkg.Dependencies = append(pkg.Dependencies,
-				&gx.Dependency{
-					Name:     ndep.Name,
-					Hash:     depname,
-					Linkname: linkname,
-					Version:  ndep.Version,
-				},
-			)
+			ndep, err := pm.ImportPackage(cwd, dephash, name, nolink)
+			if err != nil {
+				Fatal(err)
+			}
 
+			pkg.Dependencies = append(pkg.Dependencies, ndep)
 			err = gx.SavePackageFile(pkg, PkgFileName)
 			if err != nil {
 				Fatal("writing pkgfile: %s", err)
@@ -175,23 +151,63 @@ func main() {
 				Name:  "global",
 				Usage: "install package in global namespace",
 			},
+			cli.BoolFlag{
+				Name:  "save",
+				Usage: "write installed packages as deps in package.json",
+			},
+			cli.BoolFlag{
+				Name:  "nolink",
+				Usage: "do not link installed packages",
+			},
 		},
 		Action: func(c *cli.Context) {
-			if len(c.Args()) > 0 {
-				Fatal("this command currently just installs the package in your current directory")
-			}
 			pkg, err := gx.LoadPackageFile(PkgFileName)
 			if err != nil {
 				Fatal(err)
 			}
-			location := cwd + "/vendor/"
-			if c.Bool("global") {
-				location = os.Getenv("GOPATH") + "/src"
+
+			save := c.Bool("save")
+			nolink := c.Bool("nolink")
+			global := c.Bool("global")
+
+			if len(c.Args()) == 0 {
+				location := cwd + "/vendor/"
+				if global {
+					location = os.Getenv("GOPATH") + "/src"
+				}
+
+				err = pm.InstallDeps(pkg, location)
+				if err != nil {
+					Fatal(err)
+				}
+				return
 			}
 
-			err = pm.InstallDeps(pkg, location)
-			if err != nil {
-				Fatal(err)
+			for _, p := range c.Args() {
+				phash, err := pm.ResolveDepName(p)
+				if err != nil {
+					Error("resolving package '%s': %s", p, err)
+				}
+
+				if p != phash {
+					VLog("%s resolved to %s", p, phash)
+				}
+
+				ndep, err := pm.ImportPackage(cwd, p, "", nolink)
+				if err != nil {
+					Fatal("importing package '%s': %s", p, err)
+				}
+
+				if save {
+					pkg.Dependencies = append(pkg.Dependencies, ndep)
+				}
+			}
+
+			if save {
+				err := gx.SavePackageFile(pkg, PkgFileName)
+				if err != nil {
+					Fatal(err)
+				}
 			}
 		},
 	}

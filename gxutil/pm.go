@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	sh "github.com/ipfs/go-ipfs-api"
+	mh "github.com/jbenet/go-multihash"
+	. "github.com/whyrusleeping/stump"
 )
 
 const PkgFileName = "package.json"
@@ -232,4 +234,47 @@ func (pm *PM) InitPkg(dir, name, lang string) error {
 	}
 
 	return SavePackageFile(pkg, p)
+}
+
+func (pm *PM) ImportPackage(dir, dephash, name string, nolink bool) (*Dependency, error) {
+	ndep, err := pm.GetPackage(dephash)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(name) == 0 {
+		name = ndep.Name + "-v" + ndep.Version
+	}
+
+	var linkname string
+
+	if !nolink {
+		err = TryLinkPackage(path.Join(dir, "vendor"), dephash, name)
+		switch err {
+		case nil:
+			Log("package symlinked as '%s'", name)
+			linkname = name
+		case ErrLinkAlreadyExists:
+			Log("a package with the same name already exists, skipping link step...")
+			linkname = name
+		default:
+			return nil, err
+		}
+	}
+
+	return &Dependency{
+		Name:     ndep.Name,
+		Hash:     dephash,
+		Linkname: linkname,
+		Version:  ndep.Version,
+	}, nil
+}
+
+func (pm *PM) ResolveDepName(name string) (string, error) {
+	_, err := mh.FromB58String(name)
+	if err == nil {
+		return name, nil
+	}
+
+	return "", fmt.Errorf("cannot resolve non-hash package names yet!")
 }

@@ -8,6 +8,8 @@ import (
 type Package struct {
 	Name         string        `json:"name,omitempty"`
 	Author       string        `json:"author,omitempty"`
+	Description  string        `json:"description,omitempty"`
+	Keywords     string        `json:"keywords,omitempty"`
 	Version      string        `json:"version,omitempty"`
 	Dependencies []*Dependency `json:"gxDependencies,omitempty"`
 	Bin          string        `json:"bin,omitempty"`
