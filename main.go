@@ -139,6 +139,19 @@ func main() {
 			if err != nil {
 				Fatal("writing pkgfile: %s", err)
 			}
+
+			npkg, err := pm.GetPackage(dephash)
+			if err != nil {
+				Fatal("loading package after import: ", err)
+			}
+
+			switch npkg.Language {
+			case "go":
+				if npkg.Go != nil && npkg.Go.DvcsImport != "" {
+					Log("To switch existing imports to new package, run:")
+					Log("gx-go-tool update %s %s/%s", npkg.Go.DvcsImport, dephash, npkg.Name)
+				}
+			}
 		},
 	}
 
