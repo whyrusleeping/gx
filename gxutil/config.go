@@ -11,13 +11,26 @@ import (
 const CfgFileName = ".gxrc"
 
 type Config struct {
-	Repos      []string `json:"repos,omitempty"`
-	ExtraRepos []string `json:"extra_repos,omitempty"`
-	User       User     `json:"user,omitempty"`
+	Repos      map[string]string `json:"repos,omitempty"`
+	ExtraRepos map[string]string `json:"extra_repos,omitempty"`
+	User       User              `json:"user,omitempty"`
 }
 
-func (c *Config) getUsername() string {
-	return c.User.Name
+func (c *Config) GetRepos() map[string]string {
+	if len(c.ExtraRepos) == 0 {
+		return c.Repos
+	}
+
+	combined := make(map[string]string)
+	for k, v := range c.Repos {
+		combined[k] = v
+	}
+
+	for k, v := range c.ExtraRepos {
+		combined[k] = v
+	}
+
+	return combined
 }
 
 type User struct {
@@ -111,7 +124,23 @@ func LoadConfigFrom(paths ...string) (*Config, error) {
 		cfg = mergeConfigs(cfg, next)
 	}
 
-	return mapToCfg(cfg)
+	rcfg, err := mapToCfg(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	sanityFill(rcfg)
+	return rcfg, nil
+}
+
+func sanityFill(c *Config) {
+	if c.ExtraRepos == nil {
+		c.ExtraRepos = make(map[string]string)
+	}
+
+	if c.Repos == nil {
+		c.Repos = make(map[string]string)
+	}
 }
 
 func loadFile(fname string) (map[string]interface{}, error) {

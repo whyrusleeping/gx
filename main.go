@@ -542,6 +542,7 @@ EXAMPLE:
 		UnlinkCommand,
 		UpdateCommand,
 		VersionCommand,
+		RepoCommand,
 	}
 
 	app.RunAndExitOnError()

@@ -147,6 +147,8 @@ func getDaemonAddr() string {
 
 func RemoveLink(dir, hash, name string) error {
 	linkpath := path.Join(dir, name)
+
+	VLog("removing package link: '%s'", linkpath)
 	finfo, err := os.Lstat(linkpath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -193,7 +195,7 @@ func (pm *PM) InitPkg(dir, name, lang string) error {
 		return errors.New("package file already exists in working dir")
 	}
 
-	username := pm.cfg.getUsername()
+	username := pm.cfg.User.Name
 	if username == "" {
 		u, err := user.Current()
 		if err != nil {
