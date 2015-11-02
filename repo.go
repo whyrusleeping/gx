@@ -111,8 +111,14 @@ var RepoRmCommand = cli.Command{
 		name := c.Args().First()
 
 		if global {
+			if _, ok := cfg.Repos[name]; !ok {
+				Fatal("no repo named %s", name)
+			}
 			delete(cfg.Repos, name)
 		} else {
+			if _, ok := cfg.ExtraRepos[name]; !ok {
+				Fatal("no repo named %s", name)
+			}
 			delete(cfg.ExtraRepos, name)
 		}
 
