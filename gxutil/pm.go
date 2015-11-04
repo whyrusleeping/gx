@@ -278,5 +278,40 @@ func (pm *PM) ResolveDepName(name string) (string, error) {
 		return name, nil
 	}
 
-	return "", fmt.Errorf("cannot resolve non-hash package names yet!")
+	if strings.Contains(name, "/") {
+		parts := strings.Split(name, "/")
+		rpath, ok := pm.cfg.GetRepos()[parts[0]]
+		if !ok {
+			return "", fmt.Errorf("unknown repo: '%s'", parts[0])
+		}
+
+		pkgs, err := pm.FetchRepo(rpath, true)
+		if err != nil {
+			return "", err
+		}
+
+		val, ok := pkgs[parts[1]]
+		if !ok {
+			return "", fmt.Errorf("package %s not found in repo %s", parts[1], parts[0])
+		}
+
+		return val, nil
+	}
+
+	out, err := pm.QueryRepos(name)
+	if err != nil {
+		return "", err
+	}
+
+	if len(out) == 0 {
+		return "", fmt.Errorf("could not find package by name: %s", name)
+	}
+
+	if len(out) == 1 {
+		for _, v := range out {
+			return v, nil
+		}
+	}
+
+	return "", fmt.Errorf("ambiguous ref, appears in multiple repos")
 }

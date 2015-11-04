@@ -186,23 +186,11 @@ var RepoQueryCommand = cli.Command{
 			Fatal("must specify search criteria")
 		}
 
-		cfg, err := gx.LoadConfig()
-		if err != nil {
-			Fatal(err)
-		}
-
 		searcharg := c.Args().First()
 
-		out := make(map[string]string)
-		for name, rpath := range cfg.GetRepos() {
-			repo, err := pm.FetchRepo(rpath, true)
-			if err != nil {
-				Fatal(err)
-			}
-
-			if val, ok := repo[searcharg]; ok {
-				out[name] = val
-			}
+		out, err := pm.QueryRepos(searcharg)
+		if err != nil {
+			Fatal(err)
 		}
 
 		if len(out) > 0 {
@@ -221,10 +209,18 @@ var RepoUpdateCommand = cli.Command{
 		if err != nil {
 			Fatal(err)
 		}
-
 		repos := cfg.GetRepos()
 
-		for _, r := range c.Args() {
+		var args []string
+		if c.Args().Present() {
+			args = c.Args()
+		} else {
+			for k, _ := range repos {
+				args = append(args, k)
+			}
+		}
+
+		for _, r := range args {
 			path, ok := repos[r]
 			if !ok {
 				Fatal("unknown repo:", r)

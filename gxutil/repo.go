@@ -127,3 +127,19 @@ func (pm *PM) cacheSet(name, resolved string) error {
 
 	return fi.Close()
 }
+
+func (pm *PM) QueryRepos(query string) (map[string]string, error) {
+	out := make(map[string]string)
+	for name, rpath := range pm.cfg.GetRepos() {
+		repo, err := pm.FetchRepo(rpath, true)
+		if err != nil {
+			return nil, err
+		}
+
+		if val, ok := repo[query]; ok {
+			out[name] = val
+		}
+	}
+
+	return out, nil
+}
