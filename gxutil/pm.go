@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"os/user"
 	"path"
-	"strconv"
 	"strings"
 
 	sh "github.com/ipfs/go-ipfs-api"
@@ -69,67 +68,10 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 func (pm *PM) CheckRequirements(pkg *Package) error {
 	switch pkg.Language {
 	case "go":
-		if pkg.Go != nil && pkg.Go.GoVersion != "" {
-			out, err := exec.Command("go", "version").CombinedOutput()
-			if err != nil {
-				return fmt.Errorf("no go compiler installed")
-			}
-
-			parts := strings.Split(string(out), " ")
-			if len(parts) < 4 {
-				return fmt.Errorf("unrecognized output from go compiler")
-			}
-
-			havevers := parts[2][2:]
-
-			reqvers := pkg.Go.GoVersion
-
-			badreq, err := versionComp(havevers, reqvers)
-			if err != nil {
-				return err
-			}
-			if badreq {
-				return fmt.Errorf("package '%s' requires go version %s, you have %s installed.", pkg.Name, reqvers, havevers)
-			}
-
-		}
 		return nil
-
 	default:
 		return nil
 	}
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func versionComp(have, req string) (bool, error) {
-	hp := strings.Split(have, ".")
-	rp := strings.Split(req, ".")
-
-	l := min(len(hp), len(rp))
-	hp = hp[:l]
-	rp = rp[:l]
-	for i, v := range hp {
-		hv, err := strconv.Atoi(v)
-		if err != nil {
-			return false, err
-		}
-
-		rv, err := strconv.Atoi(rp[i])
-		if err != nil {
-			return false, err
-		}
-
-		if hv < rv {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 func (pm *PM) CheckDaemon() error {

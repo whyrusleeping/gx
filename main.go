@@ -257,6 +257,8 @@ func main() {
 				lang = promptUser("what language will the project be in?")
 			}
 
+			checkForTools(lang)
+
 			fmt.Printf("initializing package %s...\n", pkgname)
 			err := pm.InitPkg(cwd, pkgname, lang)
 			if err != nil {
@@ -599,4 +601,18 @@ func runPostImportHook(env, pkg string) error {
 	}
 
 	return nil
+}
+
+func checkForTools(lang string) {
+	_, err := exec.LookPath("gx-" + lang)
+	if err == nil {
+		return
+	}
+
+	if strings.Contains(err.Error(), "file not found") {
+		Log("notice: no helper tool found for", lang)
+		return
+	}
+
+	Error("checking for helper tool:", err)
 }
