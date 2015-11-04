@@ -10,9 +10,9 @@ import (
 	. "github.com/whyrusleeping/stump"
 )
 
-func (pm *PM) FetchRepo(rpath string) (map[string]string, error) {
+func (pm *PM) FetchRepo(rpath string, usecache bool) (map[string]string, error) {
 	if strings.HasPrefix(rpath, "/ipns/") {
-		p, err := pm.cacheGet(rpath)
+		p, err := pm.ResolveName(rpath, usecache)
 		if err != nil {
 			return nil, err
 		}
@@ -35,27 +35,15 @@ func (pm *PM) FetchRepo(rpath string) (map[string]string, error) {
 var ErrNotFound = errors.New("cache miss")
 
 // TODO: once on ipfs 0.4.0, use the files api
-func (pm *PM) cacheGet(name string) (string, error) {
-	home := os.Getenv("HOME")
-	p := filepath.Join(home, ".gxcache")
-
-	fi, err := os.Open(p)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return "", err
-		}
-	} else {
-		defer fi.Close()
-
-		cache := make(map[string]string)
-		err = json.NewDecoder(fi).Decode(&cache)
+func (pm *PM) ResolveName(name string, usecache bool) (string, error) {
+	if usecache {
+		cache, ok, err := CheckCacheFile(name)
 		if err != nil {
 			return "", err
 		}
 
-		v, ok := cache[name]
 		if ok {
-			return v, nil
+			return cache, nil
 		}
 	}
 
@@ -65,7 +53,7 @@ func (pm *PM) cacheGet(name string) (string, error) {
 		return "", err
 	}
 
-	err = pm.cacheResolution(name, out)
+	err = pm.cacheSet(name, out)
 	if err != nil {
 		return "", err
 	}
@@ -73,8 +61,33 @@ func (pm *PM) cacheGet(name string) (string, error) {
 	return out, nil
 }
 
+func CheckCacheFile(name string) (string, bool, error) {
+	home := os.Getenv("HOME")
+	p := filepath.Join(home, ".gxcache")
+
+	fi, err := os.Open(p)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return "", false, err
+		}
+	}
+	defer fi.Close()
+
+	cache := make(map[string]string)
+	err = json.NewDecoder(fi).Decode(&cache)
+	if err != nil {
+		return "", false, err
+	}
+
+	v, ok := cache[name]
+	if ok {
+		return v, true, nil
+	}
+	return "", false, nil
+}
+
 // TODO: think about moving gx global files into a .config/local type thing
-func (pm *PM) cacheResolution(name, resolved string) error {
+func (pm *PM) cacheSet(name, resolved string) error {
 	home := os.Getenv("HOME")
 	p := filepath.Join(home, ".gxcache")
 

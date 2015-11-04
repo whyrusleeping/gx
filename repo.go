@@ -67,7 +67,7 @@ var RepoAddCommand = cli.Command{
 		rpath := c.Args()[1]
 
 		// make sure we can fetch it
-		_, err = pm.FetchRepo(rpath)
+		_, err = pm.FetchRepo(rpath, false)
 		if err != nil {
 			Fatal("finding repo: ", err)
 		}
@@ -150,7 +150,7 @@ var RepoListCommand = cli.Command{
 			Fatal("no such repo: ", rname)
 		}
 
-		repo, err := pm.FetchRepo(r)
+		repo, err := pm.FetchRepo(r, true)
 		if err != nil {
 			Fatal(err)
 		}
@@ -195,7 +195,7 @@ var RepoQueryCommand = cli.Command{
 
 		out := make(map[string]string)
 		for name, rpath := range cfg.GetRepos() {
-			repo, err := pm.FetchRepo(rpath)
+			repo, err := pm.FetchRepo(rpath, true)
 			if err != nil {
 				Fatal(err)
 			}
@@ -217,6 +217,38 @@ var RepoUpdateCommand = cli.Command{
 	Name:  "update",
 	Usage: "update cached versions of repos",
 	Action: func(c *cli.Context) {
-		Fatal("not yet implemented")
+		cfg, err := gx.LoadConfig()
+		if err != nil {
+			Fatal(err)
+		}
+
+		repos := cfg.GetRepos()
+
+		for _, r := range c.Args() {
+			path, ok := repos[r]
+			if !ok {
+				Fatal("unknown repo:", r)
+			}
+
+			val, ok, err := gx.CheckCacheFile(path)
+			if err != nil {
+				Fatal("checking cache:", err)
+			}
+
+			nval, err := pm.ResolveName(path, false)
+			if err != nil {
+				Fatal("resolving repo:", err)
+			}
+
+			if ok {
+				if nval == val {
+					Log("%s: up to date", r)
+				} else {
+					Log("%s: updated from %s to %s", r, val, nval)
+				}
+			} else if !ok {
+				Log("%s: %s", r, nval)
+			}
+		}
 	},
 }
