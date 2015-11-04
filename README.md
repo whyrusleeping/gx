@@ -30,6 +30,8 @@ This will output a 'package-hash' which is unique to the exact content of your
 package at the time of publishing. If someone were to download your package and
 republish it, it would produce the *exact* same hash.
 
+
+## Dependencies
 To add a dependency of another package to your package, simply import it by its
 hash:
 
@@ -39,6 +41,46 @@ $ gx import QmaDFJvcHAnxpnMwcEh6VStYN4v4PB4S16j4pAuC2KSHVr
 
 This downloads the package specified by the hash into the `vendor` directory in your
 workspace. It also adds an entry referencing the package to the local `package.json`.
+
+## Repos
+gx supports named packages via user configured repositories. A repository is
+simply an ipfs object whose links name package hashes. You can add a repository
+as either an ipns or ipfs path.
+
+### Usage
+
+Add a new repo
+```bash
+$ gx repo add myrepo /ipns/QmPupmUqXHBxikXxuptYECKaq8tpGNDSetx1Ed44irmew3
+```
+
+List configured repos
+```bash
+$ gx repo list
+myrepo       /ipns/QmPupmUqXHBxikXxuptYECKaq8tpGNDSetx1Ed44irmew3
+```
+
+List packages in a given repo
+```bash
+$ gx repo list myrepo
+events      QmeJjwRaGJfx7j6LkPLjyPfzcD2UHHkKehDPkmizqSpcHT
+smalltree   QmRgTZA6jGi49ipQxorkmC75d3pLe69N6MZBKfQaN6grGY
+stump       QmebiJS1saSNEPAfr9AWoExvpfGoEK4QCtdLKCK4z6Qw7U
+```
+
+## Hooks
+gx can support a wide array of use cases by having sane defaults that are
+extensible based on the scenario you are in. To this end, gx has hooks that
+get called during certain operations.
+
+These hooks are language specific, and gx will attempt to make calls to a
+helper binary matching your language to execute the hooks, for example, when
+writing go, gx calls `gx-go hook <hookname>` for any given hook.
+
+Currently available hooks are:
+
+- `post-import`
+  - called after a new package is imported and its info written to package.json
 
 ## ipfs
 
@@ -64,20 +106,14 @@ with it!
 ## Using gx as a Go package manager
 
 If you want (like me) to use gx as a package manager for go, its pretty easy.
-Pre go1.5, youll need to set your `GOPATH` to `$GOPATH:$(pwd)/vendor` and 
-running `go build` or `go install`. Once go1.5 lands, you'll be able to build by
-simply setting `GO15VENDOREXPERIMENT` to `1` and running `go build` or `go install`.
-
-To import code from the vendor directory use:
-
+You can import code from the vendor directory using:
 ```go
 import "<hash>/packagename"
 ```
-
 for example:
 ```go
 import "QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa/cobra"
 ```
+Then simply set the environment variable `GO15VENDOREXPERIMENT` to `1` and run
+`go build` or `go install` like you normally would.
 
-## TODO:
-- registries for naming
