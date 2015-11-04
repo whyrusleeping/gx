@@ -35,6 +35,7 @@ var RepoCommand = cli.Command{
 		RepoRmCommand,
 		RepoListCommand,
 		RepoQueryCommand,
+		RepoUpdateCommand,
 	},
 }
 
@@ -139,7 +140,7 @@ var RepoListCommand = cli.Command{
 		}
 
 		if !c.Args().Present() {
-			tabPrintSortedMap(cfg.GetRepos())
+			tabPrintSortedMap(nil, cfg.GetRepos())
 			return
 		}
 
@@ -154,11 +155,11 @@ var RepoListCommand = cli.Command{
 			Fatal(err)
 		}
 
-		tabPrintSortedMap(repo)
+		tabPrintSortedMap(nil, repo)
 	},
 }
 
-func tabPrintSortedMap(m map[string]string) {
+func tabPrintSortedMap(headers []string, m map[string]string) {
 	var names []string
 	for k, _ := range m {
 		names = append(names, k)
@@ -167,6 +168,10 @@ func tabPrintSortedMap(m map[string]string) {
 	sort.Strings(names)
 
 	w := tabwriter.NewWriter(os.Stdout, 12, 4, 1, ' ', 0)
+	if headers != nil {
+		fmt.Fprintf(w, "%s\t%s\n", headers[0], headers[1])
+	}
+
 	for _, n := range names {
 		fmt.Fprintf(w, "%s\t%s\n", n, m[n])
 	}
@@ -174,5 +179,44 @@ func tabPrintSortedMap(m map[string]string) {
 }
 
 var RepoQueryCommand = cli.Command{
-	Name: "query",
+	Name:  "query",
+	Usage: "search for a package in repos",
+	Action: func(c *cli.Context) {
+		if !c.Args().Present() {
+			Fatal("must specify search criteria")
+		}
+
+		cfg, err := gx.LoadConfig()
+		if err != nil {
+			Fatal(err)
+		}
+
+		searcharg := c.Args().First()
+
+		out := make(map[string]string)
+		for name, rpath := range cfg.GetRepos() {
+			repo, err := pm.FetchRepo(rpath)
+			if err != nil {
+				Fatal(err)
+			}
+
+			if val, ok := repo[searcharg]; ok {
+				out[name] = val
+			}
+		}
+
+		if len(out) > 0 {
+			tabPrintSortedMap([]string{"repo", "ref"}, out)
+		} else {
+			Fatal("not found")
+		}
+	},
+}
+
+var RepoUpdateCommand = cli.Command{
+	Name:  "update",
+	Usage: "update cached versions of repos",
+	Action: func(c *cli.Context) {
+		Fatal("not yet implemented")
+	},
 }
