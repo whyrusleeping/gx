@@ -13,6 +13,7 @@ import (
 	"github.com/blang/semver"
 	cli "github.com/codegangsta/cli"
 	gx "github.com/whyrusleeping/gx/gxutil"
+	. "github.com/whyrusleeping/stump"
 )
 
 var pm *gx.PM
@@ -141,7 +142,7 @@ func main() {
 				Fatal("writing pkgfile: %s", err)
 			}
 
-			err = runPostImportHook(pkg.Language, dephash)
+			err = gx.RunPostImportHook(pkg.Language, dephash)
 			if err != nil {
 				Fatal(err)
 			}
@@ -573,34 +574,6 @@ func yesNoPrompt(prompt string, def bool) bool {
 	}
 
 	panic("unexpected termination of stdin")
-}
-
-func runPostImportHook(env, pkg string) error {
-	if env == "" {
-		return nil
-	}
-
-	binname := "gx-" + env
-	_, err := exec.LookPath(binname)
-	if err != nil {
-		if os.IsNotExist(err) {
-			Log("No gx helper tool found for", env)
-			return nil
-		}
-		return err
-	}
-
-	cmd := exec.Command(binname, "hook", "post-import", pkg)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
-
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("hook failed: %s", err)
-	}
-
-	return nil
 }
 
 func checkForTools(lang string) {

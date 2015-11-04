@@ -52,7 +52,7 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 				dep.Hash, err)
 		}
 
-		err = pm.CheckRequirements(deppkg)
+		err = RunReqCheckHook(deppkg.Language, dep.Hash)
 		if err != nil {
 			return err
 		}
@@ -63,15 +63,6 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 		}
 	}
 	return nil
-}
-
-func (pm *PM) CheckRequirements(pkg *Package) error {
-	switch pkg.Language {
-	case "go":
-		return nil
-	default:
-		return nil
-	}
 }
 
 func (pm *PM) CheckDaemon() error {
@@ -206,6 +197,11 @@ func (pm *PM) ImportPackage(dir, dephash, name string, nolink bool) (*Dependency
 		}
 	}
 
+	err = RunReqCheckHook(ndep.Language, dephash)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Dependency{
 		Name:     ndep.Name,
 		Hash:     dephash,
@@ -256,4 +252,40 @@ func (pm *PM) ResolveDepName(name string) (string, error) {
 	}
 
 	return "", fmt.Errorf("ambiguous ref, appears in multiple repos")
+}
+
+func RunPostImportHook(env, pkg string) error {
+	return TryRunHook("post-import", env, pkg)
+}
+
+func RunReqCheckHook(env, pkg string) error {
+	return TryRunHook("req-check", env, pkg)
+}
+
+func TryRunHook(hook, env, pkg string) error {
+	if env == "" {
+		return nil
+	}
+
+	binname := "gx-" + env
+	_, err := exec.LookPath(binname)
+	if err != nil {
+		if os.IsNotExist(err) {
+			Log("No gx helper tool found for", env)
+			return nil
+		}
+		return err
+	}
+
+	cmd := exec.Command(binname, "hook", hook, pkg)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("hook failed: %s", err)
+	}
+
+	return nil
 }

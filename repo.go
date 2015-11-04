@@ -9,6 +9,7 @@ import (
 
 	cli "github.com/codegangsta/cli"
 	gx "github.com/whyrusleeping/gx/gxutil"
+	. "github.com/whyrusleeping/stump"
 )
 
 func cfgPath(global bool) (string, error) {
