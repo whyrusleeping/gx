@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -140,17 +141,9 @@ func main() {
 				Fatal("writing pkgfile: %s", err)
 			}
 
-			npkg, err := pm.GetPackage(dephash)
+			err = runPostImportHook(pkg.Language, dephash)
 			if err != nil {
-				Fatal("loading package after import: ", err)
-			}
-
-			switch npkg.Language {
-			case "go":
-				if npkg.Go != nil && npkg.Go.DvcsImport != "" {
-					Log("To switch existing imports to new package, run:")
-					Log("gx-go-tool update %s %s/%s", npkg.Go.DvcsImport, dephash, npkg.Name)
-				}
+				Fatal(err)
 			}
 		},
 	}
@@ -578,4 +571,32 @@ func yesNoPrompt(prompt string, def bool) bool {
 	}
 
 	panic("unexpected termination of stdin")
+}
+
+func runPostImportHook(env, pkg string) error {
+	if env == "" {
+		return nil
+	}
+
+	binname := "gx-" + env
+	_, err := exec.LookPath(binname)
+	if err != nil {
+		if os.IsNotExist(err) {
+			Log("No gx helper tool found for", env)
+			return nil
+		}
+		return err
+	}
+
+	cmd := exec.Command(binname, "hook", "post-import", pkg)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("hook failed: %s", err)
+	}
+
+	return nil
 }

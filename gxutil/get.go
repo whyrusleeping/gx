@@ -37,7 +37,7 @@ func (pm *PM) GetPackageLocalDaemon(hash, target string) (*Package, error) {
 	pkgdir := path.Join(target, hash)
 	_, err := os.Stat(pkgdir)
 	if err == nil {
-		pkg, err := findPackageInDir(pkgdir)
+		pkg, err := FindPackageInDir(pkgdir)
 		if err == nil {
 			return pkg, nil
 		} else if !os.IsNotExist(err) {
@@ -54,10 +54,10 @@ func (pm *PM) GetPackageLocalDaemon(hash, target string) (*Package, error) {
 		return nil, err
 	}
 
-	return findPackageInDir(pkgdir)
+	return FindPackageInDir(pkgdir)
 }
 
-func findPackageInDir(dir string) (*Package, error) {
+func FindPackageInDir(dir string) (*Package, error) {
 	name, err := packageNameInDir(dir)
 	if err != nil {
 		return nil, err

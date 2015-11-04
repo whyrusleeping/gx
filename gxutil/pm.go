@@ -42,7 +42,7 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 
 		// if its already local, skip it
 		pkgdir := path.Join(location, dep.Hash)
-		_, err := findPackageInDir(pkgdir)
+		_, err := FindPackageInDir(pkgdir)
 		if err == nil {
 			continue
 		}
