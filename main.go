@@ -182,7 +182,7 @@ func main() {
 			global := c.Bool("global")
 
 			if len(c.Args()) == 0 {
-				location := cwd + "/vendor/"
+				location := cwd + "/" + vendorDir + "/"
 				if global {
 					location = os.Getenv("GOPATH") + "/src"
 				}
@@ -308,7 +308,7 @@ EXAMPLE:
 				Fatal("(getpackage) : ", err)
 			}
 
-			srcdir := path.Join(cwd, "vendor")
+			srcdir := path.Join(cwd, vendorDir)
 
 			err = pm.InstallDeps(npkg, srcdir)
 			if err != nil {
@@ -475,7 +475,7 @@ EXAMPLE:
 				good[dep.Hash] = struct{}{}
 			}
 
-			vdir := filepath.Join(cwd, "vendor")
+			vdir := filepath.Join(cwd, vendorDir)
 			dirinfos, err := ioutil.ReadDir(vdir)
 			if err != nil {
 				Fatal(err)
@@ -486,7 +486,7 @@ EXAMPLE:
 				if !keep {
 					fmt.Println(di.Name())
 					if !dry {
-						err := os.RemoveAll(filepath.Join(cwd, "vendor", di.Name()))
+						err := os.RemoveAll(filepath.Join(cwd, vendorDir, di.Name()))
 						if err != nil {
 							Fatal(err)
 						}
