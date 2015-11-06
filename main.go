@@ -335,100 +335,6 @@ EXAMPLE:
 		},
 	}
 
-	var UnlinkCommand = cli.Command{
-		Name:  "unlink",
-		Usage: "remove the named link for the given package",
-		Action: func(c *cli.Context) {
-			pkg, err := gx.LoadPackageFile(PkgFileName)
-			if err != nil {
-				Fatal(err)
-			}
-
-			if !c.Args().Present() {
-				Fatal("must specify name of dep to link")
-			}
-
-			dep := pkg.FindDep(c.Args().First())
-			if dep == nil {
-				Fatal("no such dep: %s", c.Args().First())
-			}
-
-			err = gx.RemoveLink(path.Join(cwd, "vendor"), dep.Hash, dep.Linkname)
-			if err != nil {
-				Fatal(err)
-			}
-
-			dep.Linkname = ""
-
-			err = gx.SavePackageFile(pkg, PkgFileName)
-			if err != nil {
-				Fatal(err)
-			}
-		},
-	}
-
-	var LinkCommand = cli.Command{
-		Name:  "link",
-		Usage: "create a named link for the given package",
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  "name",
-				Usage: "specify the name of the link",
-			},
-		},
-		Action: func(c *cli.Context) {
-			pkg, err := gx.LoadPackageFile(PkgFileName)
-			if err != nil {
-				Fatal(err)
-			}
-
-			if !c.Args().Present() {
-				Fatal("must specify name of dep to link")
-			}
-
-			dep := pkg.FindDep(c.Args().First())
-			if dep == nil {
-				Fatal("no such dep: %s", c.Args().First())
-			}
-
-			// get name from flag or default
-			name := c.String("name")
-			if name == "" {
-				name = dep.Name + "-v" + dep.Version
-			}
-
-			if dep.Linkname != "" {
-				con := yesNoPrompt("package already has link, continue anyway?", true)
-				if !con {
-					return
-				}
-
-				err := gx.RemoveLink(path.Join(cwd, "vendor"), dep.Hash, name)
-				if err != nil {
-					Fatal(err)
-				}
-				dep.Linkname = ""
-
-				err = gx.SavePackageFile(pkg, PkgFileName)
-				if err != nil {
-					Fatal(err)
-				}
-			}
-
-			err = gx.TryLinkPackage(path.Join(cwd, "vendor"), dep.Hash, name)
-			if err != nil {
-				Fatal(err)
-			}
-
-			dep.Linkname = name
-
-			err = gx.SavePackageFile(pkg, PkgFileName)
-			if err != nil {
-				Fatal(err)
-			}
-		},
-	}
-
 	var VersionCommand = cli.Command{
 		Name:  "version",
 		Usage: "view or modify this packages version",
@@ -533,9 +439,7 @@ EXAMPLE:
 		ImportCommand,
 		InitCommand,
 		InstallCommand,
-		LinkCommand,
 		PublishCommand,
-		UnlinkCommand,
 		UpdateCommand,
 		VersionCommand,
 		RepoCommand,

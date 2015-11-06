@@ -16,8 +16,6 @@ import (
 
 const PkgFileName = "package.json"
 
-var ErrLinkAlreadyExists = fmt.Errorf("named package link already exists")
-
 type PM struct {
 	shell *sh.Shell
 
@@ -76,48 +74,6 @@ func getDaemonAddr() string {
 		return "localhost:5001"
 	}
 	return da
-}
-
-func RemoveLink(dir, hash, name string) error {
-	linkpath := path.Join(dir, name)
-
-	VLog("removing package link: '%s'", linkpath)
-	finfo, err := os.Lstat(linkpath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-
-		return err
-	}
-
-	if finfo.Mode()&os.ModeSymlink == 0 {
-		return fmt.Errorf("%s was not a package link", name)
-	}
-
-	return os.Remove(linkpath)
-}
-
-func TryLinkPackage(dir, hash, name string) error {
-	finfo, err := os.Lstat(path.Join(dir, name))
-	if err == nil {
-		if finfo.Mode()&os.ModeSymlink != 0 {
-			return ErrLinkAlreadyExists
-		} else {
-			return fmt.Errorf("link target exists and is not a symlink")
-		}
-	}
-
-	if !os.IsNotExist(err) {
-		return err
-	}
-
-	pkgname, err := packageNameInDir(path.Join(dir, hash))
-	if err != nil {
-		return err
-	}
-
-	return os.Symlink(path.Join(hash, pkgname), path.Join(dir, name))
 }
 
 func (pm *PM) InitPkg(dir, name, lang string) error {
@@ -181,32 +137,15 @@ func (pm *PM) ImportPackage(dir, dephash, name string, nolink bool) (*Dependency
 		name = ndep.Name + "-v" + ndep.Version
 	}
 
-	var linkname string
-
-	if !nolink {
-		err = TryLinkPackage(path.Join(dir, "vendor"), dephash, name)
-		switch err {
-		case nil:
-			Log("package symlinked as '%s'", name)
-			linkname = name
-		case ErrLinkAlreadyExists:
-			Log("a package with the same name already exists, skipping link step...")
-			linkname = name
-		default:
-			return nil, err
-		}
-	}
-
 	err = RunReqCheckHook(ndep.Language, dephash)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Dependency{
-		Name:     ndep.Name,
-		Hash:     dephash,
-		Linkname: linkname,
-		Version:  ndep.Version,
+		Name:    ndep.Name,
+		Hash:    dephash,
+		Version: ndep.Version,
 	}, nil
 }
 

@@ -23,11 +23,10 @@ type Package struct {
 
 // Dependency represents a dependency of a package
 type Dependency struct {
-	Author   string `json:"author,omitempty"`
-	Name     string `json:"name,omitempty"`
-	Hash     string `json:"hash"`
-	Version  string `json:"version,omitempty"`
-	Linkname string `json:"linkname,omitempty"`
+	Author  string `json:"author,omitempty"`
+	Name    string `json:"name,omitempty"`
+	Hash    string `json:"hash"`
+	Version string `json:"version,omitempty"`
 }
 
 // for go packages, extra info
