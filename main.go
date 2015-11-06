@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/blang/semver"
@@ -15,6 +17,8 @@ import (
 	gx "github.com/whyrusleeping/gx/gxutil"
 	. "github.com/whyrusleeping/stump"
 )
+
+const vendorDir = "vendor"
 
 var pm *gx.PM
 
@@ -387,6 +391,68 @@ EXAMPLE:
 		},
 	}
 
+	var ViewCommand = cli.Command{
+		Name:  "view",
+		Usage: "view package information",
+		Action: func(c *cli.Context) {
+			if !c.Args().Present() {
+				Fatal("must specify at least a query")
+			}
+			fname := PkgFileName
+			queryStr := c.Args()[0]
+			if len(c.Args()) == 2 {
+				pkgdir := filepath.Join(vendorDir, c.Args()[0])
+				name, err := gx.PackageNameInDir(pkgdir)
+				if err != nil {
+					Fatal(err)
+				}
+
+				fname = filepath.Join(pkgdir, name, PkgFileName)
+				queryStr = c.Args()[1]
+			}
+
+			fi, err := os.Open(fname)
+			if err != nil {
+				Fatal(err)
+			}
+
+			var cfg map[string]interface{}
+			err = json.NewDecoder(fi).Decode(&cfg)
+			if err != nil {
+				Fatal(err)
+			}
+			fi.Close()
+
+			var query []string
+			for _, s := range strings.Split(queryStr, ".") {
+				if s != "" {
+					query = append(query, s)
+				}
+			}
+
+			cur := cfg
+			var val interface{} = cur
+			for i, q := range query {
+				v, ok := cur[q]
+				if !ok {
+					Fatal("key not found: %s", strings.Join(query[:i+1], "."))
+				}
+				val = v
+
+				mp, ok := v.(map[string]interface{})
+				if !ok {
+					if i == len(query)-1 {
+						break
+					}
+					Fatal("%s is not indexable", query[i-1])
+				}
+				cur = mp
+			}
+
+			jsonPrint(val)
+		},
+	}
+
 	var CleanCommand = cli.Command{
 		Name:  "clean",
 		Usage: "cleanup unused packages in vendor directory",
@@ -407,9 +473,6 @@ EXAMPLE:
 			good := make(map[string]struct{})
 			for _, dep := range pkg.Dependencies {
 				good[dep.Hash] = struct{}{}
-				if dep.Linkname != "" {
-					good[dep.Linkname] = struct{}{}
-				}
 			}
 
 			vdir := filepath.Join(cwd, "vendor")
@@ -440,9 +503,10 @@ EXAMPLE:
 		InitCommand,
 		InstallCommand,
 		PublishCommand,
+		RepoCommand,
 		UpdateCommand,
 		VersionCommand,
-		RepoCommand,
+		ViewCommand,
 	}
 
 	app.RunAndExitOnError()
@@ -492,4 +556,13 @@ func checkForTools(lang string) {
 	}
 
 	Error("checking for helper tool:", err)
+}
+
+func jsonPrint(i interface{}) {
+	out, _ := json.MarshalIndent(i, "", "  ")
+	outs, err := strconv.Unquote(string(out))
+	if err != nil {
+		outs = string(out)
+	}
+	Log(outs)
 }

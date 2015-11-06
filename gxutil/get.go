@@ -58,14 +58,14 @@ func (pm *PM) GetPackageLocalDaemon(hash, target string) (*Package, error) {
 }
 
 func FindPackageInDir(dir string) (*Package, error) {
-	name, err := packageNameInDir(dir)
+	name, err := PackageNameInDir(dir)
 	if err != nil {
 		return nil, err
 	}
 	return LoadPackageFile(path.Join(dir, name, PkgFileName))
 }
 
-func packageNameInDir(dir string) (string, error) {
+func PackageNameInDir(dir string) (string, error) {
 	fs, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return "", err
