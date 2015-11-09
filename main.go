@@ -337,7 +337,7 @@ EXAMPLE:
 				Fatal("writing package file: %s", err)
 			}
 
-			err = gx.TryRunHook("post-update", pkg.Language, existing, target)
+			err = gx.TryRunHook("post-update", pkg.Language, oldhash, target)
 			if err != nil {
 				Fatal(err)
 			}

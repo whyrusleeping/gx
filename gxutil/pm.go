@@ -201,7 +201,7 @@ func RunReqCheckHook(env, pkg string) error {
 	return TryRunHook("req-check", env, pkg)
 }
 
-func TryRunHook(hook, env, pkg string) error {
+func TryRunHook(hook, env string, args ...string) error {
 	if env == "" {
 		return nil
 	}
@@ -216,7 +216,8 @@ func TryRunHook(hook, env, pkg string) error {
 		return err
 	}
 
-	cmd := exec.Command(binname, "hook", hook, pkg)
+	args = append([]string{"hook", hook}, args...)
+	cmd := exec.Command(binname, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
