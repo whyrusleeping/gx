@@ -76,6 +76,11 @@ func main() {
 				Fatal(err)
 			}
 
+			err = gx.TryRunHook("pre-publish", pkg.Language, "")
+			if err != nil {
+				Fatal(err)
+			}
+
 			hash, err := pm.PublishPackage(cwd, pkg)
 			if err != nil {
 				Fatal(err)
@@ -94,6 +99,11 @@ func main() {
 			_, err = fmt.Fprintf(fi, "%s: %s\n", pkg.Version, hash)
 			if err != nil {
 				Fatal("failed to write version file: %s", err)
+			}
+
+			err = gx.TryRunHook("post-publish", pkg.Language, hash)
+			if err != nil {
+				Fatal(err)
 			}
 		},
 	}
@@ -327,14 +337,9 @@ EXAMPLE:
 				Fatal("writing package file: %s", err)
 			}
 
-			if oldhash != "" {
-				Log("now update your source with:")
-				switch pkg.Language {
-				case "go":
-					Log("gx-go-tool update %s/%s %s/%s", olddep.Hash, oldhash, target, olddep.Name)
-				default:
-					Log("sed -i s/%s/%s/ ./*\n", oldhash, target)
-				}
+			err = gx.TryRunHook("post-update", pkg.Language, existing, target)
+			if err != nil {
+				Fatal(err)
 			}
 		},
 	}
