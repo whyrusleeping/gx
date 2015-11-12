@@ -34,12 +34,13 @@ func (pm *PM) GetPackage(hash string) (*Package, error) {
 
 // retreive the given package from the local ipfs daemon
 func (pm *PM) GetPackageLocalDaemon(hash, target string) (*Package, error) {
+	var pkg Package
 	pkgdir := path.Join(target, hash)
 	_, err := os.Stat(pkgdir)
 	if err == nil {
-		pkg, err := FindPackageInDir(pkgdir)
+		err := FindPackageInDir(&pkg, pkgdir)
 		if err == nil {
-			return pkg, nil
+			return &pkg, nil
 		} else if !os.IsNotExist(err) {
 			return nil, err
 		}
@@ -54,15 +55,20 @@ func (pm *PM) GetPackageLocalDaemon(hash, target string) (*Package, error) {
 		return nil, err
 	}
 
-	return FindPackageInDir(pkgdir)
-}
-
-func FindPackageInDir(dir string) (*Package, error) {
-	name, err := PackageNameInDir(dir)
+	err = FindPackageInDir(&pkg, pkgdir)
 	if err != nil {
 		return nil, err
 	}
-	return LoadPackageFile(path.Join(dir, name, PkgFileName))
+
+	return &pkg, nil
+}
+
+func FindPackageInDir(pkg interface{}, dir string) error {
+	name, err := PackageNameInDir(dir)
+	if err != nil {
+		return err
+	}
+	return LoadPackageFile(pkg, path.Join(dir, name, PkgFileName))
 }
 
 func PackageNameInDir(dir string) (string, error) {

@@ -39,7 +39,7 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 
 		// if its already local, skip it
 		pkgdir := path.Join(location, dep.Hash)
-		_, err := FindPackageInDir(pkgdir)
+		err := FindPackageInDir(&Package{}, pkgdir)
 		if err == nil {
 			continue
 		}
@@ -99,32 +99,33 @@ func (pm *PM) InitPkg(dir, name, lang string) error {
 	pkg.Author = username
 	pkg.Version = "1.0.0"
 
-	switch lang {
-	case "go":
-		_, err := exec.LookPath("gx-go-tool")
-		if err != nil {
-			fmt.Println("gx-go-tool not found in path.")
-			fmt.Println("this tool is recommended when using gx for go packages.")
-			fmt.Println("to install, run: 'go get -u github.com/whyrusleeping/gx-go-tool'")
-			fmt.Println()
-		}
+	// check if the user has a tool installed for the selected language
+	CheckForHelperTools(lang)
 
-		dir, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("could not determine cwd")
-		}
-		imp, _ := packagesGoImport(dir)
-
-		if imp != "" {
-			pkg.Go = &GoInfo{
-				DvcsImport: imp,
-			}
-		}
-
-	default:
+	err = SavePackageFile(pkg, p)
+	if err != nil {
+		return err
 	}
 
-	return SavePackageFile(pkg, p)
+	err = TryRunHook("post-init", lang)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func CheckForHelperTools(lang string) {
+	_, err := exec.LookPath("gx-" + lang)
+	if err == nil {
+		return
+	}
+
+	if strings.Contains(err.Error(), "file not found") {
+		Log("notice: no helper tool found for", lang)
+		return
+	}
+
+	Error("checking for helper tool:", err)
 }
 
 func (pm *PM) ImportPackage(dir, dephash, name string, nolink bool) (*Dependency, error) {

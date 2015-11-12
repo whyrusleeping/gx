@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-type Package struct {
+type PackageBase struct {
 	Name         string        `json:"name,omitempty"`
 	Author       string        `json:"author,omitempty"`
 	Description  string        `json:"description,omitempty"`
@@ -17,8 +17,12 @@ type Package struct {
 	Test         string        `json:"test,omitempty"`
 	Language     string        `json:"language,omitempty"`
 	Copyright    string        `json:"copyright,omitempty"`
+}
 
-	Go *GoInfo `json:"go,omitempty"`
+type Package struct {
+	PackageBase
+
+	Gx json.RawMessage `json:"gx,omitempty"`
 }
 
 // Dependency represents a dependency of a package
@@ -29,32 +33,22 @@ type Dependency struct {
 	Version string `json:"version,omitempty"`
 }
 
-// for go packages, extra info
-type GoInfo struct {
-	DvcsImport string `json:"dvcsimport,omitempty"`
-
-	// GoVersion sets a compiler version requirement, users will be warned if installing
-	// a package using an unsupported compiler
-	GoVersion string `json:"goversion,omitempty"`
-}
-
-func LoadPackageFile(fname string) (*Package, error) {
+func LoadPackageFile(pkg interface{}, fname string) error {
 	fi, err := os.Open(fname)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	dec := json.NewDecoder(fi)
-	var pkg Package
-	err = dec.Decode(&pkg)
+	err = dec.Decode(pkg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &pkg, nil
+	return nil
 }
 
-func SavePackageFile(pkg *Package, fname string) error {
+func SavePackageFile(pkg interface{}, fname string) error {
 	fi, err := os.Create(fname)
 	if err != nil {
 		return err

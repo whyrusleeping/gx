@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -23,6 +22,15 @@ const vendorDir = "vendor"
 var pm *gx.PM
 
 const PkgFileName = gx.PkgFileName
+
+func LoadPackageFile(path string) (*gx.Package, error) {
+	var pkg gx.Package
+	err := gx.LoadPackageFile(&pkg, path)
+	if err != nil {
+		return nil, err
+	}
+	return &pkg, nil
+}
 
 func main() {
 	cfg, err := gx.LoadConfig()
@@ -71,7 +79,7 @@ func main() {
 		Name:  "publish",
 		Usage: "publish a package",
 		Action: func(c *cli.Context) {
-			pkg, err := gx.LoadPackageFile(PkgFileName)
+			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
 				Fatal(err)
 			}
@@ -129,7 +137,7 @@ func main() {
 			name := c.String("name")
 			nolink := c.Bool("nolink")
 
-			pkg, err := gx.LoadPackageFile(PkgFileName)
+			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
 				Fatal(err)
 			}
@@ -182,7 +190,7 @@ func main() {
 			},
 		},
 		Action: func(c *cli.Context) {
-			pkg, err := gx.LoadPackageFile(PkgFileName)
+			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
 				Fatal(err)
 			}
@@ -272,9 +280,7 @@ func main() {
 				lang = promptUser("what language will the project be in?")
 			}
 
-			checkForTools(lang)
-
-			fmt.Printf("initializing package %s...\n", pkgname)
+			Log("initializing package %s...", pkgname)
 			err := pm.InitPkg(cwd, pkgname, lang)
 			if err != nil {
 				Fatal("init error: %s", err)
@@ -308,7 +314,7 @@ EXAMPLE:
 			target := c.Args()[1]
 			// TODO: ensure both args are the 'same' package (same name at least)
 
-			pkg, err := gx.LoadPackageFile(PkgFileName)
+			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
 				Fatal("error: ", err)
 			}
@@ -348,7 +354,7 @@ EXAMPLE:
 		Name:  "version",
 		Usage: "view or modify this packages version",
 		Action: func(c *cli.Context) {
-			pkg, err := gx.LoadPackageFile(PkgFileName)
+			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
 				Fatal(err)
 			}
@@ -468,7 +474,7 @@ EXAMPLE:
 			},
 		},
 		Action: func(c *cli.Context) {
-			pkg, err := gx.LoadPackageFile(PkgFileName)
+			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
 				Fatal(err)
 			}
@@ -547,20 +553,6 @@ func yesNoPrompt(prompt string, def bool) bool {
 	}
 
 	panic("unexpected termination of stdin")
-}
-
-func checkForTools(lang string) {
-	_, err := exec.LookPath("gx-" + lang)
-	if err == nil {
-		return
-	}
-
-	if strings.Contains(err.Error(), "file not found") {
-		Log("notice: no helper tool found for", lang)
-		return
-	}
-
-	Error("checking for helper tool:", err)
 }
 
 func jsonPrint(i interface{}) {

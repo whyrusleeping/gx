@@ -10,7 +10,7 @@ import (
 	gi "github.com/sabhiram/go-git-ignore"
 )
 
-func (pm *PM) PublishPackage(dir string, pkg *Package) (string, error) {
+func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
 	gitig, err := gi.CompileIgnoreFile(path.Join(dir, ".gitignore"))
 	if err != nil && !os.IsNotExist(err) {
 		return "", err
