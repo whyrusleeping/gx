@@ -107,7 +107,7 @@ func (pm *PM) InitPkg(dir, name, lang string) error {
 		return err
 	}
 
-	err = TryRunHook("post-init", lang)
+	err = TryRunHook("post-init", lang, dir)
 	if err != nil {
 		return err
 	}

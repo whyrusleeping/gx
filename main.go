@@ -84,12 +84,12 @@ func main() {
 				Fatal(err)
 			}
 
-			err = gx.TryRunHook("pre-publish", pkg.Language, "")
+			err = gx.TryRunHook("pre-publish", pkg.Language)
 			if err != nil {
 				Fatal(err)
 			}
 
-			hash, err := pm.PublishPackage(cwd, pkg)
+			hash, err := pm.PublishPackage(cwd, &pkg.PackageBase)
 			if err != nil {
 				Fatal(err)
 			}

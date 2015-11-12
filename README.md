@@ -75,12 +75,25 @@ get called during certain operations.
 
 These hooks are language specific, and gx will attempt to make calls to a
 helper binary matching your language to execute the hooks, for example, when
-writing go, gx calls `gx-go hook <hookname>` for any given hook.
+writing go, gx calls `gx-go hook <hookname> <args>` for any given hook.
 
 Currently available hooks are:
 
 - `post-import`
   - called after a new package is imported and its info written to package.json
+  - takes the hash of the newly imported package as an argument
+- `post-init`
+  - called after a new package is initialized
+  - takes an optional argument of the directory of the newly init'ed package
+- `pre-publish`
+  - called during `gx publish` before the package is bundled up and added to ipfs
+  - currently takes no arguments
+- `post-publish`
+  - called during `gx publish` after the package has been added to ipfs
+  - takes the hash of the newly published package as an argument
+- `post-update`
+  - called during `gx update` after a dependency has been updated
+  - takes the old package ref and the new hash as arguments
 
 ## ipfs
 
