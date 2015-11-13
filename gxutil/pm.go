@@ -34,7 +34,7 @@ func NewPM(cfg *Config) *PM {
 
 // InstallDeps recursively installs all dependencies for the given package
 func (pm *PM) InstallDeps(pkg *Package, location string) error {
-	fmt.Printf("installing package: %s-%s\n", pkg.Name, pkg.Version)
+	Log("installing package: %s-%s", pkg.Name, pkg.Version)
 	for _, dep := range pkg.Dependencies {
 
 		// if its already local, skip it
