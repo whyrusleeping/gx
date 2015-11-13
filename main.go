@@ -124,10 +124,6 @@ func main() {
 				Name:  "name",
 				Usage: "specify an alternative name for the package",
 			},
-			cli.BoolFlag{
-				Name:  "nolink",
-				Usage: "do not link package after importing",
-			},
 		},
 		Action: func(c *cli.Context) {
 			if len(c.Args()) == 0 {
@@ -135,7 +131,6 @@ func main() {
 			}
 
 			name := c.String("name")
-			nolink := c.Bool("nolink")
 
 			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
@@ -153,7 +148,7 @@ func main() {
 				Fatal(err)
 			}
 
-			ndep, err := pm.ImportPackage(cwd, dephash, name, nolink)
+			ndep, err := pm.ImportPackage(cwd, dephash, name)
 			if err != nil {
 				Fatal(err)
 			}
@@ -184,10 +179,6 @@ func main() {
 				Name:  "save",
 				Usage: "write installed packages as deps in package.json",
 			},
-			cli.BoolFlag{
-				Name:  "nolink",
-				Usage: "do not link installed packages",
-			},
 		},
 		Action: func(c *cli.Context) {
 			pkg, err := LoadPackageFile(PkgFileName)
@@ -196,7 +187,6 @@ func main() {
 			}
 
 			save := c.Bool("save")
-			nolink := c.Bool("nolink")
 			global := c.Bool("global")
 
 			if len(c.Args()) == 0 {
@@ -222,7 +212,7 @@ func main() {
 					VLog("%s resolved to %s", p, phash)
 				}
 
-				ndep, err := pm.ImportPackage(cwd, p, "", nolink)
+				ndep, err := pm.ImportPackage(cwd, p, "")
 				if err != nil {
 					Fatal("importing package '%s': %s", p, err)
 				}

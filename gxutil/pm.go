@@ -128,7 +128,7 @@ func CheckForHelperTools(lang string) {
 	Error("checking for helper tool:", err)
 }
 
-func (pm *PM) ImportPackage(dir, dephash, name string, nolink bool) (*Dependency, error) {
+func (pm *PM) ImportPackage(dir, dephash, name string) (*Dependency, error) {
 	ndep, err := pm.GetPackage(dephash)
 	if err != nil {
 		return nil, err
