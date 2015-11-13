@@ -244,6 +244,12 @@ func main() {
 	var GetCommand = cli.Command{
 		Name:  "get",
 		Usage: "download a package",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "o",
+				Usage: "specify output dir name",
+			},
+		},
 		Action: func(c *cli.Context) {
 			if !c.Args().Present() {
 				Fatal("no package specified")
@@ -251,7 +257,12 @@ func main() {
 
 			pkg := c.Args().First()
 
-			_, err := pm.GetPackageLocalDaemon(pkg, cwd)
+			out := c.String("o")
+			if out == "" {
+				out = cwd
+			}
+
+			_, err := pm.GetPackageLocalDaemon(pkg, out)
 			if err != nil {
 				Fatal("fetching package: %s", err)
 			}
@@ -292,7 +303,7 @@ func main() {
 		Name:      "update",
 		Usage:     "update a package dependency",
 		ArgsUsage: "[oldref] [newref]",
-		Description: `Update a package to a specified version
+		Description: `Update a package to a specified ref.
 		
 EXAMPLE:
    Update 'myPkg' to a given version (referencing it by package name):
