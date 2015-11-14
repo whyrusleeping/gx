@@ -44,23 +44,18 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 
 		// if its already local, skip it
 		pkgdir := path.Join(location, dep.Hash)
-		err := FindPackageInDir(&Package{}, pkgdir)
-		if err == nil {
-			continue
-		}
-
-		deppkg, err := pm.GetPackageLocalDaemon(dep.Hash, location)
+		pkg := new(Package)
+		err := FindPackageInDir(pkg, pkgdir)
 		if err != nil {
-			return fmt.Errorf("failed to fetch package: %s (%s):%s", dep.Name,
-				dep.Hash, err)
+			deppkg, err := pm.GetPackageLocalDaemon(dep.Hash, location)
+			if err != nil {
+				return fmt.Errorf("failed to fetch package: %s (%s):%s", dep.Name,
+					dep.Hash, err)
+			}
+			pkg = deppkg
 		}
 
-		err = RunReqCheckHook(deppkg.Language, dep.Hash)
-		if err != nil {
-			return err
-		}
-
-		err = pm.InstallDeps(deppkg, location)
+		err = pm.InstallDeps(pkg, location)
 		if err != nil {
 			return err
 		}
