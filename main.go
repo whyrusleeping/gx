@@ -38,7 +38,10 @@ func main() {
 		Fatal(err)
 	}
 
-	pm = gx.NewPM(cfg)
+	pm, err = gx.NewPM(cfg)
+	if err != nil {
+		Fatal(err)
+	}
 
 	var cwd string
 
@@ -58,17 +61,7 @@ func main() {
 		if err != nil {
 			return err
 		}
-
 		cwd = gcwd
-
-		err = pm.CheckDaemon()
-		if err != nil {
-			str := fmt.Sprintf("%s requires a running ipfs daemon", os.Args[0])
-			if Verbose {
-				return fmt.Errorf(str+" (%s)", err)
-			}
-			return fmt.Errorf(str)
-		}
 
 		return nil
 	}
@@ -119,18 +112,10 @@ func main() {
 	var ImportCommand = cli.Command{
 		Name:  "import",
 		Usage: "import a package as a dependency",
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  "name",
-				Usage: "specify an alternative name for the package",
-			},
-		},
 		Action: func(c *cli.Context) {
 			if len(c.Args()) == 0 {
 				Fatal("import requires a package name")
 			}
-
-			name := c.String("name")
 
 			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
@@ -148,7 +133,7 @@ func main() {
 				Fatal(err)
 			}
 
-			ndep, err := pm.ImportPackage(cwd, dephash, name)
+			ndep, err := pm.ImportPackage(cwd, dephash)
 			if err != nil {
 				Fatal(err)
 			}
@@ -159,10 +144,6 @@ func main() {
 				Fatal("writing pkgfile: %s", err)
 			}
 
-			err = gx.RunPostImportHook(pkg.Language, dephash)
-			if err != nil {
-				Fatal(err)
-			}
 		},
 	}
 
@@ -190,9 +171,9 @@ func main() {
 			global := c.Bool("global")
 
 			if len(c.Args()) == 0 {
-				location := cwd + "/" + vendorDir + "/"
+				location := filepath.Join(cwd, vendorDir)
 				if global {
-					location = os.Getenv("GOPATH") + "/src"
+					location = filepath.Join(os.Getenv("GOPATH"), "src")
 				}
 
 				err = pm.InstallDeps(pkg, location)
@@ -212,7 +193,7 @@ func main() {
 					VLog("%s resolved to %s", p, phash)
 				}
 
-				ndep, err := pm.ImportPackage(cwd, p, "")
+				ndep, err := pm.ImportPackage(cwd, p)
 				if err != nil {
 					Fatal("importing package '%s': %s", p, err)
 				}

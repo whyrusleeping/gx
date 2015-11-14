@@ -9,15 +9,15 @@ import (
 	"path"
 	"strings"
 
-	sh "github.com/ipfs/go-ipfs-api"
 	mh "github.com/jbenet/go-multihash"
+	ish "github.com/whyrusleeping/fallback-ipfs-shell"
 	. "github.com/whyrusleeping/stump"
 )
 
 const PkgFileName = "package.json"
 
 type PM struct {
-	shell *sh.Shell
+	shell ish.Shell
 
 	cfg *Config
 
@@ -25,11 +25,16 @@ type PM struct {
 	blankDir string
 }
 
-func NewPM(cfg *Config) *PM {
-	return &PM{
-		shell: sh.NewShell(getDaemonAddr()),
-		cfg:   cfg,
+func NewPM(cfg *Config) (*PM, error) {
+	sh, err := ish.NewShell()
+	if err != nil {
+		return nil, err
 	}
+
+	return &PM{
+		shell: sh,
+		cfg:   cfg,
+	}, nil
 }
 
 // InstallDeps recursively installs all dependencies for the given package
@@ -61,19 +66,6 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 		}
 	}
 	return nil
-}
-
-func (pm *PM) CheckDaemon() error {
-	_, err := pm.shell.ID()
-	return err
-}
-
-func getDaemonAddr() string {
-	da := os.Getenv("GX_IPFS_ADDR")
-	if len(da) == 0 {
-		return "localhost:5001"
-	}
-	return da
 }
 
 func (pm *PM) InitPkg(dir, name, lang string) error {
@@ -128,19 +120,22 @@ func CheckForHelperTools(lang string) {
 	Error("checking for helper tool:", err)
 }
 
-func (pm *PM) ImportPackage(dir, dephash, name string) (*Dependency, error) {
+func (pm *PM) ImportPackage(dir, dephash string) (*Dependency, error) {
 	ndep, err := pm.GetPackage(dephash)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(name) == 0 {
-		name = ndep.Name + "-v" + ndep.Version
+	for _, child := range ndep.Dependencies {
+		_, err := pm.ImportPackage(dir, child.Hash)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	err = RunReqCheckHook(ndep.Language, dephash)
+	err = RunPostImportHook(ndep.Language, dephash)
 	if err != nil {
-		return nil, err
+		Fatal(err)
 	}
 
 	return &Dependency{
