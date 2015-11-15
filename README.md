@@ -42,6 +42,18 @@ $ gx import QmaDFJvcHAnxpnMwcEh6VStYN4v4PB4S16j4pAuC2KSHVr
 This downloads the package specified by the hash into the `vendor` directory in your
 workspace. It also adds an entry referencing the package to the local `package.json`.
 
+## Updating
+Updating packages in gx is simple:
+```bash
+$ gx update mypkg QmbH7fpAV1FgMp6J7GZXUV6rj6Lck5tDix9JJGBSjFPgUd
+```
+
+If you have your language tool (e.g. `gx-go`) installed, and it has a `post-update`
+hook, references to the given package should be updated correctly. If not, you may
+have to run sed over the package to update everything. The bright side of that is
+that you are very unlikely to have those hashes sitting around for any other reason
+so a global find-replace should be just fine.
+
 ## Repos
 gx supports named packages via user configured repositories. A repository is
 simply an ipfs object whose links name package hashes. You can add a repository
