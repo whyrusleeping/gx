@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"path"
+	"path/filepath"
 	"strings"
 
 	mh "github.com/jbenet/go-multihash"
@@ -43,7 +43,7 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 	for _, dep := range pkg.Dependencies {
 
 		// if its already local, skip it
-		pkgdir := path.Join(location, dep.Hash)
+		pkgdir := filepath.Join(location, dep.Hash)
 		pkg := new(Package)
 		err := FindPackageInDir(pkg, pkgdir)
 		if err != nil {
@@ -65,7 +65,7 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 
 func (pm *PM) InitPkg(dir, name, lang string) error {
 	// check for existing packagefile
-	p := path.Join(dir, PkgFileName)
+	p := filepath.Join(dir, PkgFileName)
 	_, err := os.Stat(p)
 	if err == nil {
 		return errors.New("package file already exists in working dir")
@@ -115,6 +115,8 @@ func CheckForHelperTools(lang string) {
 	Error("checking for helper tool:", err)
 }
 
+// ImportPackage downloads the package specified by dephash into the package
+// in the directory 'dir'
 func (pm *PM) ImportPackage(dir, dephash string) (*Dependency, error) {
 	ndep, err := pm.GetPackage(dephash)
 	if err != nil {
@@ -128,7 +130,7 @@ func (pm *PM) ImportPackage(dir, dephash string) (*Dependency, error) {
 		}
 	}
 
-	err = RunPostImportHook(ndep.Language, dephash)
+	err = TryRunHook("post-import", ndep.Language, dephash)
 	if err != nil {
 		Fatal(err)
 	}
@@ -140,6 +142,8 @@ func (pm *PM) ImportPackage(dir, dephash string) (*Dependency, error) {
 	}, nil
 }
 
+// ResolveDepName resolves a given package name to a hash
+// using configured repos as a mapping.
 func (pm *PM) ResolveDepName(name string) (string, error) {
 	_, err := mh.FromB58String(name)
 	if err == nil {
@@ -182,14 +186,6 @@ func (pm *PM) ResolveDepName(name string) (string, error) {
 	}
 
 	return "", fmt.Errorf("ambiguous ref, appears in multiple repos")
-}
-
-func RunPostImportHook(env, pkg string) error {
-	return TryRunHook("post-import", env, pkg)
-}
-
-func RunReqCheckHook(env, pkg string) error {
-	return TryRunHook("req-check", env, pkg)
 }
 
 func TryRunHook(hook, env string, args ...string) error {
