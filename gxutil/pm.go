@@ -39,8 +39,16 @@ func NewPM(cfg *Config) (*PM, error) {
 
 // InstallDeps recursively installs all dependencies for the given package
 func (pm *PM) InstallDeps(pkg *Package, location string) error {
+	done := make(map[string]struct{})
+	return pm.installDepsRec(pkg, location, done)
+}
+
+func (pm *PM) installDepsRec(pkg *Package, location string, done map[string]struct{}) error {
 	Log("installing package: %s-%s", pkg.Name, pkg.Version)
 	for _, dep := range pkg.Dependencies {
+		if _, ok := done[dep.Hash]; ok {
+			continue
+		}
 
 		// if its already local, skip it
 		pkgdir := filepath.Join(location, dep.Hash)
@@ -55,10 +63,11 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 			pkg = deppkg
 		}
 
-		err = pm.InstallDeps(pkg, location)
+		err = pm.installDepsRec(pkg, location, done)
 		if err != nil {
 			return err
 		}
+		done[dep.Hash] = struct{}{}
 	}
 	return nil
 }
@@ -186,6 +195,33 @@ func (pm *PM) ResolveDepName(name string) (string, error) {
 	}
 
 	return "", fmt.Errorf("ambiguous ref, appears in multiple repos")
+}
+
+func (pm *PM) EnumerateDependencies(pkg *Package) (map[string]struct{}, error) {
+	deps := make(map[string]struct{})
+	err := pm.enumerateDepsRec(pkg, deps)
+	if err != nil {
+		return nil, err
+	}
+
+	return deps, nil
+}
+
+func (pm *PM) enumerateDepsRec(pkg *Package, set map[string]struct{}) error {
+	for _, d := range pkg.Dependencies {
+		set[d.Hash] = struct{}{}
+
+		depkg, err := pm.GetPackage(d.Hash)
+		if err != nil {
+			return err
+		}
+
+		err = pm.enumerateDepsRec(depkg, set)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func TryRunHook(hook, env string, args ...string) error {

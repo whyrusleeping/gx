@@ -471,9 +471,9 @@ EXAMPLE:
 
 			dry := c.Bool("dry-run")
 
-			good := make(map[string]struct{})
-			for _, dep := range pkg.Dependencies {
-				good[dep.Hash] = struct{}{}
+			good, err := pm.EnumerateDependencies(pkg)
+			if err != nil {
+				Fatal(err)
 			}
 
 			vdir := filepath.Join(cwd, vendorDir)
