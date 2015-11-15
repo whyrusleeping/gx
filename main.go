@@ -138,6 +138,14 @@ func main() {
 				Fatal(err)
 			}
 
+			if pkg.FindDep(ndep.Name) != nil {
+				s := fmt.Sprintf("package with name %s already imported, continue?", ndep.Name)
+				if !yesNoPrompt(s, false) {
+					return
+				}
+				Log("continuing, please note some things may not work as expected")
+			}
+
 			pkg.Dependencies = append(pkg.Dependencies, ndep)
 			err = gx.SavePackageFile(pkg, PkgFileName)
 			if err != nil {
