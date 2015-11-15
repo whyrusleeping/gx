@@ -95,30 +95,26 @@ Currently available hooks are:
   - called during `gx update` after a dependency has been updated
   - takes the old package ref and the new hash as arguments
 
-## ipfs
-
-gx requires that you be running an ipfs daemon locally. If you run the daemon
-on a port other than the default 5001, you can tell gx about it by setting the
-`GX_IPFS_ADDR` environment variable to the address youre using, for example:
-
-```
-export GX_IPFS_ADDR=localhost:7777
-```
-
 ## The vendor directory
 
-The `vendor` (package) directory contains all of the downloaded dependencies of your
-package.  You do not need to add the contents of the `vendor` directory to version
-control, simply running `gx install` in the root directory of your project will
-fetch and download the appropriate versions of required packages. 
+The `vendor` (package) directory contains all of the downloaded dependencies of
+your package.  You do not need to add the contents of the `vendor` directory to
+version control, simply running `gx install` in the root directory of your
+project will fetch and download the appropriate versions of required packages. 
 
-Note: This is not to say that you can't add the `vendor` directory to version control,
-by all means do if you want a single `git clone` or `svn co` to bring all deps
-with it!
+Note: This is not to say that you can't add the `vendor` directory to version
+control, by all means do if you want a single `git clone` or `svn co` to bring
+all deps with it!
 
 ## Using gx as a Go package manager
 
 If you want (like me) to use gx as a package manager for go, its pretty easy.
+You will need the gx go extensions before starting your project:
+```
+$ go get -u github.com/whyrusleeping/gx-go
+```
+
+Once thats installed, use gx like normal to import dependencies.
 You can import code from the vendor directory using:
 ```go
 import "<hash>/packagename"
@@ -130,3 +126,8 @@ import "QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa/cobra"
 Then simply set the environment variable `GO15VENDOREXPERIMENT` to `1` and run
 `go build` or `go install` like you normally would.
 
+## Using gx as a package manager for language/environment X
+
+If you want to extend gx to work with any other language or environment,
+you can implement the relevant hooks in a binary named `gx-X` where the 'X'
+is the name of your environment. (See 'hooks' above)
