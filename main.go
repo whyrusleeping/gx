@@ -8,8 +8,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/blang/semver"
 	cli "github.com/codegangsta/cli"
@@ -497,8 +499,66 @@ EXAMPLE:
 		},
 	}
 
+	var DepsCommand = cli.Command{
+		Name:  "deps",
+		Usage: "print out package dependencies",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "r",
+				Usage: "print deps recursively",
+			},
+			cli.BoolFlag{
+				Name:  "q",
+				Usage: "only print hashes",
+			},
+		},
+		Action: func(c *cli.Context) {
+			rec := c.Bool("r")
+			quiet := c.Bool("q")
+
+			pkg, err := LoadPackageFile(PkgFileName)
+			if err != nil {
+				Fatal(err)
+			}
+
+			var deps []string
+			if rec {
+				depmap, err := pm.EnumerateDependencies(pkg)
+				if err != nil {
+					Fatal(err)
+				}
+
+				for k, _ := range depmap {
+					deps = append(deps, k)
+				}
+			} else {
+				for _, d := range pkg.Dependencies {
+					deps = append(deps, d.Hash)
+				}
+			}
+
+			sort.Strings(deps)
+
+			w := tabwriter.NewWriter(os.Stdout, 12, 4, 1, ' ', 0)
+			for _, d := range deps {
+				if !quiet {
+					dpkg, err := pm.GetPackage(d)
+					if err != nil {
+						Fatal(err)
+					}
+
+					fmt.Fprintf(w, "%s\t%s\t%s\n", dpkg.Name, d, dpkg.Version)
+				} else {
+					Log(d)
+				}
+			}
+			w.Flush()
+		},
+	}
+
 	app.Commands = []cli.Command{
 		CleanCommand,
+		DepsCommand,
 		GetCommand,
 		ImportCommand,
 		InitCommand,
