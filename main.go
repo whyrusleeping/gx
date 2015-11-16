@@ -316,7 +316,7 @@ EXAMPLE:
 				Fatal("(getpackage) : ", err)
 			}
 
-			srcdir := path.Join(cwd, vendorDir)
+			srcdir := filepath.Join(cwd, vendorDir)
 
 			err = pm.InstallDeps(npkg, srcdir)
 			if err != nil {
@@ -511,6 +511,10 @@ EXAMPLE:
 				Name:  "q",
 				Usage: "only print hashes",
 			},
+			cli.BoolFlag{
+				Name:  "tree",
+				Usage: "print deps as a tree",
+			},
 		},
 		Action: func(c *cli.Context) {
 			rec := c.Bool("r")
@@ -519,6 +523,14 @@ EXAMPLE:
 			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
 				Fatal(err)
+			}
+
+			if c.Bool("tree") {
+				err := printDepsTree(pm, pkg, quiet, 0)
+				if err != nil {
+					Fatal(err)
+				}
+				return
 			}
 
 			var deps []string
@@ -612,4 +624,24 @@ func jsonPrint(i interface{}) {
 		outs = string(out)
 	}
 	Log(outs)
+}
+
+func printDepsTree(pm *gx.PM, pkg *gx.Package, quiet bool, indent int) error {
+	for _, d := range pkg.Dependencies {
+		label := d.Hash
+		if !quiet {
+			label = fmt.Sprintf("%s %s %s", d.Name, d.Hash, d.Version)
+		}
+		Log("%s%s", strings.Repeat("  ", indent), label)
+		npkg, err := pm.GetPackage(d.Hash)
+		if err != nil {
+			return err
+		}
+
+		err = printDepsTree(pm, npkg, quiet, indent+1)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -55,6 +55,11 @@ func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
 			return nil
 		}
 
+		// dont publish last hash file
+		if rel == ".gxlastpubver" {
+			return nil
+		}
+
 		files = append(files, rel)
 		return nil
 	})
