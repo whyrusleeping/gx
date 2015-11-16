@@ -400,32 +400,22 @@ EXAMPLE:
 			if !c.Args().Present() {
 				Fatal("must specify at least a query")
 			}
-			fname := PkgFileName
-			queryStr := c.Args()[0]
+
+			var cfg map[string]interface{}
 			if len(c.Args()) == 2 {
 				ref := c.Args()[0]
-				pkgdir := filepath.Join(vendorDir, ref)
-				name, err := gx.PackageNameInDir(pkgdir)
+				err := gx.LocalPackageByName(cwd, ref, &cfg)
 				if err != nil {
 					Fatal(err)
 				}
-
-				fname = filepath.Join(pkgdir, name, PkgFileName)
-				queryStr = c.Args()[1]
+			} else {
+				err := gx.LoadPackageFile(&cfg, PkgFileName)
+				if err != nil {
+					Fatal(err)
+				}
 			}
 
-			fi, err := os.Open(fname)
-			if err != nil {
-				Fatal(err)
-			}
-
-			var cfg map[string]interface{}
-			err = json.NewDecoder(fi).Decode(&cfg)
-			if err != nil {
-				Fatal(err)
-			}
-			fi.Close()
-
+			queryStr := c.Args()[len(c.Args())-1]
 			var query []string
 			for _, s := range strings.Split(queryStr, ".") {
 				if s != "" {

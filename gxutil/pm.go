@@ -229,6 +229,55 @@ func (pm *PM) enumerateDepsRec(dir string, pkg *Package, set map[string]struct{}
 	return nil
 }
 
+func LocalPackageByName(dir, name string, out interface{}) error {
+	if IsHash(name) {
+		return FindPackageInDir(out, filepath.Join(dir, "vendor", name))
+	}
+
+	var local Package
+	err := LoadPackageFile(&local, PkgFileName)
+	if err != nil {
+		return err
+	}
+
+	return resolveDepName(&local, out, dir, name, make(map[string]struct{}))
+}
+
+var ErrUnrecognizedName = fmt.Errorf("unrecognized package name")
+
+func resolveDepName(pkg *Package, out interface{}, dir, name string, checked map[string]struct{}) error {
+	// first check if its a direct dependency of this package
+	for _, d := range pkg.Dependencies {
+		if d.Name == name {
+			return LoadPackageFile(out, filepath.Join(dir, "vendor", d.Hash, d.Name, PkgFileName))
+		}
+	}
+
+	// recurse!
+	var dpkg Package
+	for _, d := range pkg.Dependencies {
+		if _, ok := checked[d.Hash]; ok {
+			continue
+		}
+		err := LoadPackageFile(&dpkg, filepath.Join(dir, "vendor", d.Hash))
+		if err != nil {
+			return err
+		}
+
+		err = resolveDepName(&dpkg, out, dir, name, checked)
+		switch err {
+		case nil:
+			return nil // success!
+		case ErrUnrecognizedName:
+			checked[d.Hash] = struct{}{}
+		default:
+			return err
+		}
+	}
+
+	return ErrUnrecognizedName
+}
+
 func TryRunHook(hook, env string, args ...string) error {
 	if env == "" {
 		return nil
