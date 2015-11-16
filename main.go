@@ -485,6 +485,9 @@ EXAMPLE:
 			}
 
 			for _, di := range dirinfos {
+				if !strings.HasPrefix(di.Name(), "Qm") {
+					continue
+				}
 				_, keep := good[di.Name()]
 				if !keep {
 					fmt.Println(di.Name())
