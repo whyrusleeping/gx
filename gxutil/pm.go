@@ -52,18 +52,23 @@ func (pm *PM) installDepsRec(pkg *Package, location string, done map[string]stru
 
 		// if its already local, skip it
 		pkgdir := filepath.Join(location, dep.Hash)
-		pkg := new(Package)
-		err := FindPackageInDir(pkg, pkgdir)
+		cpkg := new(Package)
+		err := FindPackageInDir(cpkg, pkgdir)
 		if err != nil {
-			deppkg, err := pm.GetPackage(dep.Hash, location)
+			deppkg, err := pm.GetPackageTo(dep.Hash, pkgdir)
 			if err != nil {
 				return fmt.Errorf("failed to fetch package: %s (%s):%s", dep.Name,
 					dep.Hash, err)
 			}
-			pkg = deppkg
+			cpkg = deppkg
 		}
 
-		err = pm.installDepsRec(pkg, location, done)
+		err = pm.installDepsRec(cpkg, location, done)
+		if err != nil {
+			return err
+		}
+
+		err = TryRunHook("post-install", cpkg.Language, pkgdir)
 		if err != nil {
 			return err
 		}
@@ -127,7 +132,7 @@ func CheckForHelperTools(lang string) {
 // ImportPackage downloads the package specified by dephash into the package
 // in the directory 'dir'
 func (pm *PM) ImportPackage(dir, dephash string) (*Dependency, error) {
-	ndep, err := pm.GetPackage(dephash, dir)
+	ndep, err := pm.GetPackageTo(dephash, dir)
 	if err != nil {
 		return nil, err
 	}
@@ -198,13 +203,8 @@ func (pm *PM) ResolveDepName(name string) (string, error) {
 }
 
 func (pm *PM) EnumerateDependencies(pkg *Package) (map[string]struct{}, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
 	deps := make(map[string]struct{})
-	err = pm.enumerateDepsRec(cwd, pkg, deps)
+	err := pm.enumerateDepsRec(pkg, deps)
 	if err != nil {
 		return nil, err
 	}
@@ -212,16 +212,16 @@ func (pm *PM) EnumerateDependencies(pkg *Package) (map[string]struct{}, error) {
 	return deps, nil
 }
 
-func (pm *PM) enumerateDepsRec(dir string, pkg *Package, set map[string]struct{}) error {
+func (pm *PM) enumerateDepsRec(pkg *Package, set map[string]struct{}) error {
 	for _, d := range pkg.Dependencies {
 		set[d.Hash] = struct{}{}
 
-		depkg, err := pm.GetPackage(d.Hash, dir)
+		depkg, err := pm.GetPackage(d.Hash)
 		if err != nil {
 			return err
 		}
 
-		err = pm.enumerateDepsRec(dir, depkg, set)
+		err = pm.enumerateDepsRec(depkg, set)
 		if err != nil {
 			return err
 		}

@@ -20,13 +20,20 @@ func (eai ErrAlreadyInstalled) Error() string {
 	return fmt.Sprintf("package %s already installed", eai.pkg)
 }
 
-func (pm *PM) GetPackage(hash, dir string) (*Package, error) {
-	var pkg Package
+func (pm *PM) GetPackage(hash string) (*Package, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
 
-	pkgdir := filepath.Join(dir, "vendor", hash)
-	_, err := os.Stat(pkgdir)
+	return pm.GetPackageTo(hash, filepath.Join(cwd, "vendor", hash))
+}
+
+func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
+	var pkg Package
+	_, err := os.Stat(out)
 	if err == nil {
-		err := FindPackageInDir(&pkg, pkgdir)
+		err := FindPackageInDir(&pkg, out)
 		if err == nil {
 			return &pkg, nil
 		} else if !os.IsNotExist(err) {
@@ -38,12 +45,12 @@ func (pm *PM) GetPackage(hash, dir string) (*Package, error) {
 		return nil, err
 	}
 
-	err = pm.shell.Get(hash, pkgdir)
+	err = pm.shell.Get(hash, out)
 	if err != nil {
 		return nil, err
 	}
 
-	err = FindPackageInDir(&pkg, pkgdir)
+	err = FindPackageInDir(&pkg, out)
 	if err != nil {
 		return nil, err
 	}

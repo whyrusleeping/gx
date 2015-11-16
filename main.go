@@ -134,7 +134,7 @@ func main() {
 				Fatal(err)
 			}
 
-			ndep, err := pm.ImportPackage(cwd, dephash)
+			ndep, err := pm.ImportPackage(filepath.Join(cwd, "vendor"), dephash)
 			if err != nil {
 				Fatal(err)
 			}
@@ -202,7 +202,7 @@ func main() {
 					VLog("%s resolved to %s", p, phash)
 				}
 
-				ndep, err := pm.ImportPackage(cwd, p)
+				ndep, err := pm.ImportPackage(filepath.Join(cwd, "vendor"), p)
 				if err != nil {
 					Fatal("importing package '%s': %s", p, err)
 				}
@@ -239,10 +239,11 @@ func main() {
 
 			out := c.String("o")
 			if out == "" {
-				out = cwd
+				out = filepath.Join(cwd, pkg)
 			}
 
-			_, err := pm.GetPackage(pkg, out)
+			Log("writing package to:", out)
+			_, err := pm.GetPackageTo(pkg, out)
 			if err != nil {
 				Fatal("fetching package: %s", err)
 			}
@@ -310,7 +311,7 @@ EXAMPLE:
 				Fatal("error: ", err)
 			}
 
-			npkg, err := pm.GetPackage(target, cwd)
+			npkg, err := pm.GetPackage(target)
 			if err != nil {
 				Fatal("(getpackage) : ", err)
 			}
@@ -547,7 +548,7 @@ EXAMPLE:
 			w := tabwriter.NewWriter(os.Stdout, 12, 4, 1, ' ', 0)
 			for _, d := range deps {
 				if !quiet {
-					dpkg, err := pm.GetPackage(d, cwd)
+					dpkg, err := pm.GetPackage(d)
 					if err != nil {
 						Fatal(err)
 					}
@@ -626,7 +627,7 @@ func printDepsTree(pm *gx.PM, pkg *gx.Package, quiet bool, indent int) error {
 			label = fmt.Sprintf("%s %s %s", d.Name, d.Hash, d.Version)
 		}
 		Log("%s%s", strings.Repeat("  ", indent), label)
-		npkg, err := pm.GetPackage(d.Hash, cwd)
+		npkg, err := pm.GetPackage(d.Hash)
 		if err != nil {
 			return err
 		}
