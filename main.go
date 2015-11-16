@@ -49,7 +49,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.Author = "whyrusleeping"
-	app.Version = "0.1"
+	app.Version = "0.2"
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
 			Name:  "verbose",
