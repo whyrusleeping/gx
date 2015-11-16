@@ -21,6 +21,7 @@ import (
 
 const vendorDir = "vendor"
 
+var cwd string
 var pm *gx.PM
 
 const PkgFileName = gx.PkgFileName
@@ -44,8 +45,6 @@ func main() {
 	if err != nil {
 		Fatal(err)
 	}
-
-	var cwd string
 
 	app := cli.NewApp()
 	app.Author = "whyrusleeping"
@@ -243,7 +242,7 @@ func main() {
 				out = cwd
 			}
 
-			_, err := pm.GetPackageLocalDaemon(pkg, out)
+			_, err := pm.GetPackage(pkg, out)
 			if err != nil {
 				Fatal("fetching package: %s", err)
 			}
@@ -311,7 +310,7 @@ EXAMPLE:
 				Fatal("error: ", err)
 			}
 
-			npkg, err := pm.GetPackage(target)
+			npkg, err := pm.GetPackage(target, cwd)
 			if err != nil {
 				Fatal("(getpackage) : ", err)
 			}
@@ -404,7 +403,8 @@ EXAMPLE:
 			fname := PkgFileName
 			queryStr := c.Args()[0]
 			if len(c.Args()) == 2 {
-				pkgdir := filepath.Join(vendorDir, c.Args()[0])
+				ref := c.Args()[0]
+				pkgdir := filepath.Join(vendorDir, ref)
 				name, err := gx.PackageNameInDir(pkgdir)
 				if err != nil {
 					Fatal(err)
@@ -557,7 +557,7 @@ EXAMPLE:
 			w := tabwriter.NewWriter(os.Stdout, 12, 4, 1, ' ', 0)
 			for _, d := range deps {
 				if !quiet {
-					dpkg, err := pm.GetPackage(d)
+					dpkg, err := pm.GetPackage(d, cwd)
 					if err != nil {
 						Fatal(err)
 					}
@@ -636,7 +636,7 @@ func printDepsTree(pm *gx.PM, pkg *gx.Package, quiet bool, indent int) error {
 			label = fmt.Sprintf("%s %s %s", d.Name, d.Hash, d.Version)
 		}
 		Log("%s%s", strings.Repeat("  ", indent), label)
-		npkg, err := pm.GetPackage(d.Hash)
+		npkg, err := pm.GetPackage(d.Hash, cwd)
 		if err != nil {
 			return err
 		}

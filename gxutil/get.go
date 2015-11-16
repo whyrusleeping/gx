@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 )
 
 type ErrAlreadyInstalled struct {
@@ -20,22 +20,10 @@ func (eai ErrAlreadyInstalled) Error() string {
 	return fmt.Sprintf("package %s already installed", eai.pkg)
 }
 
-func (pm *PM) GetPackage(hash string) (*Package, error) {
-	// TODO: support using gateways for package fetching
-	// TODO: download packages into global package store
-	//       and create readonly symlink to them in local dir
-	dir, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	return pm.GetPackageLocalDaemon(hash, path.Join(dir, "vendor"))
-}
-
-// retreive the given package from the local ipfs daemon
-func (pm *PM) GetPackageLocalDaemon(hash, target string) (*Package, error) {
+func (pm *PM) GetPackage(hash, dir string) (*Package, error) {
 	var pkg Package
-	pkgdir := path.Join(target, hash)
+
+	pkgdir := filepath.Join(dir, "vendor", hash)
 	_, err := os.Stat(pkgdir)
 	if err == nil {
 		err := FindPackageInDir(&pkg, pkgdir)
@@ -68,7 +56,7 @@ func FindPackageInDir(pkg interface{}, dir string) error {
 	if err != nil {
 		return err
 	}
-	return LoadPackageFile(pkg, path.Join(dir, name, PkgFileName))
+	return LoadPackageFile(pkg, filepath.Join(dir, name, PkgFileName))
 }
 
 func PackageNameInDir(dir string) (string, error) {
