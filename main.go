@@ -311,6 +311,14 @@ EXAMPLE:
 				Fatal("error: ", err)
 			}
 
+			var oldhash string
+			olddep := pkg.FindDep(existing)
+			if olddep == nil {
+				Fatal("unknown package: ", existing)
+			}
+			oldhash = olddep.Hash
+			olddep.Hash = target
+
 			npkg, err := pm.GetPackage(target)
 			if err != nil {
 				Fatal("(getpackage) : ", err)
@@ -321,13 +329,6 @@ EXAMPLE:
 			err = pm.InstallDeps(npkg, srcdir)
 			if err != nil {
 				Fatal("(installdeps) : ", err)
-			}
-
-			var oldhash string
-			olddep := pkg.FindDep(existing)
-			if olddep != nil {
-				oldhash = olddep.Hash
-				olddep.Hash = target
 			}
 
 			err = gx.SavePackageFile(pkg, PkgFileName)

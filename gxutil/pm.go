@@ -132,7 +132,29 @@ func CheckForHelperTools(lang string) {
 // ImportPackage downloads the package specified by dephash into the package
 // in the directory 'dir'
 func (pm *PM) ImportPackage(dir, dephash string) (*Dependency, error) {
-	ndep, err := pm.GetPackageTo(dephash, dir)
+	pkgpath := filepath.Join(dir, dephash)
+	// check if its already imported
+	_, err := os.Stat(pkgpath)
+	if err == nil {
+		var pkg Package
+		err := FindPackageInDir(&pkg, pkgpath)
+		if err != nil {
+			return nil, fmt.Errorf("dir for package already exists, but no package found:", err)
+		}
+
+		return &Dependency{
+			Name:    pkg.Name,
+			Hash:    dephash,
+			Version: pkg.Version,
+		}, nil
+	}
+
+	ndep, err := pm.GetPackageTo(dephash, pkgpath)
+	if err != nil {
+		return nil, err
+	}
+
+	err = TryRunHook("post-install", ndep.Language, pkgpath)
 	if err != nil {
 		return nil, err
 	}

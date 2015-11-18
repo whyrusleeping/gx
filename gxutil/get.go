@@ -77,6 +77,7 @@ func PackageNameInDir(dir string) (string, error) {
 	}
 
 	if len(fs) > 1 {
+		panic("stop")
 		return "", fmt.Errorf("found multiple packages in hashdir: %s", dir)
 	}
 
