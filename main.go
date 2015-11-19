@@ -349,6 +349,15 @@ EXAMPLE:
 	var VersionCommand = cli.Command{
 		Name:  "version",
 		Usage: "view or modify this packages version",
+		Description: `view of modify this pacakges version
+
+   run without any arguments, will print the current semver of this package.
+   
+   if an argument is given, it will be parsed as a semver, if that succeeds,
+   the version will be set to that exactly. If the argument is not a semver,
+   it should be one of three things: "major", "minor", or "patch". Passing
+   any of those three will bump the corresponding segment of the semver up
+   by one.`,
 		Action: func(c *cli.Context) {
 			pkg, err := LoadPackageFile(PkgFileName)
 			if err != nil {
@@ -401,6 +410,23 @@ EXAMPLE:
 	var ViewCommand = cli.Command{
 		Name:  "view",
 		Usage: "view package information",
+		Description: `view can be used to print out information in the package.json
+   of this package, or a dependency specified either by name or hash.
+
+EXAMPLE:
+   > gx view language
+   go
+
+   > gx view .
+   {
+     "language": "go",
+     "name": "gx",
+     "version": "0.2.0
+   }
+
+   > gx view go-libp2p gx.dvcsimport
+   "github.com/ipfs/go-libp2p"
+`,
 		Action: func(c *cli.Context) {
 			if !c.Args().Present() {
 				Fatal("must specify at least a query")
@@ -456,6 +482,12 @@ EXAMPLE:
 	var CleanCommand = cli.Command{
 		Name:  "clean",
 		Usage: "cleanup unused packages in vendor directory",
+		Description: `deletes any package in the 'vendor/gx' directory
+   that is not a dependency of this package.
+   
+   use '--dry-run' to print packages that would be deleted without actually
+   removing them.
+   `,
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "dry-run",
@@ -502,6 +534,17 @@ EXAMPLE:
 	var DepsCommand = cli.Command{
 		Name:  "deps",
 		Usage: "print out package dependencies",
+		Description: `prints out dependencies for this package
+
+   Run with no flags, will print out name, hash, and version for each
+   package that is a direct dependency of this package.
+
+   The '-r' option will recursively print out all dependencies directly
+   and indirectly required by this package.
+
+   The '--tree' option will do the same as '-r', but will add indents
+   to show which packages are dependent on which other.
+`,
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "r",

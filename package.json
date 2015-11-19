@@ -1,11 +1,5 @@
 {
   "name": "gx",
   "version": "2.0.0",
-  "dependencies": [
-    {
-      "name": "cobra",
-      "hash": "QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa"
-    }
-  ],
   "language": "go"
 }

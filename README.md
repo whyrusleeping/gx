@@ -133,7 +133,7 @@ import "gx/<hash>/packagename"
 ```
 for example:
 ```go
-import "QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa/cobra"
+import "gx/QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa/cobra"
 ```
 Then simply set the environment variable `GO15VENDOREXPERIMENT` to `1` and run
 `go build` or `go install` like you normally would.
