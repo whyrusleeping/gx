@@ -77,7 +77,7 @@ func (pm *PM) installDepsRec(pkg *Package, location string, done map[string]stru
 	return nil
 }
 
-func (pm *PM) InitPkg(dir, name, lang string) error {
+func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
 	// check for existing packagefile
 	p := filepath.Join(dir, PkgFileName)
 	_, err := os.Stat(p)
@@ -96,9 +96,13 @@ func (pm *PM) InitPkg(dir, name, lang string) error {
 
 	pkg := new(Package)
 	pkg.Name = name
-	pkg.Language = lang
 	pkg.Author = username
-	pkg.Version = "1.0.0"
+	pkg.Language = lang
+	pkg.Version = "0.0.0"
+
+	if setup != nil {
+		setup(pkg)
+	}
 
 	// check if the user has a tool installed for the selected language
 	CheckForHelperTools(lang)
@@ -253,7 +257,7 @@ func (pm *PM) enumerateDepsRec(pkg *Package, set map[string]struct{}) error {
 
 func LocalPackageByName(dir, name string, out interface{}) error {
 	if IsHash(name) {
-		return FindPackageInDir(out, filepath.Join(dir, "vendor", name))
+		return FindPackageInDir(out, filepath.Join(dir, name))
 	}
 
 	var local Package
@@ -271,7 +275,7 @@ func resolveDepName(pkg *Package, out interface{}, dir, name string, checked map
 	// first check if its a direct dependency of this package
 	for _, d := range pkg.Dependencies {
 		if d.Name == name {
-			return LoadPackageFile(out, filepath.Join(dir, "vendor", d.Hash, d.Name, PkgFileName))
+			return LoadPackageFile(out, filepath.Join(dir, d.Hash, d.Name, PkgFileName))
 		}
 	}
 
@@ -281,7 +285,8 @@ func resolveDepName(pkg *Package, out interface{}, dir, name string, checked map
 		if _, ok := checked[d.Hash]; ok {
 			continue
 		}
-		err := LoadPackageFile(&dpkg, filepath.Join(dir, "vendor", d.Hash))
+
+		err := LoadPackageFile(&dpkg, filepath.Join(dir, d.Hash, d.Name, PkgFileName))
 		if err != nil {
 			return err
 		}

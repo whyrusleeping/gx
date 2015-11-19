@@ -109,12 +109,12 @@ Currently available hooks are:
 
 ## The vendor directory
 
-The `vendor` (package) directory contains all of the downloaded dependencies of
-your package.  You do not need to add the contents of the `vendor` directory to
+The `vendor/gx` (package) directory contains all of the downloaded dependencies of
+your package.  You do not need to add the contents of the `vendor/gx` directory to
 version control, simply running `gx install` in the root directory of your
 project will fetch and download the appropriate versions of required packages. 
 
-Note: This is not to say that you can't add the `vendor` directory to version
+Note: This is not to say that you can't add the `vendor/gx` directory to version
 control, by all means do if you want a single `git clone` or `svn co` to bring
 all deps with it!
 
@@ -129,7 +129,7 @@ $ go get -u github.com/whyrusleeping/gx-go
 Once thats installed, use gx like normal to import dependencies.
 You can import code from the vendor directory using:
 ```go
-import "<hash>/packagename"
+import "gx/<hash>/packagename"
 ```
 for example:
 ```go

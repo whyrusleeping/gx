@@ -19,7 +19,7 @@ import (
 	. "github.com/whyrusleeping/stump"
 )
 
-const vendorDir = "vendor"
+var vendorDir = filepath.Join("vendor", "gx")
 
 var cwd string
 var pm *gx.PM
@@ -134,7 +134,7 @@ func main() {
 				Fatal(err)
 			}
 
-			ndep, err := pm.ImportPackage(filepath.Join(cwd, "vendor"), dephash)
+			ndep, err := pm.ImportPackage(filepath.Join(cwd, vendorDir), dephash)
 			if err != nil {
 				Fatal(err)
 			}
@@ -182,7 +182,7 @@ func main() {
 			if len(c.Args()) == 0 {
 				location := filepath.Join(cwd, vendorDir)
 				if global {
-					location = filepath.Join(os.Getenv("GOPATH"), "src")
+					location = filepath.Join(os.Getenv("GOPATH"), "src", "gx")
 				}
 
 				err = pm.InstallDeps(pkg, location)
@@ -202,7 +202,7 @@ func main() {
 					VLog("%s resolved to %s", p, phash)
 				}
 
-				ndep, err := pm.ImportPackage(filepath.Join(cwd, "vendor"), p)
+				ndep, err := pm.ImportPackage(filepath.Join(cwd, vendorDir), p)
 				if err != nil {
 					Fatal("importing package '%s': %s", p, err)
 				}
@@ -273,7 +273,10 @@ func main() {
 			}
 
 			Log("initializing package %s...", pkgname)
-			err := pm.InitPkg(cwd, pkgname, lang)
+			err := pm.InitPkg(cwd, pkgname, lang, func(p *gx.Package) {
+				p.Issues = promptUser("where should users go to report issues?")
+			})
+
 			if err != nil {
 				Fatal("init error: %s", err)
 			}
@@ -403,10 +406,12 @@ EXAMPLE:
 				Fatal("must specify at least a query")
 			}
 
+			vendir := filepath.Join(cwd, vendorDir)
+
 			var cfg map[string]interface{}
 			if len(c.Args()) == 2 {
 				ref := c.Args()[0]
-				err := gx.LocalPackageByName(cwd, ref, &cfg)
+				err := gx.LocalPackageByName(vendir, ref, &cfg)
 				if err != nil {
 					Fatal(err)
 				}

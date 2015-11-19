@@ -17,6 +17,7 @@ type PackageBase struct {
 	Test         string        `json:"test,omitempty"`
 	Language     string        `json:"language,omitempty"`
 	Copyright    string        `json:"copyright,omitempty"`
+	Issues       string        `json:"issues_url"`
 }
 
 type Package struct {

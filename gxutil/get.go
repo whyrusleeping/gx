@@ -26,7 +26,7 @@ func (pm *PM) GetPackage(hash string) (*Package, error) {
 		return nil, err
 	}
 
-	return pm.GetPackageTo(hash, filepath.Join(cwd, "vendor", hash))
+	return pm.GetPackageTo(hash, filepath.Join(cwd, "vendor", "gx", hash))
 }
 
 func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
