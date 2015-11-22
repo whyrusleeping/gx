@@ -313,8 +313,8 @@ func TryRunHook(hook, env string, args ...string) error {
 	binname := "gx-" + env
 	_, err := exec.LookPath(binname)
 	if err != nil {
-		if os.IsNotExist(err) {
-			Log("No gx helper tool found for", env)
+		if strings.Contains(err.Error(), "file not found") {
+			VLog("runhook(%s): No gx helper tool found for", hook, env)
 			return nil
 		}
 		return err
