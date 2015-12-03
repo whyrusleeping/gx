@@ -1,3 +1,7 @@
 gx
 *.swp
 .gxrc
+
+tests/lib/sharness/*
+tests/bin/*
+tests/test-results/*
