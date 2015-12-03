@@ -46,7 +46,7 @@ func yesNoPrompt(prompt string, def bool) bool {
 
 func jsonPrint(i interface{}) {
 	out, _ := json.MarshalIndent(i, "", "  ")
-	outs, err := strconv.Unquote(string(out))
+	outs, err := strconv.Unquote(string(out)) // for printing out raw strings
 	if err != nil {
 		outs = string(out)
 	}

@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	vendorDir = filepath.Join("vendor", "gx")
+	vendorDir = filepath.Join("vendor", "gx", "ipfs")
 	cwd       string
 	pm        *gx.PM
 )

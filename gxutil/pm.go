@@ -26,6 +26,7 @@ type PM struct {
 }
 
 func NewPM(cfg *Config) (*PM, error) {
+	// TODO: make shell lazy load
 	sh, err := ish.NewShell()
 	if err != nil {
 		return nil, err
