@@ -23,4 +23,13 @@ test_expect_success "output looks good" '
 	test_cmp sorted_pkg full_out
 '
 
+test_expect_success "gx view individual field works" '
+	gx view .language > lang_out
+'
+
+test_expect_success "gx view individual field works" '
+	echo "none" > lang_exp &&
+	test_cmp lang_exp lang_out
+'
+
 test_done

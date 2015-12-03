@@ -23,7 +23,7 @@ test_expect_success "package.json has right values" '
 test_expect_success "values look correct" '
 	test $NAME = "mypkg" &&
 	test $PKGLANG = "none" &&
-	test $PKGLANG = "0.0.0"
+	test $PKGVERS = "0.0.0"
 '
 
 test_expect_success "publish package works" '

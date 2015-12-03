@@ -37,7 +37,7 @@ $(SHARNESS): FORCE
 	@echo "*** checking $@ ***"
 	lib/install-sharness.sh
 
-bin/ipfs: FORCE
+bin/ipfs:
 	mkdir -p bin
 	go get github.com/ipfs/go-ipfs/cmd/ipfs
 	go build -o bin/ipfs github.com/ipfs/go-ipfs/cmd/ipfs

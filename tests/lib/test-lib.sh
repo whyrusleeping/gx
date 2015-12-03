@@ -345,3 +345,23 @@ test_check_peerid() {
 	}
 }
 
+
+make_package() {
+	dir=$1
+	lang=$2
+	mkdir -p $dir
+	test_expect_success "gx init succeeds" '
+		(cd $dir && gx init --lang=$lang)
+	'
+}
+
+publish_package() {
+	pkgdir=$1
+	(cd $pkgdir && gx publish) | awk '{ print $6 }'
+}
+
+pkg_run() {
+	dir=$1
+	shift
+	(cd $dir && $@)
+}
