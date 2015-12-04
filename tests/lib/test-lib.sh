@@ -351,7 +351,7 @@ make_package() {
 	lang=$2
 	mkdir -p $dir
 	test_expect_success "gx init succeeds" '
-		(cd $dir && gx init --lang=$lang)
+		(cd $dir && gx init --lang="$lang")
 	'
 }
 
