@@ -175,7 +175,7 @@ func (pm *PM) ImportPackage(dir, dephash string) (*Dependency, error) {
 
 	err = TryRunHook("post-import", ndep.Language, dephash)
 	if err != nil {
-		Fatal(err)
+		return nil, err
 	}
 
 	return &Dependency{

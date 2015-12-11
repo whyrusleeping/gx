@@ -202,7 +202,7 @@ var InstallCommand = cli.Command{
 
 			err = pm.InstallDeps(pkg, location)
 			if err != nil {
-				Fatal(err)
+				Fatal("install deps:", err)
 			}
 			return
 		}
