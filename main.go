@@ -197,7 +197,7 @@ var InstallCommand = cli.Command{
 		if len(c.Args()) == 0 {
 			location := filepath.Join(cwd, vendorDir)
 			if global {
-				location = filepath.Join(os.Getenv("GOPATH"), "src", "gx")
+				location = filepath.Join(os.Getenv("GOPATH"), "src", "gx", "ipfs")
 			}
 
 			err = pm.InstallDeps(pkg, location)
