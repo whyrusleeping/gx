@@ -331,7 +331,7 @@ func TryRunHook(hook, env string, args ...string) error {
 
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("hook failed: %s", err)
+		return fmt.Errorf("%s hook failed: %s", hook, err)
 	}
 
 	return nil
