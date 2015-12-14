@@ -45,7 +45,7 @@ func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 		return nil, err
 	}
 
-	err = pm.shell.Get(hash, out)
+	err = pm.Shell().Get(hash, out)
 	if err != nil {
 		return nil, err
 	}

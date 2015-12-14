@@ -9,15 +9,15 @@ import (
 	"path/filepath"
 	"strings"
 
+	sh "github.com/ipfs/go-ipfs-api"
 	mh "github.com/jbenet/go-multihash"
-	ish "github.com/whyrusleeping/fallback-ipfs-shell"
 	. "github.com/whyrusleeping/stump"
 )
 
 const PkgFileName = "package.json"
 
 type PM struct {
-	shell ish.Shell
+	ipfssh *sh.Shell
 
 	cfg *Config
 
@@ -26,16 +26,18 @@ type PM struct {
 }
 
 func NewPM(cfg *Config) (*PM, error) {
-	// TODO: make shell lazy load
-	sh, err := ish.NewShell()
-	if err != nil {
-		return nil, err
+	return &PM{
+		ipfssh: NewShell(),
+		cfg:    cfg,
+	}, nil
+}
+
+func (pm *PM) Shell() *sh.Shell {
+	if pm.ipfssh == nil {
+		pm.ipfssh = NewShell()
 	}
 
-	return &PM{
-		shell: sh,
-		cfg:   cfg,
-	}, nil
+	return pm.ipfssh
 }
 
 // InstallDeps recursively installs all dependencies for the given package

@@ -65,7 +65,7 @@ func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
 	})
 
 	// we cant guarantee that the 'empty dir' object exists already
-	blank, err := pm.shell.NewObject("unixfs-dir")
+	blank, err := pm.Shell().NewObject("unixfs-dir")
 	if err != nil {
 		return "", err
 	}
@@ -77,7 +77,7 @@ func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
 		return "", err
 	}
 
-	return pm.shell.Patch(pm.blankDir, "add-link", pkg.Name, pkgdir)
+	return pm.Shell().Patch(pm.blankDir, "add-link", pkg.Name, pkgdir)
 }
 
 type filetree struct {
@@ -141,7 +141,7 @@ func (pm *PM) addFile(p string) (string, error) {
 	}
 	defer fi.Close()
 
-	return pm.shell.Add(fi)
+	return pm.Shell().Add(fi)
 }
 
 func (pm *PM) addPathElem(v *filetree, f, cwd string) (string, error) {
@@ -161,7 +161,7 @@ func (pm *PM) addPathElem(v *filetree, f, cwd string) (string, error) {
 				return "", err
 			}
 
-			return pm.shell.AddLink(target)
+			return pm.Shell().AddLink(target)
 		}
 
 		return pm.addFile(p)
@@ -177,7 +177,7 @@ func (pm *PM) addTree(nd *filetree, cwd string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		patched, err := pm.shell.Patch(cur, "add-link", f, hash)
+		patched, err := pm.Shell().Patch(cur, "add-link", f, hash)
 		if err != nil {
 			return "", err
 		}

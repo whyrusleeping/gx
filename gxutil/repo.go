@@ -19,7 +19,7 @@ func (pm *PM) FetchRepo(rpath string, usecache bool) (map[string]string, error) 
 
 		rpath = p
 	}
-	links, err := pm.shell.List(rpath)
+	links, err := pm.Shell().List(rpath)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (pm *PM) ResolveName(name string, usecache bool) (string, error) {
 		}
 	}
 
-	out, err := pm.shell.ResolvePath(name)
+	out, err := pm.Shell().ResolvePath(name)
 	if err != nil {
 		Error("error from resolve path", name)
 		return "", err
