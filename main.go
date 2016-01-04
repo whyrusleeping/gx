@@ -195,12 +195,17 @@ var InstallCommand = cli.Command{
 		global := c.Bool("global")
 
 		if len(c.Args()) == 0 {
-			location := filepath.Join(cwd, vendorDir)
-			if global {
-				location = filepath.Join(os.Getenv("GOPATH"), "src", "gx", "ipfs")
+			cwd, err := os.Getwd()
+			if err != nil {
+				Fatal(err)
 			}
 
-			err = pm.InstallDeps(pkg, location)
+			ipath, err := gx.InstallPath(pkg.Language, cwd, global)
+			if err != nil {
+				Fatal(err)
+			}
+
+			err = pm.InstallDeps(pkg, ipath)
 			if err != nil {
 				Fatal("install deps:", err)
 			}
@@ -574,6 +579,9 @@ var DepsCommand = cli.Command{
 			Usage: "print deps as a tree",
 		},
 	},
+	Subcommands: []cli.Command{
+		depBundleCommand,
+	},
 	Action: func(c *cli.Context) {
 		rec := c.Bool("r")
 		quiet := c.Bool("q")
@@ -623,5 +631,31 @@ var DepsCommand = cli.Command{
 			}
 		}
 		w.Flush()
+	},
+}
+
+var depBundleCommand = cli.Command{
+	Name:  "bundle",
+	Usage: "print hash of object containing all dependencies for this package",
+	Action: func(c *cli.Context) {
+		pkg, err := LoadPackageFile(PkgFileName)
+		if err != nil {
+			Fatal(err)
+		}
+
+		obj, err := pm.Shell().NewObject("unixfs-dir")
+		if err != nil {
+			Fatal(err)
+		}
+
+		for _, dep := range pkg.Dependencies {
+			nobj, err := pm.Shell().PatchLink(obj, dep.Name+"-"+dep.Hash, dep.Hash, false)
+			if err != nil {
+				Fatal(err)
+			}
+			obj = nobj
+		}
+
+		fmt.Println(obj)
 	},
 }

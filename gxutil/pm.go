@@ -50,15 +50,16 @@ func (pm *PM) installDepsRec(pkg *Package, location string, done map[string]stru
 	Log("installing package: %s-%s", pkg.Name, pkg.Version)
 	for _, dep := range pkg.Dependencies {
 		if _, ok := done[dep.Hash]; ok {
+			VLog("  - package %s already processed", dep.Name)
 			continue
 		}
 
 		// if its already local, skip it
-		pkgdir := filepath.Join(location, dep.Hash)
+		pkgdir := filepath.Join(location, "gx", "ipfs", dep.Hash)
 		cpkg := new(Package)
 		err := FindPackageInDir(cpkg, pkgdir)
 		if err != nil {
-			VLog("  - %s not found locally, fetching: %s", dep.Name, dep.Hash)
+			VLog("  - %s not found locally, fetching: %s into %s", dep.Name, dep.Hash, pkgdir)
 			deppkg, err := pm.GetPackageTo(dep.Hash, pkgdir)
 			if err != nil {
 				return fmt.Errorf("failed to fetch package: %s (%s):%s", dep.Name,
@@ -68,6 +69,7 @@ func (pm *PM) installDepsRec(pkg *Package, location string, done map[string]stru
 			cpkg = deppkg
 		}
 
+		VLog("  - now processing dep %s-%s of %s", dep.Name, dep.Hash, pkg.Name)
 		err = pm.installDepsRec(cpkg, location, done)
 		if err != nil {
 			return err
@@ -337,6 +339,37 @@ func TryRunHook(hook, env string, args ...string) error {
 	}
 
 	return nil
+}
+
+func InstallPath(env, relpath string, global bool) (string, error) {
+	if env == "" {
+		Error("no env, returning empty install path")
+		return "", nil
+	}
+
+	binname := "gx-" + env
+	_, err := exec.LookPath(binname)
+	if err != nil {
+		if strings.Contains(err.Error(), "file not found") {
+			VLog("runhook(install-path): No gx helper tool found for", env)
+			return "", nil
+		}
+		return "", err
+	}
+
+	args := []string{"hook", "install-path"}
+	if global {
+		args = append(args, "--global")
+	}
+	cmd := exec.Command(binname, args...)
+
+	cmd.Dir = relpath
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("install-path hook failed: %s", err)
+	}
+
+	return strings.Trim(string(out), " \t\n"), nil
 }
 
 func IsHash(s string) bool {
