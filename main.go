@@ -100,7 +100,7 @@ var PublishCommand = cli.Command{
 
 		hash, err := pm.PublishPackage(cwd, &pkg.PackageBase)
 		if err != nil {
-			Fatal(err)
+			Fatal("publishing: ", err)
 		}
 		Log("package %s published with hash: %s", pkg.Name, hash)
 
