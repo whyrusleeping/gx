@@ -2,7 +2,9 @@ package gxutil
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"path/filepath"
 )
 
 type PackageBase struct {
@@ -70,5 +72,41 @@ func (pkg *Package) FindDep(ref string) *Dependency {
 			return d
 		}
 	}
+	return nil
+}
+
+func (pkg *Package) ForEachDep(cb func(dep *Dependency, pkg *Package) error) error {
+	local, err := InstallPath(pkg.Language, "", false)
+	if err != nil {
+		return err
+	}
+
+	global, err := InstallPath(pkg.Language, "", true)
+	if err != nil {
+		return err
+	}
+
+	for _, dep := range pkg.Dependencies {
+		var pkg Package
+		err := FindPackageInDir(&pkg, filepath.Join(local, "gx", "ipfs", dep.Hash))
+		if err == nil {
+			err := cb(dep, &pkg)
+			if err != nil {
+				return err
+			}
+
+			continue
+		}
+		err = FindPackageInDir(&pkg, filepath.Join(global, "gx", "ipfs", dep.Hash))
+		if err != nil {
+			return fmt.Errorf("package %s (%s) not found", dep.Name, dep.Hash)
+		}
+
+		err = cb(dep, &pkg)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

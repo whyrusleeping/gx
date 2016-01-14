@@ -54,21 +54,18 @@ func jsonPrint(i interface{}) {
 }
 
 func printDepsTree(pm *gx.PM, pkg *gx.Package, quiet bool, indent int) error {
-	for _, d := range pkg.Dependencies {
-		label := d.Hash
+	return pkg.ForEachDep(func(dep *gx.Dependency, dpkg *gx.Package) error {
+		label := dep.Hash
 		if !quiet {
-			label = fmt.Sprintf("%s %s %s", d.Name, d.Hash, d.Version)
+			label = fmt.Sprintf("%s %s %s", dep.Name, dep.Hash, dep.Version)
 		}
 		Log("%s%s", strings.Repeat("  ", indent), label)
-		npkg, err := pm.GetPackage(d.Hash)
+
+		err := printDepsTree(pm, dpkg, quiet, indent+1)
 		if err != nil {
 			return err
 		}
 
-		err = printDepsTree(pm, npkg, quiet, indent+1)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+		return nil
+	})
 }
