@@ -66,7 +66,7 @@ func SavePackageFile(pkg interface{}, fname string) error {
 	return err
 }
 
-func (pkg *Package) FindDep(ref string) *Dependency {
+func (pkg *PackageBase) FindDep(ref string) *Dependency {
 	for _, d := range pkg.Dependencies {
 		if d.Hash == ref || d.Name == ref {
 			return d
@@ -75,7 +75,7 @@ func (pkg *Package) FindDep(ref string) *Dependency {
 	return nil
 }
 
-func (pkg *Package) ForEachDep(cb func(dep *Dependency, pkg *Package) error) error {
+func (pkg *PackageBase) ForEachDep(cb func(dep *Dependency, pkg *Package) error) error {
 	local, err := InstallPath(pkg.Language, "", false)
 	if err != nil {
 		return err
