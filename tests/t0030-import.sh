@@ -66,4 +66,27 @@ test_expect_success "importing c brought along a and b" '
 	stat d/vendor/gx/ipfs/$pkgB/b/package.json > /dev/null
 '
 
+test_expect_success "install d works" '
+	pkg_run d gx install > install_out
+'
+
+test_expect_success "install output looks good" '
+	echo "installing package: d-0.0.0" > install_exp &&
+	echo "installing package: c-0.0.0" >> install_exp &&
+	echo "installing package: a-0.0.0" >> install_exp &&
+	echo "installing package: b-0.0.0" >> install_exp &&
+	test_cmp install_exp install_out
+'
+
+test_expect_success "deps look correct" '
+	pkg_run d gx deps --tree > deps_out
+'
+
+test_expect_success "deps tree looks right" '
+	echo "c QmRYA5eaKKTBWp51Wewaz1zzZVNrubzipHsGbJA1Fn55Xu 0.0.0" > deps_exp &&
+	echo "  a QmRBRLtDgVfqZy8PJwSjvXMRZwM7w6VAbg53ZENPE7QVPw 0.0.0" >> deps_exp &&
+	echo "  b Qme9my1FBdkaiDvoVkT3ewDME3ks3a2uGN4bdpJWMhss1V 0.0.0" >> deps_exp &&
+	test_cmp deps_exp deps_out
+'
+
 test_done
