@@ -339,13 +339,19 @@ EXAMPLE:
 		if olddep == nil {
 			Fatal("unknown package: ", existing)
 		}
-		oldhash = olddep.Hash
-		olddep.Hash = target
 
 		npkg, err := pm.GetPackage(target)
 		if err != nil {
 			Fatal("(getpackage) : ", err)
 		}
+
+		err = updateCollisionCheck(pkg, olddep, nil)
+		if err != nil {
+			Fatal("update sanity check: ", err)
+		}
+
+		oldhash = olddep.Hash
+		olddep.Hash = target
 
 		srcdir := filepath.Join(cwd, vendorDir)
 
@@ -364,6 +370,21 @@ EXAMPLE:
 			Fatal(err)
 		}
 	},
+}
+
+func updateCollisionCheck(ipkg *gx.Package, idep *gx.Dependency, chain []string) error {
+	return ipkg.ForEachDep(func(dep *gx.Dependency, pkg *gx.Package) error {
+		if dep == idep {
+			return nil
+		}
+
+		if dep.Name == idep.Name || dep.Hash == idep.Hash {
+			Log("dep %s also imports %s (%s)", strings.Join(chain, "/"), dep.Name, dep.Hash)
+			return nil
+		}
+
+		return updateCollisionCheck(pkg, idep, append(chain, dep.Name))
+	})
 }
 
 var VersionCommand = cli.Command{

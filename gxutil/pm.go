@@ -341,10 +341,12 @@ func TryRunHook(hook, env string, args ...string) error {
 	return nil
 }
 
+const defaultLocalPath = "vendor"
+
 func InstallPath(env, relpath string, global bool) (string, error) {
 	if env == "" {
 		Error("no env, returning empty install path")
-		return "", nil
+		return defaultLocalPath, nil
 	}
 
 	binname := "gx-" + env
@@ -352,7 +354,7 @@ func InstallPath(env, relpath string, global bool) (string, error) {
 	if err != nil {
 		if strings.Contains(err.Error(), "file not found") {
 			VLog("runhook(install-path): No gx helper tool found for", env)
-			return "", nil
+			return defaultLocalPath, nil
 		}
 		return "", err
 	}
