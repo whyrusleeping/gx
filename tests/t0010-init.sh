@@ -34,6 +34,15 @@ test_expect_success "publish output looks good" '
 	test_cmp expected pub_out
 '
 
+test_expect_success ".gx dir was created" '
+	test -d mypkg/.gx
+'
+
+test_expect_success "lastpubver looks good" '
+	echo "0.0.0: QmPx826U5SrMXiuHQbFzBhsuzJqANGf66UpKPK5dKb4z4Y" > lpv_exp &&
+	test_cmp lpv_exp mypkg/.gx/lastpubver
+'
+
 test_expect_success "publish package second time succeeds" '
 	pkg_run mypkg gx publish > pub_out2
 '

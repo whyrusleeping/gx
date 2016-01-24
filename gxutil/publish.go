@@ -55,8 +55,8 @@ func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
 			return nil
 		}
 
-		// dont publish last hash file
-		if rel == ".gxlastpubver" {
+		// dont publish gx repo files
+		if strings.HasPrefix(rel, ".gx/") {
 			return nil
 		}
 

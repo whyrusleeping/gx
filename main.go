@@ -105,17 +105,9 @@ var PublishCommand = cli.Command{
 		Log("package %s published with hash: %s", pkg.Name, hash)
 
 		// write out version hash
-		fi, err := os.Create(".gxlastpubver")
+		err = writeLastPub(pkg.Version, hash)
 		if err != nil {
-			Fatal("failed to create version file: %s", err)
-		}
-
-		defer fi.Close()
-
-		VLog("writing published version to .gxlastpubver")
-		_, err = fmt.Fprintf(fi, "%s: %s\n", pkg.Version, hash)
-		if err != nil {
-			Fatal("failed to write version file: %s", err)
+			Fatal(err)
 		}
 
 		err = gx.TryRunHook("post-publish", pkg.Language, hash)
@@ -123,6 +115,28 @@ var PublishCommand = cli.Command{
 			Fatal(err)
 		}
 	},
+}
+
+func writeLastPub(vers string, hash string) error {
+	err := os.MkdirAll(".gx", 0755)
+	if err != nil {
+		return err
+	}
+
+	fi, err := os.Create(".gx/lastpubver")
+	if err != nil {
+		return fmt.Errorf("failed to create version file: %s", err)
+	}
+
+	defer fi.Close()
+
+	VLog("writing published version to .gx/lastpubver")
+	_, err = fmt.Fprintf(fi, "%s: %s\n", vers, hash)
+	if err != nil {
+		return fmt.Errorf("failed to write version file: %s", err)
+	}
+
+	return nil
 }
 
 var ImportCommand = cli.Command{
