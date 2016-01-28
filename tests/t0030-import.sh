@@ -72,9 +72,6 @@ test_expect_success "install d works" '
 
 test_expect_success "install output looks good" '
 	echo "installing package: d-0.0.0" > install_exp &&
-	echo "installing package: c-0.0.0" >> install_exp &&
-	echo "installing package: a-0.0.0" >> install_exp &&
-	echo "installing package: b-0.0.0" >> install_exp &&
 	test_cmp install_exp install_out
 '
 

@@ -334,6 +334,12 @@ EXAMPLE:
    $ export NEWHASH=QmPZ6gM12JxshKzwSyrhbEmyrsi7UaMrnoQZL6mdrzSfh1
    $ gx update $OLDHASH $NEWHASH
 `,
+	Flags: []cli.Flag{
+		cli.BoolFlag{
+			Name:  "global",
+			Usage: "install new package in global namespace",
+		},
+	},
 	Action: func(c *cli.Context) {
 		if len(c.Args()) < 2 {
 			Fatal("update requires two arguments, current and target")
@@ -354,9 +360,26 @@ EXAMPLE:
 			Fatal("unknown package: ", existing)
 		}
 
-		npkg, err := pm.GetPackage(target)
+		ipath, err := gx.InstallPath(pkg.Language, cwd, c.Bool("global"))
+		if err != nil {
+			Fatal(err)
+		}
+
+		pkgpath := filepath.Join(ipath, "gx", "ipfs", target)
+
+		npkg, err := pm.GetPackageTo(target, pkgpath)
 		if err != nil {
 			Fatal("(getpackage) : ", err)
+		}
+
+		if npkg.Name != olddep.Name {
+			prompt := fmt.Sprintf(`Target package has a different name than new package:
+old: %s (%s)
+new: %s (%s)
+continue?`, olddep.Name, olddep.Hash, npkg.Name, target)
+			if !yesNoPrompt(prompt, false) {
+				Fatal("refusing to update package with different names")
+			}
 		}
 
 		err = updateCollisionCheck(pkg, olddep, nil)
@@ -367,9 +390,7 @@ EXAMPLE:
 		oldhash = olddep.Hash
 		olddep.Hash = target
 
-		srcdir := filepath.Join(cwd, vendorDir)
-
-		err = pm.InstallDeps(npkg, srcdir)
+		err = pm.InstallDeps(npkg, ipath)
 		if err != nil {
 			Fatal("(installdeps) : ", err)
 		}

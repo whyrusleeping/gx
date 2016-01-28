@@ -58,16 +58,17 @@ func (pm *PM) installDepsRec(pkg *Package, location string, done map[string]stru
 		pkgdir := filepath.Join(location, "gx", "ipfs", dep.Hash)
 		cpkg := new(Package)
 		err := FindPackageInDir(cpkg, pkgdir)
-		if err != nil {
-			VLog("  - %s not found locally, fetching: %s into %s", dep.Name, dep.Hash, pkgdir)
-			deppkg, err := pm.GetPackageTo(dep.Hash, pkgdir)
-			if err != nil {
-				return fmt.Errorf("failed to fetch package: %s (%s):%s", dep.Name,
-					dep.Hash, err)
-			}
-			VLog("  - fetch complete!")
-			cpkg = deppkg
+		if err == nil {
+			continue
 		}
+		VLog("  - %s not found locally, fetching: %s into %s", dep.Name, dep.Hash, pkgdir)
+		deppkg, err := pm.GetPackageTo(dep.Hash, pkgdir)
+		if err != nil {
+			return fmt.Errorf("failed to fetch package: %s (%s):%s", dep.Name,
+				dep.Hash, err)
+		}
+		VLog("  - fetch complete!")
+		cpkg = deppkg
 
 		VLog("  - now processing dep %s-%s of %s", dep.Name, dep.Hash, pkg.Name)
 		err = pm.installDepsRec(cpkg, location, done)
@@ -75,6 +76,7 @@ func (pm *PM) installDepsRec(pkg *Package, location string, done map[string]stru
 			return err
 		}
 
+		VLog("  - running post install:", cpkg.Language, pkgdir)
 		err = TryRunHook("post-install", cpkg.Language, pkgdir)
 		if err != nil {
 			return err

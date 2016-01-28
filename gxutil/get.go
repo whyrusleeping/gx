@@ -5,6 +5,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
+
+	. "github.com/whyrusleeping/stump"
 )
 
 type ErrAlreadyInstalled struct {
@@ -45,10 +48,13 @@ func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 		return nil, err
 	}
 
+	begin := time.Now()
+	VLog("  - fetching %s via ipfs api", hash)
 	err = pm.Shell().Get(hash, out)
 	if err != nil {
 		return nil, err
 	}
+	VLog("  - fetch finished in %s", time.Now().Sub(begin))
 
 	err = FindPackageInDir(&pkg, out)
 	if err != nil {
