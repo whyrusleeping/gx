@@ -54,21 +54,23 @@ func (pm *PM) installDepsRec(pkg *Package, location string, done map[string]stru
 			continue
 		}
 
+		var didfetch bool
+
 		// if its already local, skip it
 		pkgdir := filepath.Join(location, "gx", "ipfs", dep.Hash)
 		cpkg := new(Package)
 		err := FindPackageInDir(cpkg, pkgdir)
-		if err == nil {
-			continue
-		}
-		VLog("  - %s not found locally, fetching: %s into %s", dep.Name, dep.Hash, pkgdir)
-		deppkg, err := pm.GetPackageTo(dep.Hash, pkgdir)
 		if err != nil {
-			return fmt.Errorf("failed to fetch package: %s (%s):%s", dep.Name,
-				dep.Hash, err)
+			VLog("  - %s not found locally, fetching: %s into %s", dep.Name, dep.Hash, pkgdir)
+			deppkg, err := pm.GetPackageTo(dep.Hash, pkgdir)
+			if err != nil {
+				return fmt.Errorf("failed to fetch package: %s (%s):%s", dep.Name,
+					dep.Hash, err)
+			}
+			VLog("  - fetch complete!")
+			cpkg = deppkg
+			didfetch = true
 		}
-		VLog("  - fetch complete!")
-		cpkg = deppkg
 
 		VLog("  - now processing dep %s-%s of %s", dep.Name, dep.Hash, pkg.Name)
 		err = pm.installDepsRec(cpkg, location, done)
@@ -76,10 +78,12 @@ func (pm *PM) installDepsRec(pkg *Package, location string, done map[string]stru
 			return err
 		}
 
-		VLog("  - running post install:", cpkg.Language, pkgdir)
-		err = TryRunHook("post-install", cpkg.Language, pkgdir)
-		if err != nil {
-			return err
+		if didfetch {
+			VLog("  - running post install:", cpkg.Language, pkgdir)
+			err = TryRunHook("post-install", cpkg.Language, pkgdir)
+			if err != nil {
+				return err
+			}
 		}
 		done[dep.Hash] = struct{}{}
 	}
@@ -145,7 +149,7 @@ func CheckForHelperTools(lang string) {
 // ImportPackage downloads the package specified by dephash into the package
 // in the directory 'dir'
 func (pm *PM) ImportPackage(dir, dephash string) (*Dependency, error) {
-	pkgpath := filepath.Join(dir, dephash)
+	pkgpath := filepath.Join(dir, "gx", "ipfs", dephash)
 	// check if its already imported
 	_, err := os.Stat(pkgpath)
 	if err == nil {
@@ -278,6 +282,27 @@ func LocalPackageByName(dir, name string, out interface{}) error {
 	return resolveDepName(&local, out, dir, name, make(map[string]struct{}))
 }
 
+func LoadPackage(out interface{}, env, hash string) error {
+	ipath, err := InstallPath(env, "", true)
+	if err != nil {
+		return err
+	}
+
+	p := filepath.Join(ipath, "gx", "ipfs", hash)
+	err = FindPackageInDir(out, p)
+	if err == nil {
+		return nil
+	}
+
+	ipath, err = InstallPath(env, "", false)
+	if err != nil {
+		return err
+	}
+
+	p = filepath.Join(ipath, "gx", "ipfs", hash)
+	return FindPackageInDir(out, p)
+}
+
 var ErrUnrecognizedName = fmt.Errorf("unrecognized package name")
 
 func resolveDepName(pkg *Package, out interface{}, dir, name string, checked map[string]struct{}) error {
@@ -347,7 +372,7 @@ const defaultLocalPath = "vendor"
 
 func InstallPath(env, relpath string, global bool) (string, error) {
 	if env == "" {
-		Error("no env, returning empty install path")
+		VLog("no env, returning empty install path")
 		return defaultLocalPath, nil
 	}
 

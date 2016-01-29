@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
+
+	. "github.com/whyrusleeping/stump"
 )
 
 type PackageBase struct {
@@ -76,29 +77,11 @@ func (pkg *PackageBase) FindDep(ref string) *Dependency {
 }
 
 func (pkg *PackageBase) ForEachDep(cb func(dep *Dependency, pkg *Package) error) error {
-	local, err := InstallPath(pkg.Language, "", false)
-	if err != nil {
-		return err
-	}
-
-	global, err := InstallPath(pkg.Language, "", true)
-	if err != nil {
-		return err
-	}
-
 	for _, dep := range pkg.Dependencies {
 		var pkg Package
-		err := FindPackageInDir(&pkg, filepath.Join(local, "gx", "ipfs", dep.Hash))
-		if err == nil {
-			err := cb(dep, &pkg)
-			if err != nil {
-				return err
-			}
-
-			continue
-		}
-		err = FindPackageInDir(&pkg, filepath.Join(global, "gx", "ipfs", dep.Hash))
+		err := LoadPackage(&pkg, pkg.Language, dep.Hash)
 		if err != nil {
+			VLog("LoadPackage error: ", err)
 			return fmt.Errorf("package %s (%s) not found", dep.Name, dep.Hash)
 		}
 

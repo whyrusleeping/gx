@@ -142,6 +142,12 @@ func writeLastPub(vers string, hash string) error {
 var ImportCommand = cli.Command{
 	Name:  "import",
 	Usage: "import a package as a dependency",
+	Flags: []cli.Flag{
+		cli.BoolFlag{
+			Name:  "global",
+			Usage: "download imported package to global store",
+		},
+	},
 	Action: func(c *cli.Context) {
 		if len(c.Args()) == 0 {
 			Fatal("import requires a package name")
@@ -163,7 +169,12 @@ var ImportCommand = cli.Command{
 			Fatal(err)
 		}
 
-		ndep, err := pm.ImportPackage(filepath.Join(cwd, vendorDir), dephash)
+		ipath, err := gx.InstallPath(pkg.Language, "", c.Bool("global"))
+		if err != nil {
+			Fatal(err)
+		}
+
+		ndep, err := pm.ImportPackage(ipath, dephash)
 		if err != nil {
 			Fatal(err)
 		}
@@ -226,6 +237,11 @@ var InstallCommand = cli.Command{
 			return
 		}
 
+		ipath, err := gx.InstallPath(pkg.Language, "", c.Bool("global"))
+		if err != nil {
+			Fatal(err)
+		}
+
 		for _, p := range c.Args() {
 			phash, err := pm.ResolveDepName(p)
 			if err != nil {
@@ -236,7 +252,7 @@ var InstallCommand = cli.Command{
 				VLog("%s resolved to %s", p, phash)
 			}
 
-			ndep, err := pm.ImportPackage(filepath.Join(cwd, vendorDir), p)
+			ndep, err := pm.ImportPackage(ipath, p)
 			if err != nil {
 				Fatal("importing package '%s': %s", p, err)
 			}
@@ -699,19 +715,46 @@ var depBundleCommand = cli.Command{
 			Fatal(err)
 		}
 
-		obj, err := pm.Shell().NewObject("unixfs-dir")
+		obj, err := depBundleForPkg(pkg)
 		if err != nil {
 			Fatal(err)
 		}
 
-		for _, dep := range pkg.Dependencies {
-			nobj, err := pm.Shell().PatchLink(obj, dep.Name+"-"+dep.Hash, dep.Hash, false)
-			if err != nil {
-				Fatal(err)
-			}
-			obj = nobj
-		}
-
 		fmt.Println(obj)
 	},
+}
+
+func depBundleForPkg(pkg *gx.Package) (string, error) {
+	obj, err := pm.Shell().NewObject("unixfs-dir")
+	if err != nil {
+		Fatal(err)
+	}
+
+	for _, dep := range pkg.Dependencies {
+		Log("processing dep: ", dep.Name)
+		nobj, err := pm.Shell().PatchLink(obj, dep.Name+"-"+dep.Hash, dep.Hash, false)
+		if err != nil {
+			return "", err
+		}
+
+		var cpkg gx.Package
+		err = gx.LoadPackage(&cpkg, pkg.Language, dep.Hash)
+		if err != nil {
+			return "", err
+		}
+
+		child, err := depBundleForPkg(&cpkg)
+		if err != nil {
+			return "", err
+		}
+
+		nobj, err = pm.Shell().PatchLink(nobj, dep.Name+"-"+dep.Hash+"-deps", child, false)
+		if err != nil {
+			return "", err
+		}
+
+		obj = nobj
+	}
+
+	return obj, nil
 }
