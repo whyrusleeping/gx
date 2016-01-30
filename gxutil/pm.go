@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"time"
 
 	sh "github.com/ipfs/go-ipfs-api"
 	mh "github.com/jbenet/go-multihash"
@@ -79,11 +80,13 @@ func (pm *PM) installDepsRec(pkg *Package, location string, done map[string]stru
 		}
 
 		if didfetch {
+			before := time.Now()
 			VLog("  - running post install:", cpkg.Language, pkgdir)
 			err = TryRunHook("post-install", cpkg.Language, pkgdir)
 			if err != nil {
 				return err
 			}
+			VLog("  - post install finished in ", time.Now().Sub(before))
 		}
 		done[dep.Hash] = struct{}{}
 	}
