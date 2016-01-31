@@ -80,8 +80,8 @@ test_expect_success "updating package c works" '
 '
 
 test_expect_success "update printed correct warning" '
-	echo "dep b also imports c ($pkgC)" > update_exp &&
-	echo "installing package: c-0.0.0" >> update_exp &&
+	echo "installing package: c-0.0.0" > update_exp &&
+	echo "dep b also imports c ($pkgC)" >> update_exp &&
 	test_cmp update_exp update_out
 '
 

@@ -41,54 +41,52 @@ func (pm *PM) Shell() *sh.Shell {
 	return pm.ipfssh
 }
 
-// InstallDeps recursively installs all dependencies for the given package
-func (pm *PM) InstallDeps(pkg *Package, location string) error {
-	done := make(map[string]struct{})
-	return pm.installDepsRec(pkg, location, done)
+func (pm *PM) InstallPackage(hash, location string) (*Package, error) {
+	var didfetch bool
+
+	// if its already local, skip it
+	pkgdir := filepath.Join(location, "gx", "ipfs", hash)
+	cpkg := new(Package)
+	err := FindPackageInDir(cpkg, pkgdir)
+	if err != nil {
+		VLog("  - %s not found locally, fetching into %s", hash, pkgdir)
+		deppkg, err := pm.GetPackageTo(hash, pkgdir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch package: %s:%s", hash, err)
+		}
+		VLog("  - fetch complete!")
+		cpkg = deppkg
+		didfetch = true
+	}
+
+	VLog("  - now processing dep %s-%s", cpkg.Name, hash)
+	err = pm.InstallDeps(cpkg, location)
+	if err != nil {
+		return nil, err
+	}
+
+	if didfetch {
+		before := time.Now()
+		VLog("  - running post install for %s:", cpkg.Name, pkgdir)
+		err = TryRunHook("post-install", cpkg.Language, pkgdir)
+		if err != nil {
+			return nil, err
+		}
+		VLog("  - post install finished in ", time.Now().Sub(before))
+	}
+
+	return cpkg, nil
 }
 
-func (pm *PM) installDepsRec(pkg *Package, location string, done map[string]struct{}) error {
+// InstallDeps recursively installs all dependencies for the given package
+func (pm *PM) InstallDeps(pkg *Package, location string) error {
 	Log("installing package: %s-%s", pkg.Name, pkg.Version)
 	for _, dep := range pkg.Dependencies {
-		if _, ok := done[dep.Hash]; ok {
-			VLog("  - package %s already processed", dep.Name)
-			continue
-		}
-
-		var didfetch bool
-
-		// if its already local, skip it
-		pkgdir := filepath.Join(location, "gx", "ipfs", dep.Hash)
-		cpkg := new(Package)
-		err := FindPackageInDir(cpkg, pkgdir)
-		if err != nil {
-			VLog("  - %s not found locally, fetching: %s into %s", dep.Name, dep.Hash, pkgdir)
-			deppkg, err := pm.GetPackageTo(dep.Hash, pkgdir)
-			if err != nil {
-				return fmt.Errorf("failed to fetch package: %s (%s):%s", dep.Name,
-					dep.Hash, err)
-			}
-			VLog("  - fetch complete!")
-			cpkg = deppkg
-			didfetch = true
-		}
-
-		VLog("  - now processing dep %s-%s of %s", dep.Name, dep.Hash, pkg.Name)
-		err = pm.installDepsRec(cpkg, location, done)
+		VLog("  - %s depends on %s (%s)", pkg.Name, dep.Name, dep.Hash)
+		_, err := pm.InstallPackage(dep.Hash, location)
 		if err != nil {
 			return err
 		}
-
-		if didfetch {
-			before := time.Now()
-			VLog("  - running post install for %s:", cpkg.Name, pkgdir)
-			err = TryRunHook("post-install", cpkg.Language, pkgdir)
-			if err != nil {
-				return err
-			}
-			VLog("  - post install finished in ", time.Now().Sub(before))
-		}
-		done[dep.Hash] = struct{}{}
 	}
 	return nil
 }
@@ -286,7 +284,7 @@ func LocalPackageByName(dir, name string, out interface{}) error {
 }
 
 func LoadPackage(out interface{}, env, hash string) error {
-	VLog("  - load package: %q", hash)
+	VLog("  - load package:", hash)
 	ipath, err := InstallPath(env, "", true)
 	if err != nil {
 		return err

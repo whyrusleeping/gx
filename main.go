@@ -381,11 +381,9 @@ EXAMPLE:
 			Fatal(err)
 		}
 
-		pkgpath := filepath.Join(ipath, "gx", "ipfs", target)
-
-		npkg, err := pm.GetPackageTo(target, pkgpath)
+		npkg, err := pm.InstallPackage(target, ipath)
 		if err != nil {
-			Fatal("(getpackage) : ", err)
+			Fatal("(installpackage) : ", err)
 		}
 
 		if npkg.Name != olddep.Name {
@@ -398,28 +396,28 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, target)
 			}
 		}
 
+		VLog("checking for potential package naming collisions...")
 		err = updateCollisionCheck(pkg, olddep, nil)
 		if err != nil {
 			Fatal("update sanity check: ", err)
 		}
+		VLog("  - no collisions found for updated package")
 
 		oldhash = olddep.Hash
 		olddep.Hash = target
-
-		err = pm.InstallDeps(npkg, ipath)
-		if err != nil {
-			Fatal("(installdeps) : ", err)
-		}
 
 		err = gx.SavePackageFile(pkg, PkgFileName)
 		if err != nil {
 			Fatal("writing package file: %s", err)
 		}
 
+		VLog("running post update hook...")
 		err = gx.TryRunHook("post-update", pkg.Language, oldhash, target)
 		if err != nil {
 			Fatal(err)
 		}
+
+		VLog("update complete!")
 	},
 }
 
