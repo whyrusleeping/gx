@@ -81,7 +81,7 @@ func (pm *PM) installDepsRec(pkg *Package, location string, done map[string]stru
 
 		if didfetch {
 			before := time.Now()
-			VLog("  - running post install:", cpkg.Language, pkgdir)
+			VLog("  - running post install for %s:", cpkg.Name, pkgdir)
 			err = TryRunHook("post-install", cpkg.Language, pkgdir)
 			if err != nil {
 				return err
@@ -286,6 +286,7 @@ func LocalPackageByName(dir, name string, out interface{}) error {
 }
 
 func LoadPackage(out interface{}, env, hash string) error {
+	VLog("  - load package: %q", hash)
 	ipath, err := InstallPath(env, "", true)
 	if err != nil {
 		return err

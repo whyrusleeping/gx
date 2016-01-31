@@ -78,14 +78,14 @@ func (pkg *PackageBase) FindDep(ref string) *Dependency {
 
 func (pkg *PackageBase) ForEachDep(cb func(dep *Dependency, pkg *Package) error) error {
 	for _, dep := range pkg.Dependencies {
-		var pkg Package
-		err := LoadPackage(&pkg, pkg.Language, dep.Hash)
+		var cpkg Package
+		err := LoadPackage(&cpkg, pkg.Language, dep.Hash)
 		if err != nil {
 			VLog("LoadPackage error: ", err)
 			return fmt.Errorf("package %s (%s) not found", dep.Name, dep.Hash)
 		}
 
-		err = cb(dep, &pkg)
+		err = cb(dep, &cpkg)
 		if err != nil {
 			return err
 		}
