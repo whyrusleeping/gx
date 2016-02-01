@@ -44,15 +44,21 @@ workspace. It also adds an entry referencing the package to the local `package.j
 
 ## Updating
 Updating packages in gx is simple:
+
 ```bash
 $ gx update mypkg QmbH7fpAV1FgMp6J7GZXUV6rj6Lck5tDix9JJGBSjFPgUd
 ```
 
-If you have your language tool (e.g. `gx-go`) installed, and it has a `post-update`
-hook, references to the given package should be updated correctly. If not, you may
-have to run sed over the package to update everything. The bright side of that is
-that you are very unlikely to have those hashes sitting around for any other reason
-so a global find-replace should be just fine.
+This looks into your `package.json` for a dependency named `mypkg` and replaces
+its hash reference with the one given.
+
+Note, this will not touch your code at all, so any references to that hash you
+have in your code will need to be updated. If you have a language tool
+(e.g. `gx-go`) installed, and it has a `post-update` hook, references to the
+given package should be updated correctly. If not, you may have to run sed over
+the package to update everything. The bright side of that is that you are very
+unlikely to have those hashes sitting around for any other reason so a global
+find-replace should be just fine.
 
 ## Repos
 gx supports named packages via user configured repositories. A repository is
@@ -78,6 +84,11 @@ $ gx repo list myrepo
 events      QmeJjwRaGJfx7j6LkPLjyPfzcD2UHHkKehDPkmizqSpcHT
 smalltree   QmRgTZA6jGi49ipQxorkmC75d3pLe69N6MZBKfQaN6grGY
 stump       QmebiJS1saSNEPAfr9AWoExvpfGoEK4QCtdLKCK4z6Qw7U
+```
+
+Import a package from a repo:
+```bash
+$ gx repo import events
 ```
 
 ## Hooks
@@ -137,6 +148,8 @@ import "gx/QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa/cobra"
 ```
 Then simply set the environment variable `GO15VENDOREXPERIMENT` to `1` and run
 `go build` or `go install` like you normally would.
+
+See [the gx-go repo](https://github.com/whyrusleeping/gx-go) for more details.
 
 ## Using gx as a package manager for language/environment X
 
