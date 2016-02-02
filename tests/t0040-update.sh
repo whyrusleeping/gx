@@ -27,6 +27,9 @@ function check_package_import() {
 	'
 }
 
+test_init_ipfs
+test_launch_ipfs_daemon
+
 # make a tree like this, then update C
 # A
 # |--B
@@ -86,5 +89,7 @@ test_expect_success "update printed correct warning" '
 '
 
 check_package_import a $pkgCnew c
+
+test_kill_ipfs_daemon
 
 test_done

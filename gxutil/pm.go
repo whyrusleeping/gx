@@ -254,14 +254,19 @@ func (pm *PM) EnumerateDependencies(pkg *Package) (map[string]struct{}, error) {
 
 func (pm *PM) enumerateDepsRec(pkg *Package, set map[string]struct{}) error {
 	for _, d := range pkg.Dependencies {
+		if _, ok := set[d.Hash]; ok {
+			continue
+		}
+
 		set[d.Hash] = struct{}{}
 
-		depkg, err := pm.GetPackage(d.Hash)
+		var depkg Package
+		err := LoadPackage(&depkg, pkg.Language, d.Hash)
 		if err != nil {
 			return err
 		}
 
-		err = pm.enumerateDepsRec(depkg, set)
+		err = pm.enumerateDepsRec(&depkg, set)
 		if err != nil {
 			return err
 		}

@@ -690,7 +690,8 @@ var DepsCommand = cli.Command{
 		w := tabwriter.NewWriter(os.Stdout, 12, 4, 1, ' ', 0)
 		for _, d := range deps {
 			if !quiet {
-				dpkg, err := pm.GetPackage(d)
+				var dpkg gx.Package
+				err := gx.LoadPackage(&dpkg, pkg.Language, d)
 				if err != nil {
 					Fatal(err)
 				}

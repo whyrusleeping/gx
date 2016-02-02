@@ -1,12 +1,15 @@
 #!/bin/sh
 #
-# Copyright (c) 2015 Jeromy Johnson
+# Copyright (c) 2016 Jeromy Johnson
 # MIT Licensed; see the LICENSE file in this repository.
 #
 
 test_description="test package init"
 
 . lib/test-lib.sh
+
+test_init_ipfs
+test_launch_ipfs_daemon
 
 test_expect_success "setup test package" '
 	mkdir mypkg &&
@@ -50,5 +53,7 @@ test_expect_success "publish package second time succeeds" '
 test_expect_success "publish output is the same on second publish" '
 	test_cmp expected pub_out2
 '
+
+test_kill_ipfs_daemon
 
 test_done

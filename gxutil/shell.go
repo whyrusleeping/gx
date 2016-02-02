@@ -13,6 +13,7 @@ import (
 )
 
 func NewShell() *sh.Shell {
+	os.Getenv("IPFS_API")
 	ash, err := getLocalApiShell()
 	if err == nil {
 		return ash
@@ -41,15 +42,24 @@ func getLocalApiShell() (*sh.Shell, error) {
 
 	addr := strings.Trim(string(data), "\n\t ")
 
-	maddr, err := ma.NewMultiaddr(addr)
-	if err != nil {
-		return nil, err
-	}
-
-	_, host, err := manet.DialArgs(maddr)
+	host, err := multiaddrToNormal(addr)
 	if err != nil {
 		return nil, err
 	}
 
 	return sh.NewShell(host), nil
+}
+
+func multiaddrToNormal(addr string) (string, error) {
+	maddr, err := ma.NewMultiaddr(addr)
+	if err != nil {
+		return "", err
+	}
+
+	_, host, err := manet.DialArgs(maddr)
+	if err != nil {
+		return "", err
+	}
+
+	return host, nil
 }

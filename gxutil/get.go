@@ -23,15 +23,6 @@ func (eai ErrAlreadyInstalled) Error() string {
 	return fmt.Sprintf("package %s already installed", eai.pkg)
 }
 
-func (pm *PM) GetPackage(hash string) (*Package, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	return pm.GetPackageTo(hash, filepath.Join(cwd, "vendor", "gx", "ipfs", hash))
-}
-
 func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 	var pkg Package
 	_, err := os.Stat(out)

@@ -27,6 +27,9 @@ function check_package_import() {
 	'
 }
 
+test_init_ipfs
+test_launch_ipfs_daemon
+
 test_expect_success "setup test packages" '
 	make_package a none
 	make_package b none
@@ -88,5 +91,7 @@ test_expect_success "deps tree looks right" '
 	echo "  b Qme9my1FBdkaiDvoVkT3ewDME3ks3a2uGN4bdpJWMhss1V 0.0.0" >> deps_exp &&
 	test_cmp deps_exp deps_out
 '
+
+test_kill_ipfs_daemon
 
 test_done

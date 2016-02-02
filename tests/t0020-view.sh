@@ -8,6 +8,9 @@ test_description="test gx view"
 
 . lib/test-lib.sh
 
+test_init_ipfs
+test_launch_ipfs_daemon
+
 test_expect_success "setup test package" '
 	mkdir mypkg &&
 	cd mypkg &&
@@ -31,5 +34,7 @@ test_expect_success "gx view individual field works" '
 	echo "none" > lang_exp &&
 	test_cmp lang_exp lang_out
 '
+
+test_kill_ipfs_daemon
 
 test_done
