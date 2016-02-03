@@ -132,6 +132,9 @@ Currently available hooks are:
 - `post-update`
   - called during `gx update` after a dependency has been updated
   - takes the old package ref and the new hash as arguments
+- `install-path`
+  - called during package installs and imports.
+  - sets the location for gx to install packages to
 
 ## The vendor directory
 
@@ -139,6 +142,11 @@ The `vendor/gx` (package) directory contains all of the downloaded dependencies 
 your package.  You do not need to add the contents of the `vendor/gx` directory to
 version control, simply running `gx install` in the root directory of your
 project will fetch and download the appropriate versions of required packages. 
+
+The location of this directory is not set in stone, if for your specific
+environment you'd like it somewhere else, simply add a hook to your environments
+extension tool named `install-path` (see above) and gx will use that path
+instead.
 
 Note: This is not to say that you can't add the `vendor/gx` directory to version
 control, by all means do if you want a single `git clone` or `svn co` to bring
@@ -155,14 +163,17 @@ $ go get -u github.com/whyrusleeping/gx-go
 Once thats installed, use gx like normal to import dependencies.
 You can import code from the vendor directory using:
 ```go
-import "gx/<hash>/packagename"
+import "gx/ipfs/<hash>/packagename"
 ```
 for example:
 ```go
-import "gx/QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa/cobra"
+import "gx/ipfs/QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa/cobra"
 ```
+
 Then simply set the environment variable `GO15VENDOREXPERIMENT` to `1` and run
-`go build` or `go install` like you normally would.
+`go build` or `go install` like you normally would. Alternatively, install
+your dependencies globally (`gx install --global`) and you can leave off the
+environment variable part.
 
 See [the gx-go repo](https://github.com/whyrusleeping/gx-go) for more details.
 
