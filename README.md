@@ -1,18 +1,33 @@
+![gx logo](logo.jpeg)
+
 # GX
-## A packaging tool
-### (gx means nothing)
+> A packaging tool
 
 gx is a packaging tool built around the distributed, content addressed filesystem
-ipfs. It aims to be flexible, powerful and simple (after learning the commands, of
-course).
+[IPFS](//github.com/ipfs/ipfs). It aims to be flexible, powerful and simple.
+
+## Table of Contents
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Dependencies](#dependencies)
+- [Updating](#updating)
+- [Repos](#repos)
+  - [Usage](#usage-1)
+- [Hooks](#hooks)
+- [The vendor directory](#the-vendor-directory)
+- [Using gx as a Go package manager](#using-gx-as-a-go-package-manager)
+- [Using gx as a package manager for language/environment X](#using-gx-as-a-package-manager-for-languageenvironment-x)
+- [Why is it called gx?](#why-is-it-called-gx)
+- [License](#license)
 
 ## Requirements
-gx currently requires that users have a running ipfs daemon on their machine.
+gx currently requires that users have a running [IPFS daemon](//github.com/ipfs/go-ipfs) on their machine.
 This requirement may be lifted in the future when better infrastructure is set
 up.
 
 ## Installation
-As simple as:
+
 ```
 $ go get -u github.com/whyrusleeping/gx
 ```
@@ -156,3 +171,11 @@ See [the gx-go repo](https://github.com/whyrusleeping/gx-go) for more details.
 If you want to extend gx to work with any other language or environment,
 you can implement the relevant hooks in a binary named `gx-X` where the 'X'
 is the name of your environment. (See 'hooks' above)
+
+## Why is it called gx?
+
+No reason. "gx" stands for nothing.
+
+## License
+
+MIT. Jeromy Johnson.
