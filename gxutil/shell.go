@@ -19,7 +19,7 @@ func NewShell() *sh.Shell {
 		return ash
 	}
 
-	return sh.NewShell("ipfs.io")
+	return sh.NewShell("https://ipfs.io")
 }
 
 func getLocalApiShell() (*sh.Shell, error) {
