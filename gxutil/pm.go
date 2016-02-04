@@ -81,13 +81,72 @@ func (pm *PM) InstallPackage(hash, location string) (*Package, error) {
 // InstallDeps recursively installs all dependencies for the given package
 func (pm *PM) InstallDeps(pkg *Package, location string) error {
 	Log("installing package: %s-%s", pkg.Name, pkg.Version)
-	for _, dep := range pkg.Dependencies {
+
+	fetched := make([]bool, len(pkg.Dependencies))
+	packages := make([]*Package, len(pkg.Dependencies))
+	pkgdirs := make([]string, len(pkg.Dependencies))
+	done := make(chan *Dependency)
+	errs := make(chan error)
+	for i, dep := range pkg.Dependencies {
+		go func(i int, dep *Dependency) {
+			hash := dep.Hash
+			pkgdir := filepath.Join(location, "gx", "ipfs", hash)
+			cpkg := new(Package)
+
+			err := FindPackageInDir(cpkg, pkgdir)
+			if err != nil {
+				VLog("  - %s not found locally, fetching into %s", hash, pkgdir)
+				deppkg, err := pm.GetPackageTo(hash, pkgdir)
+				if err != nil {
+					errs <- fmt.Errorf("failed to fetch package: %s:%s", hash, err)
+					return
+				}
+				VLog("  - fetch %s complete!", hash)
+				fetched[i] = true
+				cpkg = deppkg
+			}
+
+			pkgdirs[i] = pkgdir
+			packages[i] = cpkg
+			done <- dep
+		}(i, dep)
+	}
+
+	var failed bool
+	for i := 0; i < len(pkg.Dependencies); i++ {
+		select {
+		case dep := <-done:
+			Log("[%d / %d] fetched dep: %s", i+1, len(pkg.Dependencies), dep.Name)
+		case err := <-errs:
+			Error("[%d / %d ] parallel fetch: %s", i+1, len(pkg.Dependencies), err)
+			failed = true
+		}
+	}
+
+	if failed {
+		return errors.New("failed to fetch dependencies")
+	}
+	Log("successfully found all deps for %s", pkg.Name)
+
+	for i, dep := range pkg.Dependencies {
+		cpkg := packages[i]
 		VLog("  - %s depends on %s (%s)", pkg.Name, dep.Name, dep.Hash)
-		_, err := pm.InstallPackage(dep.Hash, location)
+		err := pm.InstallDeps(cpkg, location)
 		if err != nil {
 			return err
 		}
+
+		if fetched[i] {
+			before := time.Now()
+			VLog("  - running post install for %s:", cpkg.Name, pkgdirs[i])
+			err = TryRunHook("post-install", cpkg.Language, pkgdirs[i])
+			if err != nil {
+				return err
+			}
+			VLog("  - post install finished in ", time.Now().Sub(before))
+		}
 	}
+	Log("installation of %s complete!", pkg.Name)
 	return nil
 }
 

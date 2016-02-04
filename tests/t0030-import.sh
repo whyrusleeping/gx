@@ -74,11 +74,14 @@ test_expect_success "install d works" '
 '
 
 test_expect_success "install output looks good" '
-	echo "installing package: d-0.0.0" > install_exp &&
-	echo "installing package: c-0.0.0" >> install_exp &&
-	echo "installing package: a-0.0.0" >> install_exp &&
-	echo "installing package: b-0.0.0" >> install_exp &&
-	test_cmp install_exp install_out
+	grep "installing package: d-0.0.0" install_out && 
+	grep "installing package: c-0.0.0" install_out &&
+	grep "installing package: a-0.0.0" install_out &&
+	grep "installing package: b-0.0.0" install_out &&
+	grep "installation of a complete!" install_out &&
+	grep "installation of b complete!" install_out &&
+	grep "installation of c complete!" install_out &&
+	grep "installation of d complete!" install_out
 '
 
 test_expect_success "deps look correct" '
