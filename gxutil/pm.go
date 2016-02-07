@@ -82,7 +82,6 @@ func (pm *PM) InstallPackage(hash, location string) (*Package, error) {
 func (pm *PM) InstallDeps(pkg *Package, location string) error {
 	Log("installing package: %s-%s", pkg.Name, pkg.Version)
 
-	fetched := make([]bool, len(pkg.Dependencies))
 	packages := make([]*Package, len(pkg.Dependencies))
 	pkgdirs := make([]string, len(pkg.Dependencies))
 	done := make(chan *Dependency)
@@ -102,7 +101,6 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 					return
 				}
 				VLog("  - fetch %s complete!", hash)
-				fetched[i] = true
 				cpkg = deppkg
 			}
 
@@ -136,7 +134,8 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 			return err
 		}
 
-		if fetched[i] {
+		dir := filepath.Join(pkgdirs[i], cpkg.Name)
+		if !pkgRanHook(dir, "post-install") {
 			before := time.Now()
 			VLog("  - running post install for %s:", cpkg.Name, pkgdirs[i])
 			err = TryRunHook("post-install", cpkg.Language, pkgdirs[i])
@@ -148,6 +147,32 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 	}
 	Log("installation of %s complete!", pkg.Name)
 	return nil
+}
+
+func pkgRanHook(dir, hook string) bool {
+	p := filepath.Join(dir, ".gx", hook)
+	_, err := os.Stat(p)
+	if err == nil {
+		return true
+	}
+
+	return false
+}
+
+func writePkgHook(dir, hook string) error {
+	gxdir := filepath.Join(dir, ".gx")
+	err := os.MkdirAll(gxdir, 0755)
+	if err != nil {
+		return err
+	}
+
+	fipath := filepath.Join(gxdir, hook)
+	fi, err := os.Create(fipath)
+	if err != nil {
+		return err
+	}
+
+	return fi.Close()
 }
 
 func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
@@ -465,6 +490,7 @@ func InstallPath(env, relpath string, global bool) (string, error) {
 	}
 
 	return strings.Trim(string(out), " \t\n"), nil
+
 }
 
 func IsHash(s string) bool {
