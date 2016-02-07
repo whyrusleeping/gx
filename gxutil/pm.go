@@ -41,8 +41,26 @@ func (pm *PM) Shell() *sh.Shell {
 	return pm.ipfssh
 }
 
+func maybeRunPostInstall(pkg *Package, pkgdir string) error {
+	dir := filepath.Join(pkgdir, pkg.Name)
+	if !pkgRanHook(dir, "post-install") {
+		before := time.Now()
+		VLog("  - running post install for %s:", pkg.Name, pkgdir)
+		err := TryRunHook("post-install", pkg.Language, pkgdir)
+		if err != nil {
+			return err
+		}
+		VLog("  - post install finished in ", time.Now().Sub(before))
+		err = writePkgHook(dir, "post-install")
+		if err != nil {
+			return fmt.Errorf("error writing hook log: %s", err)
+		}
+	}
+
+	return nil
+}
+
 func (pm *PM) InstallPackage(hash, location string) (*Package, error) {
-	var didfetch bool
 
 	// if its already local, skip it
 	pkgdir := filepath.Join(location, "gx", "ipfs", hash)
@@ -56,7 +74,6 @@ func (pm *PM) InstallPackage(hash, location string) (*Package, error) {
 		}
 		VLog("  - fetch complete!")
 		cpkg = deppkg
-		didfetch = true
 	}
 
 	VLog("  - now processing dep %s-%s", cpkg.Name, hash)
@@ -65,14 +82,8 @@ func (pm *PM) InstallPackage(hash, location string) (*Package, error) {
 		return nil, err
 	}
 
-	if didfetch {
-		before := time.Now()
-		VLog("  - running post install for %s:", cpkg.Name, pkgdir)
-		err = TryRunHook("post-install", cpkg.Language, pkgdir)
-		if err != nil {
-			return nil, err
-		}
-		VLog("  - post install finished in ", time.Now().Sub(before))
+	if err := maybeRunPostInstall(cpkg, pkgdir); err != nil {
+		return nil, err
 	}
 
 	return cpkg, nil
@@ -82,7 +93,6 @@ func (pm *PM) InstallPackage(hash, location string) (*Package, error) {
 func (pm *PM) InstallDeps(pkg *Package, location string) error {
 	Log("installing package: %s-%s", pkg.Name, pkg.Version)
 
-	fetched := make([]bool, len(pkg.Dependencies))
 	packages := make([]*Package, len(pkg.Dependencies))
 	pkgdirs := make([]string, len(pkg.Dependencies))
 	done := make(chan *Dependency)
@@ -102,7 +112,6 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 					return
 				}
 				VLog("  - fetch %s complete!", hash)
-				fetched[i] = true
 				cpkg = deppkg
 			}
 
@@ -136,18 +145,38 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 			return err
 		}
 
-		if fetched[i] {
-			before := time.Now()
-			VLog("  - running post install for %s:", cpkg.Name, pkgdirs[i])
-			err = TryRunHook("post-install", cpkg.Language, pkgdirs[i])
-			if err != nil {
-				return err
-			}
-			VLog("  - post install finished in ", time.Now().Sub(before))
+		if err := maybeRunPostInstall(cpkg, pkgdirs[i]); err != nil {
+			return err
 		}
 	}
 	Log("installation of %s complete!", pkg.Name)
 	return nil
+}
+
+func pkgRanHook(dir, hook string) bool {
+	p := filepath.Join(dir, ".gx", hook)
+	_, err := os.Stat(p)
+	if err == nil {
+		return true
+	}
+
+	return false
+}
+
+func writePkgHook(dir, hook string) error {
+	gxdir := filepath.Join(dir, ".gx")
+	err := os.MkdirAll(gxdir, 0755)
+	if err != nil {
+		return err
+	}
+
+	fipath := filepath.Join(gxdir, hook)
+	fi, err := os.Create(fipath)
+	if err != nil {
+		return err
+	}
+
+	return fi.Close()
 }
 
 func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
@@ -465,6 +494,7 @@ func InstallPath(env, relpath string, global bool) (string, error) {
 	}
 
 	return strings.Trim(string(out), " \t\n"), nil
+
 }
 
 func IsHash(s string) bool {
