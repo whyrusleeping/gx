@@ -22,9 +22,9 @@ gx is a packaging tool built around the distributed, content addressed filesyste
 - [License](#license)
 
 ## Requirements
-gx currently requires that users have a running [IPFS daemon](//github.com/ipfs/go-ipfs) on their machine.
-This requirement may be lifted in the future when better infrastructure is set
-up.
+Users are encouraged to have a running [IPFS daemon](//github.com/ipfs/go-ipfs) on their machines.
+If not present, gx will use the public gateway.
+
 
 ## Installation
 
