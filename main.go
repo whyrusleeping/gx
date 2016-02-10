@@ -176,7 +176,7 @@ var ImportCommand = cli.Command{
 
 		ndep, err := pm.ImportPackage(ipath, dephash)
 		if err != nil {
-			Fatal(err)
+			Fatal("(import):", err)
 		}
 
 		if pkg.FindDep(ndep.Name) != nil {

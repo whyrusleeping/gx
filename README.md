@@ -118,23 +118,26 @@ writing go, gx calls `gx-go hook <hookname> <args>` for any given hook.
 Currently available hooks are:
 
 - `post-import`
-  - called after a new package is imported and its info written to package.json
-  - takes the hash of the newly imported package as an argument
+  - called after a new package is imported and its info written to package.json.
+  - takes the hash of the newly imported package as an argument.
 - `post-init`
-  - called after a new package is initialized
-  - takes an optional argument of the directory of the newly init'ed package
+  - called after a new package is initialized.
+  - takes an optional argument of the directory of the newly init'ed package.
 - `pre-publish`
-  - called during `gx publish` before the package is bundled up and added to ipfs
-  - currently takes no arguments
+  - called during `gx publish` before the package is bundled up and added to ipfs.
+  - currently takes no arguments.
 - `post-publish`
-  - called during `gx publish` after the package has been added to ipfs
-  - takes the hash of the newly published package as an argument
+  - called during `gx publish` after the package has been added to ipfs.
+  - takes the hash of the newly published package as an argument.
 - `post-update`
-  - called during `gx update` after a dependency has been updated
-  - takes the old package ref and the new hash as arguments
+  - called during `gx update` after a dependency has been updated.
+  - takes the old package ref and the new hash as arguments.
+- `post-install`
+  - called after a new package is downloaded, during install and import.
+  - takes the path to the new package as an argument.
 - `install-path`
   - called during package installs and imports.
-  - sets the location for gx to install packages to
+  - sets the location for gx to install packages to.
 
 ## The vendor directory
 
@@ -151,6 +154,13 @@ instead.
 Note: This is not to say that you can't add the `vendor/gx` directory to version
 control, by all means do if you want a single `git clone` or `svn co` to bring
 all deps with it!
+
+## Ignoring files from a publish
+You can use a `.gxignore` file to make gx ignore certain files during a publish.
+This has the same behaviour as a `.gitignore`. 
+
+Gx also respects a `.gitignore` file if present, and will not publish any file
+excluded by it.
 
 ## Using gx as a Go package manager
 
