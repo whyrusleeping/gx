@@ -438,12 +438,12 @@ func updateCollisionCheck(ipkg *gx.Package, idep *gx.Dependency, chain []string)
 
 var VersionCommand = cli.Command{
 	Name:  "version",
-	Usage: "view or modify this packages version",
-	Description: `view of modify this pacakges version
+	Usage: "view or modify this package's version",
+	Description: `view or modify this package's version
 
    run without any arguments, will print the current semver of this package.
    
-   if an argument is given, it will be parsed as a semver, if that succeeds,
+   if an argument is given, it will be parsed as a semver; if that succeeds,
    the version will be set to that exactly. If the argument is not a semver,
    it should be one of three things: "major", "minor", or "patch". Passing
    any of those three will bump the corresponding segment of the semver up
