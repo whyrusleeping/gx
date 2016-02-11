@@ -32,6 +32,10 @@ If not present, gx will use the public gateway.
 $ go get -u github.com/whyrusleeping/gx
 ```
 
+This will download the source into `$GOPATH/src/github.com/whyrusleeping/gx`
+and build and install a binary to `$GOPATH/bin`. To modify gx, just change
+the source in that directory, and run `go build`.
+
 ## Usage
 
 Creating and publishing new generic package:
