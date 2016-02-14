@@ -41,9 +41,19 @@ func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 
 	begin := time.Now()
 	VLog("  - fetching %s via ipfs api", hash)
-	err = pm.Shell().Get(hash, out)
-	if err != nil {
-		return nil, err
+	tries := 3
+	for i := 0; i < tries; i++ {
+		err = pm.Shell().Get(hash, out)
+		if err != nil {
+			Error("from shell.Get(): ", err)
+			if i == tries-1 {
+				return nil, err
+			}
+			Log("retrying fetch %s after a second...", hash)
+			time.Sleep(time.Second)
+		} else {
+			break
+		}
 	}
 	VLog("  - fetch finished in %s", time.Now().Sub(begin))
 
