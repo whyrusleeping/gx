@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	sh "github.com/ipfs/go-ipfs-api"
+	hd "github.com/mitchellh/go-homedir"
 	manet "github.com/jbenet/go-multiaddr-net"
 	ma "github.com/jbenet/go-multiaddr-net/Godeps/_workspace/src/github.com/jbenet/go-multiaddr"
 	log "github.com/whyrusleeping/stump"
@@ -31,7 +32,7 @@ func NewShell() *sh.Shell {
 func getLocalApiShell() (*sh.Shell, error) {
 	ipath := os.Getenv("IPFS_PATH")
 	if ipath == "" {
-		home := os.Getenv("HOME")
+		home := hd.Dir()
 		if home == "" {
 			return nil, errors.New("neither IPFS_PATH nor home dir set")
 		}
