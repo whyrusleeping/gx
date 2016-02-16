@@ -11,6 +11,8 @@ test_description="test package init"
 test_init_ipfs
 test_launch_ipfs_daemon
 
+pkg_hash="Qma4WauPWYKJtwNHFrfR2mfsiqiyXiJymS5ADwbELjkicm"
+
 test_expect_success "setup test package" '
 	mkdir mypkg &&
 	(cd mypkg && gx init --lang=none)
@@ -33,7 +35,7 @@ test_expect_success "publish package works" '
 '
 
 test_expect_success "publish output looks good" '
-	echo "package mypkg published with hash: QmPx826U5SrMXiuHQbFzBhsuzJqANGf66UpKPK5dKb4z4Y" > expected &&
+	echo "package mypkg published with hash: $pkg_hash" > expected &&
 	test_cmp expected pub_out
 '
 
@@ -42,7 +44,7 @@ test_expect_success ".gx dir was created" '
 '
 
 test_expect_success "lastpubver looks good" '
-	echo "0.0.0: QmPx826U5SrMXiuHQbFzBhsuzJqANGf66UpKPK5dKb4z4Y" > lpv_exp &&
+	echo "0.0.0: $pkg_hash" > lpv_exp &&
 	test_cmp lpv_exp mypkg/.gx/lastpubver
 '
 

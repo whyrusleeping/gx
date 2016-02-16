@@ -89,9 +89,9 @@ test_expect_success "deps look correct" '
 '
 
 test_expect_success "deps tree looks right" '
-	echo "c QmRYA5eaKKTBWp51Wewaz1zzZVNrubzipHsGbJA1Fn55Xu 0.0.0" > deps_exp &&
-	echo "  a QmRBRLtDgVfqZy8PJwSjvXMRZwM7w6VAbg53ZENPE7QVPw 0.0.0" >> deps_exp &&
-	echo "  b Qme9my1FBdkaiDvoVkT3ewDME3ks3a2uGN4bdpJWMhss1V 0.0.0" >> deps_exp &&
+	echo "c $pkgC 0.0.0" > deps_exp &&
+	echo "  a $pkgA 0.0.0" >> deps_exp &&
+	echo "  b $pkgB 0.0.0" >> deps_exp &&
 	test_cmp deps_exp deps_out
 '
 
