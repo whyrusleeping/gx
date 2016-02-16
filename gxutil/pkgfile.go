@@ -21,6 +21,7 @@ type PackageBase struct {
 	Language     string        `json:"language,omitempty"`
 	Copyright    string        `json:"copyright,omitempty"`
 	Issues       string        `json:"issues_url"`
+	GxVersion    string        `json:"gx_version"`
 }
 
 type Package struct {

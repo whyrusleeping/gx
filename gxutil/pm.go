@@ -15,6 +15,8 @@ import (
 	. "github.com/whyrusleeping/stump"
 )
 
+const GxVersion = "0.3.0"
+
 const PkgFileName = "package.json"
 
 type PM struct {
@@ -70,7 +72,7 @@ func (pm *PM) InstallPackage(hash, location string) (*Package, error) {
 		VLog("  - %s not found locally, fetching into %s", hash, pkgdir)
 		deppkg, err := pm.GetPackageTo(hash, pkgdir)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch package: %s:%s", hash, err)
+			return nil, fmt.Errorf("failed to fetch package: %s: %s", hash, err)
 		}
 		VLog("  - fetch complete!")
 		cpkg = deppkg
@@ -108,7 +110,7 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 				VLog("  - %s not found locally, fetching into %s", hash, pkgdir)
 				deppkg, err := pm.GetPackageTo(hash, pkgdir)
 				if err != nil {
-					errs <- fmt.Errorf("failed to fetch package: %s:%s", hash, err)
+					errs <- fmt.Errorf("failed to fetch package: %s: %s", hash, err)
 					return
 				}
 				VLog("  - fetch %s complete!", hash)
@@ -196,11 +198,15 @@ func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
 		username = u.Username
 	}
 
-	pkg := new(Package)
-	pkg.Name = name
-	pkg.Author = username
-	pkg.Language = lang
-	pkg.Version = "0.0.0"
+	pkg := &Package{
+		PackageBase: PackageBase{
+			Name:      name,
+			Author:    username,
+			Language:  lang,
+			Version:   "0.0.0",
+			GxVersion: GxVersion,
+		},
+	}
 
 	if setup != nil {
 		setup(pkg)

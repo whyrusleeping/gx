@@ -30,6 +30,11 @@ func LoadPackageFile(path string) (*gx.Package, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if pkg.GxVersion == "" {
+		pkg.GxVersion = gx.GxVersion
+	}
+
 	return &pkg, nil
 }
 
@@ -46,7 +51,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.Author = "whyrusleeping"
-	app.Version = "0.3"
+	app.Version = gx.GxVersion
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
 			Name:  "verbose",
@@ -174,17 +179,24 @@ var ImportCommand = cli.Command{
 			Fatal(err)
 		}
 
-		ndep, err := pm.ImportPackage(ipath, dephash)
+		npkg, err := pm.InstallPackage(dephash, ipath)
 		if err != nil {
-			Fatal("(import):", err)
+			Fatal("(install):", err)
 		}
 
-		if pkg.FindDep(ndep.Name) != nil {
-			s := fmt.Sprintf("package with name %s already imported, continue?", ndep.Name)
+		if pkg.FindDep(npkg.Name) != nil {
+			s := fmt.Sprintf("package with name %s already imported, continue?", npkg.Name)
 			if !yesNoPrompt(s, false) {
 				return
 			}
 			Log("continuing, please note some things may not work as expected")
+		}
+
+		ndep := &gx.Dependency{
+			Author:  npkg.Author,
+			Hash:    dephash,
+			Name:    npkg.Name,
+			Version: npkg.Version,
 		}
 
 		pkg.Dependencies = append(pkg.Dependencies, ndep)
@@ -192,7 +204,6 @@ var ImportCommand = cli.Command{
 		if err != nil {
 			Fatal("writing pkgfile: %s", err)
 		}
-
 	},
 }
 
