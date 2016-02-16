@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	hd "github.com/mitchellh/go-homedir"
 	. "github.com/whyrusleeping/stump"
 )
 
@@ -62,7 +63,10 @@ func (pm *PM) ResolveName(name string, usecache bool) (string, error) {
 }
 
 func CheckCacheFile(name string) (string, bool, error) {
-	home := os.Getenv("HOME")
+	home, err := hd.Dir()
+	if err != nil {
+		return "", false, err
+	}
 	p := filepath.Join(home, ".gxcache")
 
 	fi, err := os.Open(p)
@@ -88,10 +92,13 @@ func CheckCacheFile(name string) (string, bool, error) {
 
 // TODO: think about moving gx global files into a .config/local type thing
 func (pm *PM) cacheSet(name, resolved string) error {
-	home := os.Getenv("HOME")
+	home, err := hd.Dir()
+	if err != nil {
+		return err
+	}
 	p := filepath.Join(home, ".gxcache")
 
-	_, err := os.Stat(p)
+	_, err = os.Stat(p)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return err
