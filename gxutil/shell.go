@@ -32,8 +32,8 @@ func NewShell() *sh.Shell {
 func getLocalApiShell() (*sh.Shell, error) {
 	ipath := os.Getenv("IPFS_PATH")
 	if ipath == "" {
-		home := hd.Dir()
-		if home == "" {
+		home, err := hd.Dir()
+		if err != nil {
 			return nil, errors.New("neither IPFS_PATH nor home dir set")
 		}
 

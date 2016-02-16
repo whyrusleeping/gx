@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path"
+
+	hd "github.com/mitchellh/go-homedir"
 )
 
 const CfgFileName = ".gxrc"
@@ -39,8 +41,13 @@ type User struct {
 }
 
 func LoadConfig() (*Config, error) {
+	home, err := hd.Dir()
+	if err != nil {
+		return nil, err
+	}
+
 	// first check $HOME/.gxrc
-	cfg, err := loadFile(path.Join(os.Getenv("HOME"), CfgFileName))
+	cfg, err := loadFile(path.Join(home, CfgFileName))
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
