@@ -38,6 +38,7 @@ func NewPM(cfg *Config) (*PM, error) {
 func (pm *PM) Shell() *sh.Shell {
 	if pm.ipfssh == nil {
 		pm.ipfssh = NewShell()
+		pm.ipfssh.SetTimeout(time.Minute * 8)
 	}
 
 	return pm.ipfssh

@@ -13,7 +13,10 @@ import (
 )
 
 func NewShell() *sh.Shell {
-	os.Getenv("IPFS_API")
+	if apivar := os.Getenv("IPFS_API"); apivar != "" {
+		return sh.NewShell(apivar)
+	}
+
 	ash, err := getLocalApiShell()
 	if err == nil {
 		return ash
