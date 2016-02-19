@@ -1,16 +1,12 @@
 package gxutil
 
 import (
-	"errors"
-	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strings"
 
 	sh "github.com/ipfs/go-ipfs-api"
-	hd "github.com/mitchellh/go-homedir"
 	manet "github.com/jbenet/go-multiaddr-net"
 	ma "github.com/jbenet/go-multiaddr-net/Godeps/_workspace/src/github.com/jbenet/go-multiaddr"
+	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
 )
 
 func NewShell() *sh.Shell {
@@ -24,24 +20,15 @@ func NewShell() *sh.Shell {
 }
 
 func getLocalApiShell() (*sh.Shell, error) {
-	ipath := os.Getenv("IPFS_PATH")
-	if ipath == "" {
-		home, err := hd.Dir()
-		if err != nil {
-			return nil, errors.New("neither IPFS_PATH nor home dir set")
-		}
-
-		ipath = filepath.Join(home, ".ipfs")
-	}
-
-	apifile := filepath.Join(ipath, "api")
-
-	data, err := ioutil.ReadFile(apifile)
+	path, err := fsrepo.BestKnownPath()
 	if err != nil {
 		return nil, err
 	}
 
-	addr := strings.Trim(string(data), "\n\t ")
+	addr, err := fsrepo.APIAddr(path)
+	if err != nil {
+		return nil, err
+	}
 
 	host, err := multiaddrToNormal(addr)
 	if err != nil {
