@@ -9,13 +9,14 @@ import (
 
 	cli "github.com/codegangsta/cli"
 	gx "github.com/whyrusleeping/gx/gxutil"
+	hd "github.com/mitchellh/go-homedir"
 	. "github.com/whyrusleeping/stump"
 )
 
 func cfgPath(global bool) (string, error) {
 	if global {
-		home := os.Getenv("HOME")
-		if home == "" {
+		home, err := hd.Dir()
+		if err != nil {
 			return "", fmt.Errorf("$HOME not set, cannot find global .gxrc")
 		}
 		return filepath.Join(home, gx.CfgFileName), nil
