@@ -10,10 +10,12 @@ import (
 	sh "github.com/ipfs/go-ipfs-api"
 	manet "github.com/jbenet/go-multiaddr-net"
 	ma "github.com/jbenet/go-multiaddr-net/Godeps/_workspace/src/github.com/jbenet/go-multiaddr"
+	log "github.com/whyrusleeping/stump"
 )
 
 func NewShell() *sh.Shell {
 	if apivar := os.Getenv("IPFS_API"); apivar != "" {
+		log.VLog("using '%s' from IPFS_API env as api endpoint.", apivar)
 		return sh.NewShell(apivar)
 	}
 
@@ -22,6 +24,7 @@ func NewShell() *sh.Shell {
 		return ash
 	}
 
+	log.VLog("using global ipfs gateways as api endpoint")
 	return sh.NewShell("https://ipfs.io")
 }
 
