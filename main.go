@@ -236,6 +236,11 @@ var InstallCommand = cli.Command{
 				Fatal(err)
 			}
 
+			err = gx.TryRunHook("req-check", "go", cwd)
+			if err != nil {
+				Fatal(err)
+			}
+
 			ipath, err := gx.InstallPath(pkg.Language, cwd, global)
 			if err != nil {
 				Fatal(err)
