@@ -40,7 +40,7 @@ $(SHARNESS): FORCE
 bin/ipfs:
 	mkdir -p bin
 	go get github.com/ipfs/ipfs-update
-	ipfs-update install latest
+	ipfs-update install --no-check latest
 	cp (which ipfs) bin/ipfs
 
 race:
