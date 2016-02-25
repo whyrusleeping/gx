@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -330,7 +329,7 @@ var InitCommand = cli.Command{
 		if len(c.Args()) > 0 {
 			pkgname = c.Args().First()
 		} else {
-			pkgname = path.Base(cwd)
+			pkgname = filepath.Base(cwd)
 		}
 
 		lang := c.String("lang")
