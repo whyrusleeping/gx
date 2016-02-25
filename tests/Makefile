@@ -39,8 +39,9 @@ $(SHARNESS): FORCE
 
 bin/ipfs:
 	mkdir -p bin
-	go get github.com/ipfs/go-ipfs/cmd/ipfs
-	go build -o bin/ipfs github.com/ipfs/go-ipfs/cmd/ipfs
+	go get github.com/ipfs/ipfs-update
+	ipfs-update install latest
+	cp (which ipfs) bin/ipfs
 
 race:
 	make GOFLAGS=-race all
