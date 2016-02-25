@@ -3,3 +3,6 @@ all:
 
 install:
 	go install
+
+test:
+	cd tests && make
