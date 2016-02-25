@@ -40,8 +40,7 @@ $(SHARNESS): FORCE
 bin/ipfs:
 	mkdir -p bin
 	go get github.com/ipfs/ipfs-update
-	ipfs-update install --no-check latest
-	cp (which ipfs) bin/ipfs
+	ipfs-update fetch v0.3.11 --output=bin/ipfs
 
 race:
 	make GOFLAGS=-race all
