@@ -236,7 +236,7 @@ var InstallCommand = cli.Command{
 				Fatal(err)
 			}
 
-			err = gx.TryRunHook("req-check", "go", cwd)
+			err = gx.TryRunHook("req-check", pkg.Language, cwd)
 			if err != nil {
 				Fatal(err)
 			}
