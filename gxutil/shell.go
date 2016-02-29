@@ -53,7 +53,14 @@ func getLocalApiShell() (*sh.Shell, error) {
 		return nil, err
 	}
 
-	return sh.NewShell(host), nil
+	local := sh.NewShell(host)
+
+	_, _, err = local.Version()
+	if err != nil {
+		return nil, err
+	}
+
+	return local, nil
 }
 
 func multiaddrToNormal(addr string) (string, error) {

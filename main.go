@@ -13,7 +13,7 @@ import (
 	"github.com/blang/semver"
 	cli "github.com/codegangsta/cli"
 	gx "github.com/whyrusleeping/gx/gxutil"
-	. "github.com/whyrusleeping/stump"
+	log "github.com/whyrusleeping/stump"
 )
 
 var (
@@ -41,12 +41,12 @@ func LoadPackageFile(path string) (*gx.Package, error) {
 func main() {
 	cfg, err := gx.LoadConfig()
 	if err != nil {
-		Fatal(err)
+		log.Fatal(err)
 	}
 
 	pm, err = gx.NewPM(cfg)
 	if err != nil {
-		Fatal(err)
+		log.Fatal(err)
 	}
 
 	app := cli.NewApp()
@@ -59,7 +59,7 @@ func main() {
 		},
 	}
 	app.Before = func(c *cli.Context) error {
-		Verbose = c.Bool("verbose")
+		log.Verbose = c.Bool("verbose")
 
 		gcwd, err := os.Getwd()
 		if err != nil {
@@ -95,29 +95,29 @@ var PublishCommand = cli.Command{
 	Action: func(c *cli.Context) {
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		err = gx.TryRunHook("pre-publish", pkg.Language)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		hash, err := pm.PublishPackage(cwd, &pkg.PackageBase)
 		if err != nil {
-			Fatal("publishing: ", err)
+			log.Fatal("publishing: ", err)
 		}
-		Log("package %s published with hash: %s", pkg.Name, hash)
+		log.Log("package %s published with hash: %s", pkg.Name, hash)
 
 		// write out version hash
 		err = writeLastPub(pkg.Version, hash)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		err = gx.TryRunHook("post-publish", pkg.Language, hash)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 	},
 }
@@ -135,7 +135,7 @@ func writeLastPub(vers string, hash string) error {
 
 	defer fi.Close()
 
-	VLog("writing published version to .gx/lastpubver")
+	log.VLog("writing published version to .gx/lastpubver")
 	_, err = fmt.Fprintf(fi, "%s: %s\n", vers, hash)
 	if err != nil {
 		return fmt.Errorf("failed to write version file: %s", err)
@@ -155,33 +155,33 @@ var ImportCommand = cli.Command{
 	},
 	Action: func(c *cli.Context) {
 		if len(c.Args()) == 0 {
-			Fatal("import requires a package name")
+			log.Fatal("import requires a package name")
 		}
 
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		depname := c.Args().First()
 		cdep := pkg.FindDep(depname)
 		if cdep != nil {
-			Fatal("package %s already imported as %s", cdep.Hash, cdep.Name)
+			log.Fatal("package %s already imported as %s", cdep.Hash, cdep.Name)
 		}
 
 		dephash, err := pm.ResolveDepName(depname)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		ipath, err := gx.InstallPath(pkg.Language, "", c.Bool("global"))
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		npkg, err := pm.InstallPackage(dephash, ipath)
 		if err != nil {
-			Fatal("(install):", err)
+			log.Fatal("(install):", err)
 		}
 
 		if pkg.FindDep(npkg.Name) != nil {
@@ -189,7 +189,7 @@ var ImportCommand = cli.Command{
 			if !yesNoPrompt(s, false) {
 				return
 			}
-			Log("continuing, please note some things may not work as expected")
+			log.Log("continuing, please note some things may not work as expected")
 		}
 
 		ndep := &gx.Dependency{
@@ -202,7 +202,7 @@ var ImportCommand = cli.Command{
 		pkg.Dependencies = append(pkg.Dependencies, ndep)
 		err = gx.SavePackageFile(pkg, PkgFileName)
 		if err != nil {
-			Fatal("writing pkgfile: %s", err)
+			log.Fatal("writing pkgfile: %s", err)
 		}
 	},
 }
@@ -224,7 +224,7 @@ var InstallCommand = cli.Command{
 	Action: func(c *cli.Context) {
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		save := c.Bool("save")
@@ -233,44 +233,44 @@ var InstallCommand = cli.Command{
 		if len(c.Args()) == 0 {
 			cwd, err := os.Getwd()
 			if err != nil {
-				Fatal(err)
+				log.Fatal(err)
 			}
 
 			err = gx.TryRunHook("req-check", "go", cwd)
 			if err != nil {
-				Fatal(err)
+				log.Fatal(err)
 			}
 
 			ipath, err := gx.InstallPath(pkg.Language, cwd, global)
 			if err != nil {
-				Fatal(err)
+				log.Fatal(err)
 			}
 
 			err = pm.InstallDeps(pkg, ipath)
 			if err != nil {
-				Fatal("install deps:", err)
+				log.Fatal("install deps:", err)
 			}
 			return
 		}
 
 		ipath, err := gx.InstallPath(pkg.Language, "", c.Bool("global"))
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		for _, p := range c.Args() {
 			phash, err := pm.ResolveDepName(p)
 			if err != nil {
-				Error("resolving package '%s': %s", p, err)
+				log.Fatal("resolving package '%s': %s", p, err)
 			}
 
 			if p != phash {
-				VLog("%s resolved to %s", p, phash)
+				log.VLog("%s resolved to %s", p, phash)
 			}
 
 			ndep, err := pm.ImportPackage(ipath, p)
 			if err != nil {
-				Fatal("importing package '%s': %s", p, err)
+				log.Fatal("importing package '%s': %s", p, err)
 			}
 
 			if save {
@@ -281,7 +281,7 @@ var InstallCommand = cli.Command{
 		if save {
 			err := gx.SavePackageFile(pkg, PkgFileName)
 			if err != nil {
-				Fatal(err)
+				log.Fatal(err)
 			}
 		}
 	},
@@ -298,7 +298,7 @@ var GetCommand = cli.Command{
 	},
 	Action: func(c *cli.Context) {
 		if !c.Args().Present() {
-			Fatal("no package specified")
+			log.Fatal("no package specified")
 		}
 
 		pkg := c.Args().First()
@@ -308,10 +308,10 @@ var GetCommand = cli.Command{
 			out = filepath.Join(cwd, pkg)
 		}
 
-		Log("writing package to:", out)
+		log.Log("writing package to:", out)
 		_, err := pm.GetPackageTo(pkg, out)
 		if err != nil {
-			Fatal("fetching package: %s", err)
+			log.Fatal("fetching package: %s", err)
 		}
 	},
 }
@@ -338,13 +338,13 @@ var InitCommand = cli.Command{
 			lang = promptUser("what language will the project be in?")
 		}
 
-		Log("initializing package %s...", pkgname)
+		log.Log("initializing package %s...", pkgname)
 		err := pm.InitPkg(cwd, pkgname, lang, func(p *gx.Package) {
 			p.Issues = promptUser("where should users go to report issues?")
 		})
 
 		if err != nil {
-			Fatal("init error: %s", err)
+			log.Fatal("init error: %s", err)
 		}
 	},
 }
@@ -374,7 +374,7 @@ EXAMPLE:
 	},
 	Action: func(c *cli.Context) {
 		if len(c.Args()) < 2 {
-			Fatal("update requires two arguments, current and target")
+			log.Fatal("update requires two arguments, current and target")
 		}
 
 		existing := c.Args()[0]
@@ -383,23 +383,23 @@ EXAMPLE:
 
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			Fatal("error: ", err)
+			log.Fatal("error: ", err)
 		}
 
 		var oldhash string
 		olddep := pkg.FindDep(existing)
 		if olddep == nil {
-			Fatal("unknown package: ", existing)
+			log.Fatal("unknown package: ", existing)
 		}
 
 		ipath, err := gx.InstallPath(pkg.Language, cwd, c.Bool("global"))
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		npkg, err := pm.InstallPackage(target, ipath)
 		if err != nil {
-			Fatal("(installpackage) : ", err)
+			log.Fatal("(installpackage) : ", err)
 		}
 
 		if npkg.Name != olddep.Name {
@@ -408,32 +408,32 @@ old: %s (%s)
 new: %s (%s)
 continue?`, olddep.Name, olddep.Hash, npkg.Name, target)
 			if !yesNoPrompt(prompt, false) {
-				Fatal("refusing to update package with different names")
+				log.Fatal("refusing to update package with different names")
 			}
 		}
 
-		VLog("checking for potential package naming collisions...")
+		log.VLog("checking for potential package naming collisions...")
 		err = updateCollisionCheck(pkg, olddep, nil)
 		if err != nil {
-			Fatal("update sanity check: ", err)
+			log.Fatal("update sanity check: ", err)
 		}
-		VLog("  - no collisions found for updated package")
+		log.VLog("  - no collisions found for updated package")
 
 		oldhash = olddep.Hash
 		olddep.Hash = target
 
 		err = gx.SavePackageFile(pkg, PkgFileName)
 		if err != nil {
-			Fatal("writing package file: %s", err)
+			log.Fatal("writing package file: %s", err)
 		}
 
-		VLog("running post update hook...")
+		log.VLog("running post update hook...")
 		err = gx.TryRunHook("post-update", pkg.Language, oldhash, target)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
-		VLog("update complete!")
+		log.VLog("update complete!")
 	},
 }
 
@@ -444,7 +444,7 @@ func updateCollisionCheck(ipkg *gx.Package, idep *gx.Dependency, chain []string)
 		}
 
 		if dep.Name == idep.Name || dep.Hash == idep.Hash {
-			Log("dep %s also imports %s (%s)", strings.Join(chain, "/"), dep.Name, dep.Hash)
+			log.Log("dep %s also imports %s (%s)", strings.Join(chain, "/"), dep.Name, dep.Hash)
 			return nil
 		}
 
@@ -467,7 +467,7 @@ var VersionCommand = cli.Command{
 	Action: func(c *cli.Context) {
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		if !c.Args().Present() {
@@ -478,7 +478,7 @@ var VersionCommand = cli.Command{
 		defer func() {
 			err := gx.SavePackageFile(pkg, PkgFileName)
 			if err != nil {
-				Fatal(err)
+				log.Fatal(err)
 			}
 		}()
 
@@ -492,7 +492,7 @@ var VersionCommand = cli.Command{
 
 		v, err := semver.Make(pkg.Version)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 		switch nver {
 		case "major":
@@ -505,7 +505,7 @@ var VersionCommand = cli.Command{
 		case "patch":
 			v.Patch++
 		default:
-			Error("argument was not a semver field: '%s'", nver)
+			log.Error("argument was not a semver field: '%s'", nver)
 			return
 		}
 
@@ -535,7 +535,7 @@ EXAMPLE:
 `,
 	Action: func(c *cli.Context) {
 		if !c.Args().Present() {
-			Fatal("must specify at least a query")
+			log.Fatal("must specify at least a query")
 		}
 
 		vendir := filepath.Join(cwd, vendorDir)
@@ -545,12 +545,12 @@ EXAMPLE:
 			ref := c.Args()[0]
 			err := gx.LocalPackageByName(vendir, ref, &cfg)
 			if err != nil {
-				Fatal(err)
+				log.Fatal(err)
 			}
 		} else {
 			err := gx.LoadPackageFile(&cfg, PkgFileName)
 			if err != nil {
-				Fatal(err)
+				log.Fatal(err)
 			}
 		}
 
@@ -567,7 +567,7 @@ EXAMPLE:
 		for i, q := range query {
 			v, ok := cur[q]
 			if !ok {
-				Fatal("key not found: %s", strings.Join(query[:i+1], "."))
+				log.Fatal("key not found: %s", strings.Join(query[:i+1], "."))
 			}
 			val = v
 
@@ -576,7 +576,7 @@ EXAMPLE:
 				if i == len(query)-1 {
 					break
 				}
-				Fatal("%s is not indexable", query[i-1])
+				log.Fatal("%s is not indexable", query[i-1])
 			}
 			cur = mp
 		}
@@ -603,20 +603,20 @@ var CleanCommand = cli.Command{
 	Action: func(c *cli.Context) {
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		dry := c.Bool("dry-run")
 
 		good, err := pm.EnumerateDependencies(pkg)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		vdir := filepath.Join(cwd, vendorDir)
 		dirinfos, err := ioutil.ReadDir(vdir)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		for _, di := range dirinfos {
@@ -629,7 +629,7 @@ var CleanCommand = cli.Command{
 				if !dry {
 					err := os.RemoveAll(filepath.Join(cwd, vendorDir, di.Name()))
 					if err != nil {
-						Fatal(err)
+						log.Fatal(err)
 					}
 				}
 			}
@@ -674,13 +674,13 @@ var DepsCommand = cli.Command{
 
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		if c.Bool("tree") {
 			err := printDepsTree(pm, pkg, quiet, 0)
 			if err != nil {
-				Fatal(err)
+				log.Fatal(err)
 			}
 			return
 		}
@@ -689,7 +689,7 @@ var DepsCommand = cli.Command{
 		if rec {
 			depmap, err := pm.EnumerateDependencies(pkg)
 			if err != nil {
-				Fatal(err)
+				log.Fatal(err)
 			}
 
 			for k, _ := range depmap {
@@ -709,12 +709,12 @@ var DepsCommand = cli.Command{
 				var dpkg gx.Package
 				err := gx.LoadPackage(&dpkg, pkg.Language, d)
 				if err != nil {
-					Fatal(err)
+					log.Fatal(err)
 				}
 
 				fmt.Fprintf(w, "%s\t%s\t%s\n", dpkg.Name, d, dpkg.Version)
 			} else {
-				Log(d)
+				log.Log(d)
 			}
 		}
 		w.Flush()
@@ -727,12 +727,12 @@ var depBundleCommand = cli.Command{
 	Action: func(c *cli.Context) {
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		obj, err := depBundleForPkg(pkg)
 		if err != nil {
-			Fatal(err)
+			log.Fatal(err)
 		}
 
 		fmt.Println(obj)
@@ -742,11 +742,11 @@ var depBundleCommand = cli.Command{
 func depBundleForPkg(pkg *gx.Package) (string, error) {
 	obj, err := pm.Shell().NewObject("unixfs-dir")
 	if err != nil {
-		Fatal(err)
+		log.Fatal(err)
 	}
 
 	for _, dep := range pkg.Dependencies {
-		Log("processing dep: ", dep.Name)
+		log.Log("processing dep: ", dep.Name)
 		nobj, err := pm.Shell().PatchLink(obj, dep.Name+"-"+dep.Hash, dep.Hash, false)
 		if err != nil {
 			return "", err
