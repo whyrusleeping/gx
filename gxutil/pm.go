@@ -15,7 +15,7 @@ import (
 	. "github.com/whyrusleeping/stump"
 )
 
-const GxVersion = "0.3.0"
+const GxVersion = "0.4.0"
 
 const PkgFileName = "package.json"
 
