@@ -1,5 +1,7 @@
 {
   "name": "gx",
-  "version": "2.0.0",
-  "language": "go"
+  "version": "0.4.1",
+  "language": "go",
+  "issues_url": "https://github.com/whyrusleeping/gx/issues",
+  "gx_version": "0.4.0"
 }

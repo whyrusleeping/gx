@@ -68,6 +68,7 @@ func SavePackageFile(pkg interface{}, fname string) error {
 	return err
 }
 
+// FindDep returns a reference to the named dependency in this package file
 func (pkg *PackageBase) FindDep(ref string) *Dependency {
 	for _, d := range pkg.Dependencies {
 		if d.Hash == ref || d.Name == ref {

@@ -71,6 +71,7 @@ check_package_import a $pkgB b
 
 test_expect_success "change package c" '
 	echo "test" > c/README.md &&
+	pkg_run c gx version v1.2.0 &&
 	pkgCnew=$(publish_package c)
 '
 
@@ -83,8 +84,17 @@ test_expect_success "updating package c works" '
 '
 
 test_expect_success "update printed correct warning" '
-	grep "installing package: c-0.0.0" update_out &&
+	grep "installing package: c-1.2.0" update_out &&
 	grep "dep b also imports c ($pkgC)" update_out
+'
+
+test_expect_success "version was updated in package.json" '
+	pkg_run a gx view c .version > vers_out
+'
+
+test_expect_success "version output looks good" '
+	echo "1.2.0" > vers_exp &&
+	test_cmp vers_exp vers_out
 '
 
 check_package_import a $pkgCnew c

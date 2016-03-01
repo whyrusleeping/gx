@@ -421,6 +421,7 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, target)
 
 		oldhash = olddep.Hash
 		olddep.Hash = target
+		olddep.Version = npkg.Version
 
 		err = gx.SavePackageFile(pkg, PkgFileName)
 		if err != nil {
@@ -463,7 +464,22 @@ var VersionCommand = cli.Command{
    the version will be set to that exactly. If the argument is not a semver,
    it should be one of three things: "major", "minor", or "patch". Passing
    any of those three will bump the corresponding segment of the semver up
-   by one.`,
+   by one.
+   
+EXAMPLE:
+
+   > gx version
+   0.4.0
+
+   > gx version patch
+   updated version to 0.4.1
+
+   > gx version major
+   updated version to 1.0.0
+
+   > gx version 2.5.7
+   updated version to 2.5.7
+`,
 	Action: func(c *cli.Context) {
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
@@ -505,9 +521,17 @@ var VersionCommand = cli.Command{
 		case "patch":
 			v.Patch++
 		default:
-			log.Error("argument was not a semver field: '%s'", nver)
-			return
+			if nver[0] == 'v' {
+				nver = nver[1:]
+			}
+			newver, err := semver.Make(nver)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			v = newver
 		}
+		log.Log("updated version to: %s", v)
 
 		pkg.Version = v.String()
 	},
