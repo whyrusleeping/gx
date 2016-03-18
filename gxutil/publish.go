@@ -3,7 +3,6 @@ package gxutil
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -11,12 +10,12 @@ import (
 )
 
 func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
-	gitig, err := gi.CompileIgnoreFile(path.Join(dir, ".gitignore"))
+	gitig, err := gi.CompileIgnoreFile(filepath.Join(dir, ".gitignore"))
 	if err != nil && !os.IsNotExist(err) {
 		return "", err
 	}
 
-	gxig, err := gi.CompileIgnoreFile(path.Join(dir, ".gxignore"))
+	gxig, err := gi.CompileIgnoreFile(filepath.Join(dir, ".gxignore"))
 	if err != nil && !os.IsNotExist(err) {
 		return "", err
 	}
@@ -148,7 +147,7 @@ func (pm *PM) addPathElem(v *filetree, f, cwd string) (string, error) {
 	if v == nil || len(v.children) == 0 {
 
 		// file or symlink here
-		p := path.Join(cwd, f)
+		p := filepath.Join(cwd, f)
 		stat, err := os.Lstat(p)
 		if err != nil {
 			fmt.Printf("file stat failed: %s\n", err)
@@ -167,7 +166,7 @@ func (pm *PM) addPathElem(v *filetree, f, cwd string) (string, error) {
 		return pm.addFile(p)
 	}
 
-	return pm.addTree(v, path.Join(cwd, f))
+	return pm.addTree(v, filepath.Join(cwd, f))
 }
 
 func (pm *PM) addTree(nd *filetree, cwd string) (string, error) {

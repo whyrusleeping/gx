@@ -1,7 +1,6 @@
 package gxutil
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 	sh "github.com/ipfs/go-ipfs-api"
 	manet "github.com/jbenet/go-multiaddr-net"
 	ma "github.com/jbenet/go-multiaddr-net/Godeps/_workspace/src/github.com/jbenet/go-multiaddr"
+	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/whyrusleeping/stump"
 )
 
@@ -31,9 +31,9 @@ func NewShell() *sh.Shell {
 func getLocalApiShell() (*sh.Shell, error) {
 	ipath := os.Getenv("IPFS_PATH")
 	if ipath == "" {
-		home := os.Getenv("HOME")
-		if home == "" {
-			return nil, errors.New("neither IPFS_PATH nor home dir set")
+		home, err := homedir.Dir()
+		if err != nil {
+			return nil, err
 		}
 
 		ipath = filepath.Join(home, ".ipfs")
