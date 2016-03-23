@@ -66,6 +66,10 @@ func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 }
 
 func FindPackageInDir(pkg interface{}, dir string) error {
+	if err := LoadPackageFile(pkg, filepath.Join(dir, PkgFileName)); err == nil {
+		return nil
+	}
+
 	name, err := PackageNameInDir(dir)
 	if err != nil {
 		return err

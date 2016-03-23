@@ -10,6 +10,16 @@ import (
 )
 
 func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
+	// make sure we have the actual package dir, and not a hashdir
+	if _, err := os.Stat(filepath.Join(dir, PkgFileName)); err != nil {
+		// try appending the package name
+		_, err = os.Stat(filepath.Join(dir, pkg.Name, PkgFileName))
+		if err != nil {
+			return "", fmt.Errorf("%s did not contain a package!")
+		}
+		dir = filepath.Join(dir, pkg.Name)
+	}
+
 	gitig, err := gi.CompileIgnoreFile(filepath.Join(dir, ".gitignore"))
 	if err != nil && !os.IsNotExist(err) {
 		return "", err

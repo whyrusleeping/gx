@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	. "github.com/whyrusleeping/stump"
+	log "github.com/whyrusleeping/stump"
 )
 
 type PackageBase struct {
@@ -19,7 +19,7 @@ type PackageBase struct {
 	Build        string        `json:"build,omitempty"`
 	Test         string        `json:"test,omitempty"`
 	Language     string        `json:"language,omitempty"`
-	Copyright    string        `json:"copyright,omitempty"`
+	License      string        `json:"license"`
 	Issues       string        `json:"issues_url"`
 	GxVersion    string        `json:"gx_version"`
 }
@@ -79,11 +79,12 @@ func (pkg *PackageBase) FindDep(ref string) *Dependency {
 }
 
 func (pkg *PackageBase) ForEachDep(cb func(dep *Dependency, pkg *Package) error) error {
+	log.VLog("  - foreachdep: %s", pkg.Name)
 	for _, dep := range pkg.Dependencies {
 		var cpkg Package
 		err := LoadPackage(&cpkg, pkg.Language, dep.Hash)
 		if err != nil {
-			VLog("LoadPackage error: ", err)
+			log.VLog("LoadPackage error: ", err)
 			return fmt.Errorf("package %s (%s) not found", dep.Name, dep.Hash)
 		}
 

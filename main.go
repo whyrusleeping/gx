@@ -370,6 +370,10 @@ EXAMPLE:
 			Name:  "global",
 			Usage: "install new package in global namespace",
 		},
+		cli.BoolFlag{
+			Name:  "with-deps",
+			Usage: "experimental feature to recursively update child deps too",
+		},
 	},
 	Action: func(c *cli.Context) {
 		if len(c.Args()) < 2 {
@@ -390,6 +394,7 @@ EXAMPLE:
 		if olddep == nil {
 			log.Fatal("unknown package: ", existing)
 		}
+		oldhash = olddep.Hash
 
 		ipath, err := gx.InstallPath(pkg.Language, cwd, c.Bool("global"))
 		if err != nil {
@@ -411,14 +416,26 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, target)
 			}
 		}
 
-		log.VLog("checking for potential package naming collisions...")
-		err = updateCollisionCheck(pkg, olddep, nil)
+		log.VLog("running pre update hook...")
+		err = gx.TryRunHook("pre-update", pkg.Language, existing)
 		if err != nil {
-			log.Fatal("update sanity check: ", err)
+			log.Fatal(err)
 		}
-		log.VLog("  - no collisions found for updated package")
 
-		oldhash = olddep.Hash
+		if c.Bool("with-deps") {
+			err := RecursiveDepUpdate(pkg, oldhash, target)
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			log.VLog("checking for potential package naming collisions...")
+			err = updateCollisionCheck(pkg, olddep, nil)
+			if err != nil {
+				log.Fatal("update sanity check: ", err)
+			}
+			log.VLog("  - no collisions found for updated package")
+		}
+
 		olddep.Hash = target
 		olddep.Version = npkg.Version
 
