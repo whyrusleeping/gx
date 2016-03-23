@@ -212,6 +212,10 @@ hooks, check out the hooks section above.
 
 No reason. "gx" stands for nothing.
 
+## Getting Involved
+
+If you're interested in gx, please stop by #gx and #ipfs on freenode irc!
+
 ## License
 
 MIT. Jeromy Johnson.
