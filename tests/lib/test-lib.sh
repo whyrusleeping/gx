@@ -52,6 +52,13 @@ test_cmp_repeat_10_sec() {
 	test_cmp "$1" "$2"
 }
 
+test_fsh() {
+	echo "> $@"
+	eval "$@"
+	echo ""
+	false
+}
+
 test_run_repeat_60_sec() {
 	for i in $(test_seq 1 600)
 	do
