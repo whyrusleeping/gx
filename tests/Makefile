@@ -7,7 +7,7 @@
 # NOTE: run with TEST_VERBOSE=1 for verbose sharness tests.
 
 T = $(sort $(wildcard t[0-9][0-9][0-9][0-9]-*.sh))
-BINS = bin/ipfs
+BINS = bin/ipfs bin/go-sleep
 SHARNESS = lib/sharness/sharness.sh
 
 # User might want to override those on the command line
@@ -41,6 +41,10 @@ bin/ipfs:
 	mkdir -p bin
 	go get github.com/ipfs/ipfs-update
 	ipfs-update fetch v0.4.0-dev --output=bin/ipfs
+
+bin/go-sleep:
+	go get -d github.com/chriscool/go-sleep
+	go build -o bin/go-sleep github.com/chriscool/go-sleep
 
 race:
 	make GOFLAGS=-race all
