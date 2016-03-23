@@ -1,0 +1,14 @@
+os:
+  - linux
+  - osx
+
+language: go
+
+go:
+    - 1.5.3
+
+install:
+    - go install
+
+script:
+  - make test
