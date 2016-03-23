@@ -143,21 +143,22 @@ Currently available hooks are:
   - called during package installs and imports.
   - sets the location for gx to install packages to.
 
-## The vendor directory
+## Package directories
 
-The `vendor/gx` (package) directory contains all of the downloaded dependencies of
-your package.  You do not need to add the contents of the `vendor/gx` directory to
-version control, simply running `gx install` in the root directory of your
-project will fetch and download the appropriate versions of required packages. 
+Gx by default will install packages 'locally'. This means that it will create a
+folder in the current directory named `vendor` and install things to it. When
+running `gx install` in the directory of your package will recursively fetch
+all of the dependencies specified in the `package.json` and save them to the
+local package directory.
 
 The location of this directory is not set in stone, if for your specific
 environment you'd like it somewhere else, simply add a hook to your environments
 extension tool named `install-path` (see above) and gx will use that path
 instead.
 
-Note: This is not to say that you can't add the `vendor/gx` directory to version
-control, by all means do if you want a single `git clone` or `svn co` to bring
-all deps with it!
+Gx also supports a global installation path, to set this one you must handle
+the `--global` flag on your `install-path` hook. Global gx packages are shared
+across all packages that depend on them.
 
 ## Ignoring files from a publish
 You can use a `.gxignore` file to make gx ignore certain files during a publish.
@@ -179,9 +180,15 @@ You can import code from the vendor directory using:
 ```go
 import "gx/ipfs/<hash>/packagename"
 ```
-for example:
+
+for example, if i have a package foobar, you can import with gx it like so:
+```bash
+$ gx import QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa
+```
+
+And then in your go code, you can use it with:
 ```go
-import "gx/ipfs/QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa/cobra"
+import "gx/ipfs/QmR5FHS9TpLbL9oYY8ZDR3A7UWcHTBawU1FJ6pu9SvTcPa/foobar"
 ```
 
 Then simply set the environment variable `GO15VENDOREXPERIMENT` to `1` and run
@@ -193,9 +200,13 @@ See [the gx-go repo](https://github.com/whyrusleeping/gx-go) for more details.
 
 ## Using gx as a package manager for language/environment X
 
-If you want to extend gx to work with any other language or environment,
-you can implement the relevant hooks in a binary named `gx-X` where the 'X'
-is the name of your environment. (See 'hooks' above)
+If you want to extend gx to work with any other language or environment, you
+can implement the relevant hooks in a binary named `gx-X` where the 'X' is the
+name of your environment. After that, any package whose language is set to 'X'
+will call out to that tools hooks during normal `gx` operations. For example, a
+'go' package would call `gx-go hook pre-publish` during a `gx publish`
+invocation before the package is actually published.  For more information on
+hooks, check out the hooks section above.
 
 ## Why is it called gx?
 
