@@ -13,6 +13,8 @@ import (
 	log "github.com/whyrusleeping/stump"
 )
 
+var UsingGateway bool
+
 func NewShell() *sh.Shell {
 	if apivar := os.Getenv("IPFS_API"); apivar != "" {
 		log.VLog("using '%s' from IPFS_API env as api endpoint.", apivar)
@@ -23,6 +25,8 @@ func NewShell() *sh.Shell {
 	if err == nil {
 		return ash
 	}
+
+	UsingGateway = true
 
 	log.VLog("using global ipfs gateways as api endpoint")
 	return sh.NewShell("https://ipfs.io")

@@ -92,6 +92,11 @@ var PublishCommand = cli.Command{
 	Name:  "publish",
 	Usage: "publish a package",
 	Action: func(c *cli.Context) {
+		if gx.UsingGateway {
+			log.Log("gx cannot publish using public gateways.")
+			log.Log("please run an ipfs node and try again.")
+			return
+		}
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
 			log.Fatal(err)
