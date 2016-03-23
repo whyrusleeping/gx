@@ -1,16 +1,19 @@
 ![gx logo](logo.jpeg)
 
-# GX
-> A packaging tool
+# gx
+> The language-agnostic, universal package manager
 
 [![](https://img.shields.io/badge/made%20by-Protocol%20Labs-blue.svg?style=flat-square)](http://ipn.io) [![](https://img.shields.io/badge/freenode-%23gx-blue.svg?style=flat-square)](http://webchat.freenode.net/?channels=%23ipfs,%23gx)
 
 gx is a packaging tool built around the distributed, content addressed filesystem
 [IPFS](//github.com/ipfs/ipfs). It aims to be flexible, powerful and simple.
-Its not perfect yet, but it's dependable and ready for early users to try out and
-explore.
+
+gx is **Alpha Quality**. It's not perfect yet, but it's proven dependable enough
+for managing dependencies in [go-ipfs](https://github.com/ipfs/go-ipfs/) and
+ready for pioneering developers early users to try out and explore.
 
 ## Table of Contents
+- [Background](#background)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -24,6 +27,19 @@ explore.
 - [Using gx as a package manager for language/environment X](#using-gx-as-a-package-manager-for-languageenvironment-x)
 - [Why is it called gx?](#why-is-it-called-gx)
 - [License](#license)
+
+## Background
+
+gx was originally designed to handle dependencies in Go projects in a
+distributed fashion, and pulls ideas from other beloved package managers (like
+[npm](http://npmjs.org/)).
+
+gx was designed with the following major goals in mind:
+
+1. Be language/ecosystem agnostic by providing [git-like hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks) for adding [new ecosystems](https://github.com/whyrusleeping/gx-go).
+2. Built-in [semantic versioning](http://semver.org).
+3. Use [a flexible, distributed storage backend](http://ipfs.io/).
+
 
 ## Requirements
 Users are encouraged to have a running [IPFS daemon](//github.com/ipfs/go-ipfs) on their machines.
