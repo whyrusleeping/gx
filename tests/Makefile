@@ -38,7 +38,7 @@ $(SHARNESS): FORCE
 	lib/install-sharness.sh
 
 bin/gx:
-	go install github.com/whyrusleeping/gx
+	go build -o bin/gx github.com/whyrusleeping/gx
 
 bin/ipfs:
 	mkdir -p bin
