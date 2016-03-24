@@ -8,6 +8,7 @@ go:
     - 1.5.3
 
 install:
+    - go get
     - go install
 
 script:
