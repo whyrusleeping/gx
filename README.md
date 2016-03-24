@@ -10,7 +10,7 @@ gx is a packaging tool built around the distributed, content addressed filesyste
 
 gx is **Alpha Quality**. It's not perfect yet, but it's proven dependable enough
 for managing dependencies in [go-ipfs](https://github.com/ipfs/go-ipfs/) and
-ready for pioneering developers early users to try out and explore.
+ready for pioneering developers and early users to try out and explore.
 
 ## Table of Contents
 - [Background](#background)
