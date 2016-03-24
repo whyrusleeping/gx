@@ -7,7 +7,7 @@
 # NOTE: run with TEST_VERBOSE=1 for verbose sharness tests.
 
 T = $(sort $(wildcard t[0-9][0-9][0-9][0-9]-*.sh))
-BINS = bin/ipfs bin/go-sleep bin/pollEndpoint
+BINS = bin/gx bin/ipfs bin/go-sleep bin/pollEndpoint
 SHARNESS = lib/sharness/sharness.sh
 
 # User might want to override those on the command line
@@ -36,6 +36,9 @@ deps: $(SHARNESS) $(BINS)
 $(SHARNESS): FORCE
 	@echo "*** checking $@ ***"
 	lib/install-sharness.sh
+
+bin/gx:
+	go install github.com/whyrusleeping/gx
 
 bin/ipfs:
 	mkdir -p bin
