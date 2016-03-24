@@ -14,6 +14,7 @@ test_launch_ipfs_daemon
 pkg_hash="QmUHAqmEZoin6G4vsNEriA6ocNUKYssbeCCRJacPQmzsoA"
 
 test_expect_success "setup test package" '
+	which gx &&
 	mkdir mypkg &&
 	(cd mypkg && gx init --lang=none)
 '
