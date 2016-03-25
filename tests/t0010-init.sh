@@ -37,7 +37,8 @@ test_expect_success "publish package works" '
 
 test_expect_success "publish output looks good" '
 	echo "package mypkg published with hash: $pkg_hash" > expected &&
-	test_cmp expected pub_out
+	test_cmp expected pub_out ||
+	(ipfs ls $(cat mypkg/.gx/lastpubver) && false)
 '
 
 test_expect_success ".gx dir was created" '
