@@ -11,11 +11,12 @@ test_description="test package init"
 test_init_ipfs
 test_launch_ipfs_daemon
 
-pkg_hash="QmUHAqmEZoin6G4vsNEriA6ocNUKYssbeCCRJacPQmzsoA"
+pkg_hash="QmfVuYj3DCTxVuvN6CXddh6DDyTYUXhDsqZZ4cGCn2YUCp"
 
 test_expect_success "setup test package" '
 	which gx &&
 	mkdir mypkg &&
+	echo "{\"User\":{\"Name\":\"gxguy\"}}" > mypkg/.gxrc &&
 	(cd mypkg && gx init --lang=none)
 '
 
@@ -37,8 +38,7 @@ test_expect_success "publish package works" '
 
 test_expect_success "publish output looks good" '
 	echo "package mypkg published with hash: $pkg_hash" > expected &&
-	test_cmp expected pub_out ||
-	(ipfs ls $(cat mypkg/.gx/lastpubver) && false)
+	test_cmp expected pub_out
 '
 
 test_expect_success ".gx dir was created" '
