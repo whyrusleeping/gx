@@ -43,7 +43,7 @@ gx was designed with the following major goals in mind:
 
 ## Requirements
 Users are encouraged to have a running [IPFS daemon](//github.com/ipfs/go-ipfs) of at least version 0.4.0 on their machines.
-If not present, gx will use the public gateway. 
+If not present, gx will use the public gateway.
 If you wish to publish a package, a local running daemon is a hard requirement.
 
 
@@ -183,7 +183,7 @@ across all packages that depend on them.
 
 ## Ignoring files from a publish
 You can use a `.gxignore` file to make gx ignore certain files during a publish.
-This has the same behaviour as a `.gitignore`. 
+This has the same behaviour as a `.gitignore`.
 
 Gx also respects a `.gitignore` file if present, and will not publish any file
 excluded by it.

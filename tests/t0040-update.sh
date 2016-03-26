@@ -44,7 +44,7 @@ test_expect_success "setup test packages" '
 '
 
 test_expect_success "publish package c" '
-	pkgC=$(publish_package c) 
+	pkgC=$(publish_package c)
 '
 
 test_expect_success "import package c from a succeeds" '

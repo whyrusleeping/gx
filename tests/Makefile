@@ -31,7 +31,7 @@ aggregate: clean-test-results $(T)
 	@echo "*** $@ ***"
 	lib/test-aggregate-results.sh
 
-deps: $(SHARNESS) $(BINS) 
+deps: $(SHARNESS) $(BINS)
 
 $(SHARNESS): FORCE
 	@echo "*** checking $@ ***"
