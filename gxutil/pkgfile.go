@@ -20,7 +20,7 @@ type PackageBase struct {
 	Test         string        `json:"test,omitempty"`
 	Language     string        `json:"language,omitempty"`
 	License      string        `json:"license"`
-	Issues       string        `json:"issues_url"`
+	Issues       string        `json:"bugs"`
 	GxVersion    string        `json:"gx_version"`
 }
 
