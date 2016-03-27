@@ -21,7 +21,7 @@ type PackageBase struct {
 	Language     string        `json:"language,omitempty"`
 	License      string        `json:"license"`
 	Issues       string        `json:"bugs"`
-	GxVersion    string        `json:"gx_version"`
+	GxVersion    string        `json:"gxVersion"`
 }
 
 type Package struct {
