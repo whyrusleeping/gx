@@ -36,6 +36,9 @@ test_expect_success "publish package works" '
 	pkg_run mypkg gx publish > pub_out
 '
 
+PKGHASH=$(cat pub_out | awk '{ print $6 }')
+ipfs cat $PKGHASH/mypkg/package.json
+
 test_expect_success "publish output looks good" '
 	echo "package mypkg published with hash: $pkg_hash" > expected &&
 	test_cmp expected pub_out
