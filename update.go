@@ -88,7 +88,7 @@ func fetchAndUpdate(tofetch string, updates map[string]string, checked map[strin
 	}
 
 	if changed {
-		err := gx.SavePackageFile(pkg, filepath.Join(dir, pkg.Name, gx.PkgFileName))
+		err := gx.SavePackageFile(pkg, filepath.Join(dir, pkg.Name, gx.PkgFileName), pkg.NonGxFields)
 		if err != nil {
 			return "", err
 		}

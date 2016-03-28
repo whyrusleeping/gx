@@ -204,7 +204,7 @@ var ImportCommand = cli.Command{
 		}
 
 		pkg.Dependencies = append(pkg.Dependencies, ndep)
-		err = gx.SavePackageFile(pkg, PkgFileName)
+		err = gx.SavePackageFile(pkg, PkgFileName, pkg.NonGxFields)
 		if err != nil {
 			log.Fatal("writing pkgfile: %s", err)
 		}
@@ -283,7 +283,7 @@ var InstallCommand = cli.Command{
 		}
 
 		if save {
-			err := gx.SavePackageFile(pkg, PkgFileName)
+			err := gx.SavePackageFile(pkg, PkgFileName, pkg.NonGxFields)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -344,7 +344,12 @@ var InitCommand = cli.Command{
 
 		log.Log("initializing package %s...", pkgname)
 		err := pm.InitPkg(cwd, pkgname, lang, func(p *gx.Package) {
-			p.Issues = promptUser("where should users go to report issues?")
+			if p.Issues == nil {
+				url := promptUser("where should users go to report issues?")
+				p.Issues = &gx.Issues{
+					Url: url,
+				}
+			}
 		})
 
 		if err != nil {
@@ -444,7 +449,7 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, target)
 		olddep.Hash = target
 		olddep.Version = npkg.Version
 
-		err = gx.SavePackageFile(pkg, PkgFileName)
+		err = gx.SavePackageFile(pkg, PkgFileName, pkg.NonGxFields)
 		if err != nil {
 			log.Fatal("writing package file: %s", err)
 		}
@@ -513,7 +518,7 @@ EXAMPLE:
 		}
 
 		defer func() {
-			err := gx.SavePackageFile(pkg, PkgFileName)
+			err := gx.SavePackageFile(pkg, PkgFileName, pkg.NonGxFields)
 			if err != nil {
 				log.Fatal(err)
 			}
