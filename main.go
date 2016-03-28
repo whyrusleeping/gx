@@ -358,7 +358,7 @@ var UpdateCommand = cli.Command{
 	Usage:     "update a package dependency",
 	ArgsUsage: "[oldref] [newref]",
 	Description: `Update a package to a specified ref.
-		
+
 EXAMPLE:
    Update 'myPkg' to a given version (referencing it by package name):
 
@@ -480,13 +480,13 @@ var VersionCommand = cli.Command{
 	Description: `view or modify this package's version
 
    run without any arguments, will print the current semver of this package.
-   
+
    if an argument is given, it will be parsed as a semver; if that succeeds,
    the version will be set to that exactly. If the argument is not a semver,
    it should be one of three things: "major", "minor", or "patch". Passing
    any of those three will bump the corresponding segment of the semver up
    by one.
-   
+
 EXAMPLE:
 
    > gx version
@@ -635,7 +635,7 @@ var CleanCommand = cli.Command{
 	Usage: "cleanup unused packages in vendor directory",
 	Description: `deletes any package in the 'vendor/gx' directory
    that is not a dependency of this package.
-   
+
    use '--dry-run' to print packages that would be deleted without actually
    removing them.
    `,
