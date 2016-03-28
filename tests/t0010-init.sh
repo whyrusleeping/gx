@@ -11,7 +11,7 @@ test_description="test package init"
 test_init_ipfs
 test_launch_ipfs_daemon
 
-pkg_hash="QmfVuYj3DCTxVuvN6CXddh6DDyTYUXhDsqZZ4cGCn2YUCp"
+pkg_hash="QmXmwLTAxcfSeAXnq6KVsRPTjsJBAvuYnhqqLUrnUyTVNh"
 
 test_expect_success "setup test package" '
 	which gx &&
@@ -35,9 +35,6 @@ test_expect_success "values look correct" '
 test_expect_success "publish package works" '
 	pkg_run mypkg gx publish > pub_out
 '
-
-PKGHASH=$(cat pub_out | awk '{ print $6 }')
-ipfs cat $PKGHASH/mypkg/package.json
 
 test_expect_success "publish output looks good" '
 	echo "package mypkg published with hash: $pkg_hash" > expected &&
