@@ -8,7 +8,7 @@ test_description="test package updating"
 
 . lib/test-lib.sh
 
-function check_package_import() {
+check_package_import() {
 	pkg=$1
 	imphash=$2
 	name=$3
