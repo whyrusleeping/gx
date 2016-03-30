@@ -1,8 +1,10 @@
 package gxutil
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	log "github.com/whyrusleeping/stump"
@@ -39,28 +41,49 @@ type Dependency struct {
 }
 
 func LoadPackageFile(pkg interface{}, fname string) error {
-	fi, err := os.Open(fname)
+	data, err := ioutil.ReadFile(fname)
 	if err != nil {
 		return err
 	}
 
-	dec := json.NewDecoder(fi)
-	err = dec.Decode(pkg)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return json.Unmarshal(data, pkg)
 }
 
 func SavePackageFile(pkg interface{}, fname string) error {
+	data, err := ioutil.ReadFile(fname)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return writeJson(pkg, fname)
+		}
+		return err
+	}
+
+	var current map[string]interface{}
+	if err := json.Unmarshal(data, &current); err != nil {
+		return err
+	}
+
+	buf := new(bytes.Buffer)
+	if err := json.NewEncoder(buf).Encode(pkg); err != nil {
+		return err
+	}
+
+	var modified map[string]interface{}
+	if err := json.NewDecoder(buf).Decode(&modified); err != nil {
+		return err
+	}
+
+	return writeJson(mergeMaps(current, modified), fname)
+}
+
+func writeJson(i interface{}, fname string) error {
 	fi, err := os.Create(fname)
 	if err != nil {
 		return err
 	}
 	defer fi.Close()
 
-	out, err := json.MarshalIndent(pkg, "", "  ")
+	out, err := json.MarshalIndent(i, "", "  ")
 	if err != nil {
 		return err
 	}
