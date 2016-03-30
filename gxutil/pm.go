@@ -184,11 +184,6 @@ func writePkgHook(dir, hook string) error {
 
 func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
 	// check for existing packagefile
-	p := filepath.Join(dir, PkgFileName)
-	_, err := os.Stat(p)
-	if err == nil {
-		return errors.New("package file already exists in working dir")
-	}
 
 	username := pm.cfg.User.Name
 	if username == "" {
@@ -208,6 +203,11 @@ func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
 			GxVersion: GxVersion,
 		},
 	}
+	p := filepath.Join(dir, PkgFileName)
+	_, err := os.Stat(p)
+	if err == nil {
+		LoadPackageFile(pkg, PkgFileName)
+	}
 
 	if setup != nil {
 		setup(pkg)
@@ -216,7 +216,7 @@ func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
 	// check if the user has a tool installed for the selected language
 	CheckForHelperTools(lang)
 
-	err = SavePackageFile(pkg, p)
+	err = SavePackageFile(pkg, p, pkg.NonGxFields)
 	if err != nil {
 		return err
 	}

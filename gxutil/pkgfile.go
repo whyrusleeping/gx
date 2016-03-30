@@ -1,6 +1,7 @@
 package gxutil
 
 import (
+	"io/ioutil"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,7 +13,7 @@ type PackageBase struct {
 	Name         string        `json:"name,omitempty"`
 	Author       string        `json:"author,omitempty"`
 	Description  string        `json:"description,omitempty"`
-	Keywords     string        `json:"keywords,omitempty"`
+	Keywords     []string      `json:"keywords,omitempty"`
 	Version      string        `json:"version,omitempty"`
 	Dependencies []*Dependency `json:"gxDependencies,omitempty"`
 	Bin          string        `json:"bin,omitempty"`
@@ -20,14 +21,25 @@ type PackageBase struct {
 	Test         string        `json:"test,omitempty"`
 	Language     string        `json:"language,omitempty"`
 	License      string        `json:"license"`
-	Issues       string        `json:"bugs"`
+	Issues       *Issues       `json:"bugs"`
 	GxVersion    string        `json:"gxVersion"`
+	Repository   *Repository   `json:"repository,omitempty"`
+	NonGxFields map[string]interface{} `json:"-"`
 }
 
 type Package struct {
 	PackageBase
 
 	Gx json.RawMessage `json:"gx,omitempty"`
+}
+
+type Repository struct {
+	Type  string `json:"type"`
+	Url   string `json:"url"`
+}
+
+type Issues struct {
+	Url string `json:"url"`
 }
 
 // Dependency represents a dependency of a package
@@ -50,17 +62,38 @@ func LoadPackageFile(pkg interface{}, fname string) error {
 		return err
 	}
 
+	file, err := ioutil.ReadFile(fname)
+	if err != nil {
+		return nil
+	}
+	json.Unmarshal(file, &pkg.(*Package).NonGxFields)
+
+
 	return nil
 }
 
-func SavePackageFile(pkg interface{}, fname string) error {
+func SavePackageFile(pkg interface{}, fname string, nonGxFields map[string]interface{}) error {
 	fi, err := os.Create(fname)
 	if err != nil {
 		return err
 	}
 	defer fi.Close()
 
-	out, err := json.MarshalIndent(pkg, "", "  ")
+	base, err := json.Marshal(pkg)
+	if (err != nil) {
+		return err
+	}
+	var f map[string]interface{}
+	json.Unmarshal(base, &f)
+	var g map[string]interface{} = nonGxFields
+	if g == nil {
+		g = make(map[string]interface{})
+	}
+
+	for v, k := range f {
+		g[v] = k
+	}
+	out, err := json.MarshalIndent(g, "", "  ")
 	if err != nil {
 		return err
 	}
