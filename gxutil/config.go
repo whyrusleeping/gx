@@ -74,12 +74,12 @@ func LoadConfig() (*Config, error) {
 		return mapToCfg(local)
 	}
 
-	merged := mergeConfigs(cfg, local)
+	merged := mergeMaps(cfg, local)
 
 	return mapToCfg(merged)
 }
 
-func mergeConfigs(base, extra map[string]interface{}) map[string]interface{} {
+func mergeMaps(base, extra map[string]interface{}) map[string]interface{} {
 	if base == nil {
 		return extra
 	}
@@ -99,7 +99,7 @@ func mergeConfigs(base, extra map[string]interface{}) map[string]interface{} {
 			continue
 		}
 
-		base[k] = mergeConfigs(bmp, emp)
+		base[k] = mergeMaps(bmp, emp)
 	}
 
 	return base
@@ -128,7 +128,7 @@ func LoadConfigFrom(paths ...string) (*Config, error) {
 			}
 		}
 
-		cfg = mergeConfigs(cfg, next)
+		cfg = mergeMaps(cfg, next)
 	}
 
 	rcfg, err := mapToCfg(cfg)
