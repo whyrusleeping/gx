@@ -65,7 +65,7 @@ func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
 		}
 
 		// dont publish gx repo files
-		if strings.HasPrefix(rel, ".gx/") {
+		if strings.HasPrefix(rel, ".gx/") || strings.HasSuffix(rel, ".gxrc") {
 			return nil
 		}
 

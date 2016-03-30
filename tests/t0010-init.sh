@@ -11,10 +11,12 @@ test_description="test package init"
 test_init_ipfs
 test_launch_ipfs_daemon
 
-pkg_hash="QmUHAqmEZoin6G4vsNEriA6ocNUKYssbeCCRJacPQmzsoA"
+pkg_hash="QmXmwLTAxcfSeAXnq6KVsRPTjsJBAvuYnhqqLUrnUyTVNh"
 
 test_expect_success "setup test package" '
+	which gx &&
 	mkdir mypkg &&
+	echo "{\"User\":{\"Name\":\"gxguy\"}}" > mypkg/.gxrc &&
 	(cd mypkg && gx init --lang=none)
 '
 
