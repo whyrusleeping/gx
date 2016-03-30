@@ -24,6 +24,8 @@ type PM struct {
 
 	cfg *Config
 
+	global bool
+
 	// hash of the 'empty' ipfs dir to avoid extra calls to object new
 	blankDir string
 }
@@ -44,12 +46,20 @@ func (pm *PM) Shell() *sh.Shell {
 	return pm.ipfssh
 }
 
-func maybeRunPostInstall(pkg *Package, pkgdir string) error {
+func (pm *PM) SetGlobal(g bool) {
+	pm.global = g
+}
+
+func maybeRunPostInstall(pkg *Package, pkgdir string, global bool) error {
 	dir := filepath.Join(pkgdir, pkg.Name)
 	if !pkgRanHook(dir, "post-install") {
 		before := time.Now()
 		VLog("  - running post install for %s:", pkg.Name, pkgdir)
-		err := TryRunHook("post-install", pkg.Language, pkgdir)
+		args := []string{pkgdir}
+		if global {
+			args = append(args, "--global")
+		}
+		err := TryRunHook("post-install", pkg.Language, args...)
 		if err != nil {
 			return err
 		}
@@ -63,12 +73,16 @@ func maybeRunPostInstall(pkg *Package, pkgdir string) error {
 	return nil
 }
 
-func (pm *PM) InstallPackage(hash, location string) (*Package, error) {
+func (pm *PM) InstallPackage(hash, env string) (*Package, error) {
+	ipath, err := InstallPath(env, "", pm.global)
+	if err != nil {
+		return nil, err
+	}
 
 	// if its already local, skip it
-	pkgdir := filepath.Join(location, "gx", "ipfs", hash)
+	pkgdir := filepath.Join(ipath, "gx", "ipfs", hash)
 	cpkg := new(Package)
-	err := FindPackageInDir(cpkg, pkgdir)
+	err = FindPackageInDir(cpkg, pkgdir)
 	if err != nil {
 		VLog("  - %s not found locally, fetching into %s", hash, pkgdir)
 		deppkg, err := pm.GetPackageTo(hash, pkgdir)
@@ -80,12 +94,12 @@ func (pm *PM) InstallPackage(hash, location string) (*Package, error) {
 	}
 
 	VLog("  - now processing dep %s-%s", cpkg.Name, hash)
-	err = pm.InstallDeps(cpkg, location)
+	err = pm.InstallDeps(cpkg, ipath)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := maybeRunPostInstall(cpkg, pkgdir); err != nil {
+	if err := maybeRunPostInstall(cpkg, pkgdir, pm.global); err != nil {
 		return nil, err
 	}
 
@@ -148,7 +162,7 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 			return err
 		}
 
-		if err := maybeRunPostInstall(cpkg, pkgdirs[i]); err != nil {
+		if err := maybeRunPostInstall(cpkg, pkgdirs[i], pm.global); err != nil {
 			return err
 		}
 	}
@@ -267,7 +281,7 @@ func (pm *PM) ImportPackage(dir, dephash string) (*Dependency, error) {
 		return nil, err
 	}
 
-	err = TryRunHook("post-install", ndep.Language, pkgpath)
+	err = maybeRunPostInstall(ndep, pkgpath, pm.global)
 	if err != nil {
 		return nil, err
 	}

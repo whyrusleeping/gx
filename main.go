@@ -162,6 +162,8 @@ var ImportCommand = cli.Command{
 			log.Fatal("import requires a package name")
 		}
 
+		pm.SetGlobal(c.Bool("global"))
+
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
 			log.Fatal(err)
@@ -178,12 +180,7 @@ var ImportCommand = cli.Command{
 			log.Fatal(err)
 		}
 
-		ipath, err := gx.InstallPath(pkg.Language, "", c.Bool("global"))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		npkg, err := pm.InstallPackage(dephash, ipath)
+		npkg, err := pm.InstallPackage(dephash, pkg.Language)
 		if err != nil {
 			log.Fatal("(install):", err)
 		}
@@ -232,7 +229,7 @@ var InstallCommand = cli.Command{
 		}
 
 		save := c.Bool("save")
-		global := c.Bool("global")
+		pm.SetGlobal(c.Bool("global"))
 
 		if len(c.Args()) == 0 {
 			cwd, err := os.Getwd()
@@ -245,7 +242,7 @@ var InstallCommand = cli.Command{
 				log.Fatal(err)
 			}
 
-			ipath, err := gx.InstallPath(pkg.Language, cwd, global)
+			ipath, err := gx.InstallPath(pkg.Language, cwd, c.Bool("global"))
 			if err != nil {
 				log.Fatal(err)
 			}
