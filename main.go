@@ -461,7 +461,7 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, target)
 
 func updateCollisionCheck(ipkg *gx.Package, idep *gx.Dependency, chain []string) error {
 	return ipkg.ForEachDep(func(dep *gx.Dependency, pkg *gx.Package) error {
-		if dep.Hash == idep.Hash {
+		if dep == idep {
 			return nil
 		}
 
