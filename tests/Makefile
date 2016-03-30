@@ -7,7 +7,7 @@
 # NOTE: run with TEST_VERBOSE=1 for verbose sharness tests.
 
 T = $(sort $(wildcard t[0-9][0-9][0-9][0-9]-*.sh))
-BINS = bin/gx bin/ipfs bin/go-sleep bin/pollEndpoint bin/jq
+BINS = bin/gx bin/ipfs bin/go-sleep bin/pollEndpoint bin/jq bin/gx-test
 SHARNESS = lib/sharness/sharness.sh
 
 # User might want to override those on the command line
@@ -55,6 +55,9 @@ bin/pollEndpoint:
 
 bin/jq:
 	./scripts/install-jq.sh $(shell pwd)/bin
+
+bin/gx-test:
+	cp scripts/gx-test bin/
 
 race:
 	make GOFLAGS=-race all
