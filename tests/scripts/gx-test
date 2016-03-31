@@ -1,0 +1,13 @@
+#!/bin/bash
+
+cmd="$1"
+hook="$2"
+shift
+shift
+
+if [ "$cmd" != "hook" ]; then
+	echo "command must be 'hook'"
+	exit 1
+fi
+
+echo "HOOK RUN: $hook $@" >&2
