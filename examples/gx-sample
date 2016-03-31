@@ -1,0 +1,55 @@
+#!/bin/bash
+
+cmd="$1"
+hook="$2"
+shift
+shift
+
+if [ "$cmd" != "hook" ]; then
+	echo "subcommand must be 'hook'"
+	exit 1
+fi
+
+case "$hook" in
+post-init)
+	pkg_dir="$1"
+	echo "post-init in $pkg_dir"
+	;;
+post-install)
+	new_pkg_path="$1"
+	global="$2"
+	echo "post-install of package $new_pkg_path. global = $global"
+	;;
+pre-publish)
+	echo "pre-publish!"
+	;;
+post-publish)
+	pkg_hash="$1"
+	echo "post-publish! package hash is $pkg_hash"
+	;;
+pre-update)
+	cur_hash="$1"
+	echo "pre-update, about to update $cur_hash"
+	;;
+post-update)
+	old_hash="$1"
+	new_hash="$2"
+	echo "post-update, updated $old_hash to $new_hash"
+	;;
+post-import)
+	new_imp="$1"
+	echo "post-import, just imported $new_imp"
+	;;
+req-check)
+	pkg_dir="$1"
+	echo "req-check, making sure package in $pkg_dir is good"
+	;;
+install-path)
+	global="$1"
+	echo "install-path, global = $global"
+	;;
+*)
+	echo "unknown hook $hook"
+	exit 1
+	;;
+esac
