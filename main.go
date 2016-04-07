@@ -341,7 +341,7 @@ var InitCommand = cli.Command{
 
 		log.Log("initializing package %s...", pkgname)
 		err := pm.InitPkg(cwd, pkgname, lang, func(p *gx.Package) {
-			p.Issues = promptUser("where should users go to report issues?")
+			p.Bugs.Url = promptUser("where should users go to report issues?")
 		})
 
 		if err != nil {

@@ -14,7 +14,7 @@ type PackageBase struct {
 	Name         string        `json:"name,omitempty"`
 	Author       string        `json:"author,omitempty"`
 	Description  string        `json:"description,omitempty"`
-	Keywords     string        `json:"keywords,omitempty"`
+	Keywords     []string      `json:"keywords,omitempty"`
 	Version      string        `json:"version,omitempty"`
 	Dependencies []*Dependency `json:"gxDependencies,omitempty"`
 	Bin          string        `json:"bin,omitempty"`
@@ -22,8 +22,12 @@ type PackageBase struct {
 	Test         string        `json:"test,omitempty"`
 	Language     string        `json:"language,omitempty"`
 	License      string        `json:"license"`
-	Issues       string        `json:"bugs"`
+	Bugs         BugsObj       `json:"bugs"`
 	GxVersion    string        `json:"gxVersion"`
+}
+
+type BugsObj struct {
+	Url string `json:"url,omitempty"`
 }
 
 type Package struct {
