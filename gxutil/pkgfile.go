@@ -50,6 +50,22 @@ func LoadPackageFile(pkg interface{}, fname string) error {
 		return err
 	}
 
+	var pkgmap map[string]interface{}
+	if err := json.Unmarshal(data, &pkgmap); err != nil {
+		return err
+	}
+
+	if url, ok := pkgmap["bugs"].(string); ok {
+		pkgmap["bugs"] = map[string]interface{}{
+			"url": url,
+		}
+		changed, err := json.Marshal(pkgmap)
+		if err != nil {
+			return err
+		}
+		data = changed
+	}
+
 	return json.Unmarshal(data, pkg)
 }
 
