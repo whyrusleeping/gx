@@ -180,7 +180,12 @@ var ImportCommand = cli.Command{
 			log.Fatal(err)
 		}
 
-		npkg, err := pm.InstallPackage(dephash, pkg.Language)
+		ipath, err := gx.InstallPath(pkg.Language, "", c.Bool("global"))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		npkg, err := pm.InstallPackage(dephash, ipath)
 		if err != nil {
 			log.Fatal("(install):", err)
 		}

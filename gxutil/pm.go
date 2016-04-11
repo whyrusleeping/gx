@@ -73,16 +73,11 @@ func maybeRunPostInstall(pkg *Package, pkgdir string, global bool) error {
 	return nil
 }
 
-func (pm *PM) InstallPackage(hash, env string) (*Package, error) {
-	ipath, err := InstallPath(env, "", pm.global)
-	if err != nil {
-		return nil, err
-	}
-
+func (pm *PM) InstallPackage(hash, ipath string) (*Package, error) {
 	// if its already local, skip it
 	pkgdir := filepath.Join(ipath, "gx", "ipfs", hash)
 	cpkg := new(Package)
-	err = FindPackageInDir(cpkg, pkgdir)
+	err := FindPackageInDir(cpkg, pkgdir)
 	if err != nil {
 		VLog("  - %s not found locally, fetching into %s", hash, pkgdir)
 		deppkg, err := pm.GetPackageTo(hash, pkgdir)
