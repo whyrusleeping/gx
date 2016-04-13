@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -711,6 +713,10 @@ var DepsCommand = cli.Command{
 			Name:  "tree",
 			Usage: "print deps as a tree",
 		},
+		cli.BoolFlag{
+			Name:  "s,sort",
+			Usage: "sort output by package name",
+		},
 	},
 	Subcommands: []cli.Command{
 		depBundleCommand,
@@ -750,7 +756,8 @@ var DepsCommand = cli.Command{
 
 		sort.Strings(deps)
 
-		w := tabwriter.NewWriter(os.Stdout, 12, 4, 1, ' ', 0)
+		buf := new(bytes.Buffer)
+		w := tabwriter.NewWriter(buf, 12, 4, 1, ' ', 0)
 		for _, d := range deps {
 			if !quiet {
 				var dpkg gx.Package
@@ -761,10 +768,21 @@ var DepsCommand = cli.Command{
 
 				fmt.Fprintf(w, "%s\t%s\t%s\n", dpkg.Name, d, dpkg.Version)
 			} else {
-				log.Log(d)
+				fmt.Fprintln(w, d)
 			}
 		}
 		w.Flush()
+
+		if c.Bool("sort") {
+			lines := strings.Split(buf.String(), "\n")
+			lines = lines[:len(lines)-1] // remove trailing newline
+			sort.Strings(lines)
+			for _, l := range lines {
+				fmt.Println(l)
+			}
+		} else {
+			io.Copy(os.Stdout, buf)
+		}
 	},
 }
 
