@@ -10,6 +10,8 @@ T = $(sort $(wildcard t[0-9][0-9][0-9][0-9]-*.sh))
 BINS = bin/gx bin/ipfs bin/go-sleep bin/pollEndpoint bin/jq bin/gx-test
 SHARNESS = lib/sharness/sharness.sh
 
+find_go_files = $(shell find $(1) -name "*.go")
+
 # User might want to override those on the command line
 GOFLAGS =
 
@@ -37,7 +39,7 @@ $(SHARNESS): FORCE
 	@echo "*** checking $@ ***"
 	lib/install-sharness.sh
 
-bin/gx:
+bin/gx: $(call find_go_files, ../)
 	go build -o bin/gx github.com/whyrusleeping/gx
 
 bin/ipfs:
