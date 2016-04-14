@@ -212,6 +212,11 @@ var ImportCommand = cli.Command{
 		if err != nil {
 			log.Fatal("writing pkgfile: %s", err)
 		}
+
+		err = gx.TryRunHook("post-import", npkg.Language, dephash)
+		if err != nil {
+			log.Fatal("running post-import: ", err)
+		}
 	},
 }
 
