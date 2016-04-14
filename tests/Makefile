@@ -43,7 +43,7 @@ bin/gx:
 bin/ipfs:
 	mkdir -p bin
 	go get github.com/ipfs/ipfs-update
-	ipfs-update fetch v0.4.0-dev --output=bin/ipfs
+	ipfs-update fetch v0.4.0 --output=bin/ipfs
 
 bin/go-sleep:
 	go get -d github.com/chriscool/go-sleep
