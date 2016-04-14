@@ -42,6 +42,7 @@ test_expect_success "import a from b" '
 
 test_expect_success "output looks good" '
 	echo "HOOK RUN: post-install vendor/gx/ipfs/$pkg_hash" > import_exp &&
+	echo "HOOK RUN: post-import $pkg_hash" >> import_exp &&
 	test_cmp import_exp import_out
 '
 
@@ -55,6 +56,7 @@ test_expect_success "import a globally from c" '
 
 test_expect_success "output looks good" '
 	echo "HOOK RUN: post-install vendor/gx/ipfs/$pkg_hash --global" > import_exp &&
+	echo "HOOK RUN: post-import $pkg_hash" >> import_exp &&
 	test_cmp import_exp import_out
 '
 
