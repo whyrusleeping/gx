@@ -3,6 +3,8 @@ package gxutil
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
@@ -308,6 +310,46 @@ func (pm *PM) ResolveDepName(name string) (string, error) {
 		return name, nil
 	}
 
+	if strings.HasPrefix(name, "github.com/") {
+		return pm.resolveGithubDep(name)
+	}
+
+	return pm.resolveNameInRepos(name)
+}
+
+func githubRawPath(repo string) string {
+	base := strings.Replace(repo, "github.com", "raw.githubusercontent.com", 1)
+	return base + "/master"
+}
+
+func (pm *PM) resolveGithubDep(name string) (string, error) {
+	resp, err := http.Get("https://" + githubRawPath(name) + "/.gx/lastpubver")
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case 200:
+		out, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+
+		parts := strings.Split(string(out), ": ")
+		if len(parts) < 2 {
+			return "", fmt.Errorf("unrecognized format on .gx/lastpubver")
+		}
+		VLog("  - resolved %q to %s, version %s", name, parts[1], parts[0])
+		return strings.TrimSpace(parts[1]), nil
+	case 404:
+		return "", fmt.Errorf("no gx package found at %s", name)
+	default:
+		return "", fmt.Errorf("unrecognized http response from github: %d: %s", resp.StatusCode, resp.Status)
+	}
+}
+
+func (pm *PM) resolveNameInRepos(name string) (string, error) {
 	if strings.Contains(name, "/") {
 		parts := strings.Split(name, "/")
 		rpath, ok := pm.cfg.GetRepos()[parts[0]]
