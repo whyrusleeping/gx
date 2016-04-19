@@ -103,6 +103,14 @@ func (pm *PM) InstallPackage(hash, ipath string) (*Package, error) {
 	return cpkg, nil
 }
 
+func isTempError(err error) bool {
+	if strings.Contains(err.Error(), "too many open files") {
+		return true
+	}
+
+	return false
+}
+
 // InstallDeps recursively installs all dependencies for the given package
 func (pm *PM) InstallDeps(pkg *Package, location string) error {
 	Log("installing package: %s-%s", pkg.Name, pkg.Version)
@@ -120,13 +128,24 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 			err := FindPackageInDir(cpkg, pkgdir)
 			if err != nil {
 				VLog("  - %s not found locally, fetching into %s", hash, pkgdir)
-				deppkg, err := pm.GetPackageTo(hash, pkgdir)
-				if err != nil {
-					errs <- fmt.Errorf("failed to fetch package: %s: %s", hash, err)
+				var final error
+				for i := 0; i < 4; i++ {
+					cpkg, final = pm.GetPackageTo(hash, pkgdir)
+					if final == nil {
+						break
+					}
+
+					if !isTempError(final) {
+						break
+					}
+
+					time.Sleep(time.Millisecond * 200 * time.Duration(i+1))
+				}
+				if final != nil {
+					errs <- fmt.Errorf("failed to fetch package: %s: %s", hash, final)
 					return
 				}
 				VLog("  - fetch %s complete!", hash)
-				cpkg = deppkg
 			}
 
 			pkgdirs[i] = pkgdir
