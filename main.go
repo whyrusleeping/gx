@@ -725,6 +725,7 @@ var DepsCommand = cli.Command{
 	},
 	Subcommands: []cli.Command{
 		depBundleCommand,
+		depFindCommand,
 	},
 	Action: func(c *cli.Context) {
 		rec := c.Bool("r")
@@ -788,6 +789,32 @@ var DepsCommand = cli.Command{
 		} else {
 			io.Copy(os.Stdout, buf)
 		}
+	},
+}
+
+var depFindCommand = cli.Command{
+	Name:  "find",
+	Usage: "print hash of a given dependency",
+	Action: func(c *cli.Context) {
+
+		if len(c.Args()) != 1 {
+			log.Fatal("must be passed exactly one argument")
+		}
+
+		pkg, err := LoadPackageFile(PkgFileName)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		dep := c.Args()[0]
+
+		for _, d := range pkg.Dependencies {
+			if d.Name == dep {
+				fmt.Println(d.Hash)
+				return
+			}
+		}
+		log.Fatal("no dependency named '%s' found", dep)
 	},
 }
 
