@@ -44,6 +44,9 @@ func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
 			rel = rel[1:]
 		}
 
+		// make relative path cross platform safe
+		rel = filepath.ToSlash(rel)
+
 		// respect gitignore
 		if gitig != nil && gitig.MatchesPath(rel) {
 			return nil
