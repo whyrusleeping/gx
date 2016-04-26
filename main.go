@@ -154,9 +154,13 @@ var ImportCommand = cli.Command{
 	Name:  "import",
 	Usage: "import a package as a dependency",
 	Flags: []cli.Flag{
-		cli.BoolFlag{
+		cli.BoolTFlag{
 			Name:  "global",
 			Usage: "download imported package to global store",
+		},
+		cli.BoolFlag{
+			Name:  "local",
+			Usage: "install packages locally (equal to --global=false)",
 		},
 	},
 	Action: func(c *cli.Context) {
@@ -164,7 +168,12 @@ var ImportCommand = cli.Command{
 			log.Fatal("import requires a package name")
 		}
 
-		pm.SetGlobal(c.Bool("global"))
+		global := c.BoolT("global")
+		if c.Bool("local") {
+			global = false
+		}
+
+		pm.SetGlobal(global)
 
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
@@ -182,7 +191,7 @@ var ImportCommand = cli.Command{
 			log.Fatal(err)
 		}
 
-		ipath, err := gx.InstallPath(pkg.Language, "", c.Bool("global"))
+		ipath, err := gx.InstallPath(pkg.Language, "", global)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -225,9 +234,13 @@ var InstallCommand = cli.Command{
 	Usage:   "install this package",
 	Aliases: []string{"i"},
 	Flags: []cli.Flag{
-		cli.BoolFlag{
+		cli.BoolTFlag{
 			Name:  "global",
 			Usage: "install package in global namespace",
+		},
+		cli.BoolFlag{
+			Name:  "local",
+			Usage: "install packages locally (equal to --global=false)",
 		},
 		cli.BoolFlag{
 			Name:  "save",
@@ -241,7 +254,13 @@ var InstallCommand = cli.Command{
 		}
 
 		save := c.Bool("save")
-		pm.SetGlobal(c.Bool("global"))
+
+		global := c.BoolT("global")
+		if c.Bool("local") {
+			global = false
+		}
+
+		pm.SetGlobal(global)
 
 		if len(c.Args()) == 0 {
 			cwd, err := os.Getwd()
@@ -254,7 +273,7 @@ var InstallCommand = cli.Command{
 				log.Fatal(err)
 			}
 
-			ipath, err := gx.InstallPath(pkg.Language, cwd, c.Bool("global"))
+			ipath, err := gx.InstallPath(pkg.Language, cwd, global)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -266,7 +285,7 @@ var InstallCommand = cli.Command{
 			return
 		}
 
-		ipath, err := gx.InstallPath(pkg.Language, "", c.Bool("global"))
+		ipath, err := gx.InstallPath(pkg.Language, "", global)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -380,9 +399,13 @@ EXAMPLE:
    $ gx update $OLDHASH $NEWHASH
 `,
 	Flags: []cli.Flag{
-		cli.BoolFlag{
+		cli.BoolTFlag{
 			Name:  "global",
 			Usage: "install new package in global namespace",
+		},
+		cli.BoolFlag{
+			Name:  "local",
+			Usage: "install packages locally (equal to --global=false)",
 		},
 		cli.BoolFlag{
 			Name:  "with-deps",
@@ -410,7 +433,12 @@ EXAMPLE:
 		}
 		oldhash = olddep.Hash
 
-		ipath, err := gx.InstallPath(pkg.Language, cwd, c.Bool("global"))
+		global := c.BoolT("global")
+		if c.Bool("local") {
+			global = false
+		}
+
+		ipath, err := gx.InstallPath(pkg.Language, cwd, global)
 		if err != nil {
 			log.Fatal(err)
 		}

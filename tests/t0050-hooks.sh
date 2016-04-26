@@ -36,8 +36,8 @@ test_expect_success "create another package" '
 	make_package b
 '
 
-test_expect_success "import a from b" '
-	pkg_run b gx import $pkg_hash 2> import_out
+test_expect_success "import a from b locally" '
+	pkg_run b gx import --local $pkg_hash 2> import_out
 '
 
 test_expect_success "output looks good" '
