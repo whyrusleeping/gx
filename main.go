@@ -87,44 +87,48 @@ func main() {
 		ViewCommand,
 	}
 
-	app.RunAndExitOnError()
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
+	}
 }
 
 var PublishCommand = cli.Command{
 	Name:  "publish",
 	Usage: "publish a package",
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		if gx.UsingGateway {
 			log.Log("gx cannot publish using public gateways.")
 			log.Log("please run an ipfs node and try again.")
-			return
+			return nil
 		}
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		err = gx.TryRunHook("pre-publish", pkg.Language)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		hash, err := pm.PublishPackage(cwd, &pkg.PackageBase)
 		if err != nil {
-			log.Fatal("publishing: ", err)
+			return fmt.Errorf("publishing: %s", err)
 		}
 		log.Log("package %s published with hash: %s", pkg.Name, hash)
 
 		// write out version hash
 		err = writeLastPub(pkg.Version, hash)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		err = gx.TryRunHook("post-publish", pkg.Language, hash)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
+
+		return nil
 	},
 }
 
@@ -163,9 +167,9 @@ var ImportCommand = cli.Command{
 			Usage: "install packages locally (equal to --global=false)",
 		},
 	},
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		if len(c.Args()) == 0 {
-			log.Fatal("import requires a package name")
+			return fmt.Errorf("import requires a package name")
 		}
 
 		global := c.BoolT("global")
@@ -177,34 +181,34 @@ var ImportCommand = cli.Command{
 
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		depname := c.Args().First()
 		cdep := pkg.FindDep(depname)
 		if cdep != nil {
-			log.Fatal("package %s already imported as %s", cdep.Hash, cdep.Name)
+			return fmt.Errorf("package %s already imported as %s", cdep.Hash, cdep.Name)
 		}
 
 		dephash, err := pm.ResolveDepName(depname)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		ipath, err := gx.InstallPath(pkg.Language, "", global)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		npkg, err := pm.InstallPackage(dephash, ipath)
 		if err != nil {
-			log.Fatal("(install):", err)
+			return fmt.Errorf("(install):", err)
 		}
 
 		if pkg.FindDep(npkg.Name) != nil {
 			s := fmt.Sprintf("package with name %s already imported, continue?", npkg.Name)
 			if !yesNoPrompt(s, false) {
-				return
+				return nil
 			}
 			log.Log("continuing, please note some things may not work as expected")
 		}
@@ -219,13 +223,15 @@ var ImportCommand = cli.Command{
 		pkg.Dependencies = append(pkg.Dependencies, ndep)
 		err = gx.SavePackageFile(pkg, PkgFileName)
 		if err != nil {
-			log.Fatal("writing pkgfile: %s", err)
+			return fmt.Errorf("writing pkgfile: %s", err)
 		}
 
 		err = gx.TryRunHook("post-import", npkg.Language, dephash)
 		if err != nil {
-			log.Fatal("running post-import: ", err)
+			return fmt.Errorf("running post-import: %s", err)
 		}
+
+		return nil
 	},
 }
 
@@ -247,10 +253,10 @@ var InstallCommand = cli.Command{
 			Usage: "write installed packages as deps in package.json",
 		},
 	},
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		save := c.Bool("save")
@@ -265,35 +271,35 @@ var InstallCommand = cli.Command{
 		if len(c.Args()) == 0 {
 			cwd, err := os.Getwd()
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 
 			err = gx.TryRunHook("req-check", pkg.Language, cwd)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 
 			ipath, err := gx.InstallPath(pkg.Language, cwd, global)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 
 			err = pm.InstallDeps(pkg, ipath)
 			if err != nil {
-				log.Fatal("install deps:", err)
+				return fmt.Errorf("install deps:", err)
 			}
-			return
+			return nil
 		}
 
 		ipath, err := gx.InstallPath(pkg.Language, "", global)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		for _, p := range c.Args() {
 			phash, err := pm.ResolveDepName(p)
 			if err != nil {
-				log.Fatal("resolving package '%s': %s", p, err)
+				return fmt.Errorf("resolving package '%s': %s", p, err)
 			}
 
 			if p != phash {
@@ -302,7 +308,7 @@ var InstallCommand = cli.Command{
 
 			ndep, err := pm.ImportPackage(ipath, p)
 			if err != nil {
-				log.Fatal("importing package '%s': %s", p, err)
+				return fmt.Errorf("importing package '%s': %s", p, err)
 			}
 
 			if save {
@@ -313,9 +319,11 @@ var InstallCommand = cli.Command{
 		if save {
 			err := gx.SavePackageFile(pkg, PkgFileName)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 		}
+
+		return nil
 	},
 }
 
@@ -328,9 +336,9 @@ var GetCommand = cli.Command{
 			Usage: "specify output dir name",
 		},
 	},
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		if !c.Args().Present() {
-			log.Fatal("no package specified")
+			return fmt.Errorf("no package specified")
 		}
 
 		pkg := c.Args().First()
@@ -343,8 +351,9 @@ var GetCommand = cli.Command{
 		log.Log("writing package to:", out)
 		_, err := pm.GetPackageTo(pkg, out)
 		if err != nil {
-			log.Fatal("fetching package: %s", err)
+			return fmt.Errorf("fetching package: %s", err)
 		}
+		return nil
 	},
 }
 
@@ -357,7 +366,7 @@ var InitCommand = cli.Command{
 			Usage: "specify primary language of new package",
 		},
 	},
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		var pkgname string
 		if len(c.Args()) > 0 {
 			pkgname = c.Args().First()
@@ -376,8 +385,10 @@ var InitCommand = cli.Command{
 		})
 
 		if err != nil {
-			log.Fatal("init error: %s", err)
+			return fmt.Errorf("init error: %s", err)
 		}
+
+		return nil
 	},
 }
 
@@ -412,7 +423,7 @@ EXAMPLE:
 			Usage: "experimental feature to recursively update child deps too",
 		},
 	},
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		if len(c.Args()) < 2 {
 			log.Fatal("update requires two arguments, current and target")
 		}
@@ -440,7 +451,7 @@ EXAMPLE:
 
 		ipath, err := gx.InstallPath(pkg.Language, cwd, global)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		npkg, err := pm.InstallPackage(target, ipath)
@@ -461,13 +472,13 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, target)
 		log.VLog("running pre update hook...")
 		err = gx.TryRunHook("pre-update", pkg.Language, existing)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		if c.Bool("with-deps") {
 			err := RecursiveDepUpdate(pkg, oldhash, target)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 		} else {
 			log.VLog("checking for potential package naming collisions...")
@@ -483,16 +494,18 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, target)
 
 		err = gx.SavePackageFile(pkg, PkgFileName)
 		if err != nil {
-			log.Fatal("writing package file: %s", err)
+			return fmt.Errorf("writing package file: %s", err)
 		}
 
 		log.VLog("running post update hook...")
 		err = gx.TryRunHook("post-update", pkg.Language, oldhash, target)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		log.VLog("update complete!")
+
+		return nil
 	},
 }
 
@@ -538,21 +551,21 @@ EXAMPLE:
    > gx version 2.5.7
    updated version to 2.5.7
 `,
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) (outerr error) {
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		if !c.Args().Present() {
 			fmt.Println(pkg.Version)
-			return
+			return nil
 		}
 
 		defer func() {
 			err := gx.SavePackageFile(pkg, PkgFileName)
 			if err != nil {
-				log.Fatal(err)
+				outerr = err
 			}
 		}()
 
@@ -566,7 +579,7 @@ EXAMPLE:
 
 		v, err := semver.Make(pkg.Version)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		switch nver {
 		case "major":
@@ -592,6 +605,8 @@ EXAMPLE:
 		log.Log("updated version to: %s", v)
 
 		pkg.Version = v.String()
+
+		return nil
 	},
 }
 
@@ -615,7 +630,7 @@ EXAMPLE:
    > gx view go-libp2p gx.dvcsimport
    "github.com/ipfs/go-libp2p"
 `,
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		if !c.Args().Present() {
 			log.Fatal("must specify at least a query")
 		}
@@ -627,12 +642,12 @@ EXAMPLE:
 			ref := c.Args()[0]
 			err := gx.LocalPackageByName(vendir, ref, &cfg)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 		} else {
 			err := gx.LoadPackageFile(&cfg, PkgFileName)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 		}
 
@@ -664,6 +679,7 @@ EXAMPLE:
 		}
 
 		jsonPrint(val)
+		return nil
 	},
 }
 
@@ -682,23 +698,23 @@ var CleanCommand = cli.Command{
 			Usage: "print out things to be removed without removing them",
 		},
 	},
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		dry := c.Bool("dry-run")
 
 		good, err := pm.EnumerateDependencies(pkg)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		vdir := filepath.Join(cwd, vendorDir)
 		dirinfos, err := ioutil.ReadDir(vdir)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		for _, di := range dirinfos {
@@ -711,11 +727,13 @@ var CleanCommand = cli.Command{
 				if !dry {
 					err := os.RemoveAll(filepath.Join(cwd, vendorDir, di.Name()))
 					if err != nil {
-						log.Fatal(err)
+						return err
 					}
 				}
 			}
 		}
+
+		return nil
 	},
 }
 
@@ -755,28 +773,28 @@ var DepsCommand = cli.Command{
 		depBundleCommand,
 		depFindCommand,
 	},
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		rec := c.Bool("r")
 		quiet := c.Bool("q")
 
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		if c.Bool("tree") {
 			err := printDepsTree(pm, pkg, quiet, 0)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
-			return
+			return nil
 		}
 
 		var deps []string
 		if rec {
 			depmap, err := pm.EnumerateDependencies(pkg)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 
 			for k, _ := range depmap {
@@ -797,7 +815,7 @@ var DepsCommand = cli.Command{
 				var dpkg gx.Package
 				err := gx.LoadPackage(&dpkg, pkg.Language, d)
 				if err != nil {
-					log.Fatal(err)
+					return err
 				}
 
 				fmt.Fprintf(w, "%s\t%s\t%s\n", dpkg.Name, d, dpkg.Version)
@@ -817,21 +835,23 @@ var DepsCommand = cli.Command{
 		} else {
 			io.Copy(os.Stdout, buf)
 		}
+
+		return nil
 	},
 }
 
 var depFindCommand = cli.Command{
 	Name:  "find",
 	Usage: "print hash of a given dependency",
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 
 		if len(c.Args()) != 1 {
-			log.Fatal("must be passed exactly one argument")
+			fmt.Errorf("must be passed exactly one argument")
 		}
 
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		dep := c.Args()[0]
@@ -839,35 +859,38 @@ var depFindCommand = cli.Command{
 		for _, d := range pkg.Dependencies {
 			if d.Name == dep {
 				fmt.Println(d.Hash)
-				return
+				return nil
 			}
 		}
 		log.Fatal("no dependency named '%s' found", dep)
+
+		return nil
 	},
 }
 
 var depBundleCommand = cli.Command{
 	Name:  "bundle",
 	Usage: "print hash of object containing all dependencies for this package",
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		obj, err := depBundleForPkg(pkg)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		fmt.Println(obj)
+		return nil
 	},
 }
 
 func depBundleForPkg(pkg *gx.Package) (string, error) {
 	obj, err := pm.Shell().NewObject("unixfs-dir")
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	for _, dep := range pkg.Dependencies {
