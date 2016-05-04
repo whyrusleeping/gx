@@ -92,9 +92,35 @@ func main() {
 	}
 }
 
+func checkLastPubVer() string {
+	out, err := ioutil.ReadFile(filepath.Join(cwd, ".gx", "lastpubver"))
+	if err != nil {
+		return ""
+	}
+
+	parts := bytes.Split(out, []byte{':'})
+	return string(parts[0])
+}
+
 var PublishCommand = cli.Command{
 	Name:  "publish",
 	Usage: "publish a package",
+	Description: `publish a package into ipfs using a locally running daemon.
+
+'publish' bundles up all files associated with the package (respecting
+.gitignore and .gxignore files), adds them to ipfs, and writes out the
+resulting package hash.
+
+By default, you cannot publish a package without updating the version
+number. This is a soft requirement and can be skipped by specifying the
+-f or --force flag.
+`,
+	Flags: []cli.Flag{
+		cli.BoolFlag{
+			Name:  "force,f",
+			Usage: "allow publishing without bumping version",
+		},
+	},
 	Action: func(c *cli.Context) error {
 		if gx.UsingGateway {
 			log.Log("gx cannot publish using public gateways.")
@@ -104,6 +130,12 @@ var PublishCommand = cli.Command{
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
 			return err
+		}
+
+		if !c.Bool("force") {
+			if pkg.Version == checkLastPubVer() {
+				log.Fatal("please update your packages version before publishing. (use -f to skip)")
+			}
 		}
 
 		err = gx.TryRunHook("pre-publish", pkg.Language)
