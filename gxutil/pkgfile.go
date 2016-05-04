@@ -108,6 +108,7 @@ func writeJson(i interface{}, fname string) error {
 		return err
 	}
 	_, err = fi.Write(out)
+	fi.WriteString("\n")
 	return err
 }
 
