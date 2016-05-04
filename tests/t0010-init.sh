@@ -50,8 +50,17 @@ test_expect_success "lastpubver looks good" '
 	test_cmp lpv_exp mypkg/.gx/lastpubver
 '
 
-test_expect_success "publish package second time succeeds" '
-	pkg_run mypkg gx publish > pub_out2
+test_expect_success "publish package second time fails" '
+	test_expect_code 1 pkg_run mypkg gx publish > pub_out_fail
+'
+
+test_expect_success "failure message wants changed version" '
+	echo "ERROR: please update your packages version before publishing. (use -f to skip)" > exp_fail &&
+	test_cmp exp_fail pub_out_fail
+'
+
+test_expect_success "publish package -f second time succeeds" '
+	pkg_run mypkg gx publish -f > pub_out2
 '
 
 test_expect_success "publish output is the same on second publish" '

@@ -486,7 +486,12 @@ EXAMPLE:
 			return err
 		}
 
-		npkg, err := pm.InstallPackage(target, ipath)
+		trgthash, err := pm.ResolveDepName(target)
+		if err != nil {
+			return err
+		}
+
+		npkg, err := pm.InstallPackage(trgthash, ipath)
 		if err != nil {
 			log.Fatal("(installpackage) : ", err)
 		}
