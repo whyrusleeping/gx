@@ -491,6 +491,8 @@ EXAMPLE:
 			return err
 		}
 
+		log.Log("updating %s to %s", olddep.Name, trgthash)
+
 		npkg, err := pm.InstallPackage(trgthash, ipath)
 		if err != nil {
 			log.Fatal("(installpackage) : ", err)
