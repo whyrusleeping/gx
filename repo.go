@@ -8,8 +8,8 @@ import (
 	"text/tabwriter"
 
 	cli "github.com/codegangsta/cli"
-	gx "github.com/whyrusleeping/gx/gxutil"
 	hd "github.com/mitchellh/go-homedir"
+	gx "github.com/whyrusleeping/gx/gxutil"
 	. "github.com/whyrusleeping/stump"
 )
 
@@ -50,16 +50,16 @@ var RepoAddCommand = cli.Command{
 			Usage: "add repository to global set",
 		},
 	},
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		global := c.Bool("global")
 		cfp, err := cfgPath(global)
 		if err != nil {
-			Fatal(err)
+			return err
 		}
 
 		cfg, err := gx.LoadConfigFrom(cfp)
 		if err != nil {
-			Fatal(err)
+			return err
 		}
 
 		if len(c.Args()) != 2 {
@@ -71,7 +71,7 @@ var RepoAddCommand = cli.Command{
 		// make sure we can fetch it
 		_, err = pm.FetchRepo(rpath, false)
 		if err != nil {
-			Fatal("finding repo: ", err)
+			return fmt.Errorf("finding repo: %s", err)
 		}
 
 		if global {
@@ -80,10 +80,7 @@ var RepoAddCommand = cli.Command{
 			cfg.ExtraRepos[name] = rpath
 		}
 
-		err = gx.WriteConfig(cfg, cfp)
-		if err != nil {
-			Fatal(err)
-		}
+		return gx.WriteConfig(cfg, cfp)
 	},
 }
 
@@ -96,68 +93,66 @@ var RepoRmCommand = cli.Command{
 			Usage: "remove repository from global set",
 		},
 	},
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		global := c.Bool("global")
 		cfp, err := cfgPath(global)
 		if err != nil {
-			Fatal(err)
+			return err
 		}
 
 		cfg, err := gx.LoadConfigFrom(cfp)
 		if err != nil {
-			Fatal(err)
+			return err
 		}
 
 		if !c.Args().Present() {
-			Fatal("specify repo to remove")
+			return fmt.Errorf("specify repo to remove")
 		}
 		name := c.Args().First()
 
 		if global {
 			if _, ok := cfg.Repos[name]; !ok {
-				Fatal("no repo named %s", name)
+				return fmt.Errorf("no repo named %s", name)
 			}
 			delete(cfg.Repos, name)
 		} else {
 			if _, ok := cfg.ExtraRepos[name]; !ok {
-				Fatal("no repo named %s", name)
+				return fmt.Errorf("no repo named %s", name)
 			}
 			delete(cfg.ExtraRepos, name)
 		}
 
-		err = gx.WriteConfig(cfg, cfp)
-		if err != nil {
-			Fatal(err)
-		}
+		return gx.WriteConfig(cfg, cfp)
 	},
 }
 
 var RepoListCommand = cli.Command{
 	Name:  "list",
 	Usage: "list tracked repos or packages in a repo",
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		cfg, err := gx.LoadConfig()
 		if err != nil {
-			Fatal(err)
+			return err
 		}
 
 		if !c.Args().Present() {
 			tabPrintSortedMap(nil, cfg.GetRepos())
-			return
+			return nil
 		}
 
 		rname := c.Args().First()
 		r, ok := cfg.GetRepos()[rname]
 		if !ok {
-			Fatal("no such repo: ", rname)
+			fmt.Errorf("no such repo: %s", rname)
 		}
 
 		repo, err := pm.FetchRepo(r, true)
 		if err != nil {
-			Fatal(err)
+			return err
 		}
 
 		tabPrintSortedMap(nil, repo)
+		return nil
 	},
 }
 
@@ -183,33 +178,34 @@ func tabPrintSortedMap(headers []string, m map[string]string) {
 var RepoQueryCommand = cli.Command{
 	Name:  "query",
 	Usage: "search for a package in repos",
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		if !c.Args().Present() {
-			Fatal("must specify search criteria")
+			return fmt.Errorf("must specify search criteria")
 		}
 
 		searcharg := c.Args().First()
 
 		out, err := pm.QueryRepos(searcharg)
 		if err != nil {
-			Fatal(err)
+			return err
 		}
 
 		if len(out) > 0 {
 			tabPrintSortedMap([]string{"repo", "ref"}, out)
 		} else {
-			Fatal("not found")
+			return fmt.Errorf("not found")
 		}
+		return nil
 	},
 }
 
 var RepoUpdateCommand = cli.Command{
 	Name:  "update",
 	Usage: "update cached versions of repos",
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		cfg, err := gx.LoadConfig()
 		if err != nil {
-			Fatal(err)
+			return err
 		}
 		repos := cfg.GetRepos()
 
@@ -225,17 +221,17 @@ var RepoUpdateCommand = cli.Command{
 		for _, r := range args {
 			path, ok := repos[r]
 			if !ok {
-				Fatal("unknown repo:", r)
+				return fmt.Errorf("unknown repo: %s", r)
 			}
 
 			val, ok, err := gx.CheckCacheFile(path)
 			if err != nil {
-				Fatal("checking cache:", err)
+				return fmt.Errorf("checking cache: %s", err)
 			}
 
 			nval, err := pm.ResolveName(path, false)
 			if err != nil {
-				Fatal("resolving repo:", err)
+				return fmt.Errorf("resolving repo: %s", err)
 			}
 
 			if ok {
@@ -248,5 +244,6 @@ var RepoUpdateCommand = cli.Command{
 				Log("%s: %s", r, nval)
 			}
 		}
+		return nil
 	},
 }
