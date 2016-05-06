@@ -668,6 +668,12 @@ EXAMPLE:
 
    > gx view go-libp2p gx.dvcsimport
    "github.com/ipfs/go-libp2p"
+
+   > gx view '.gxDependencies[0].name'
+   go-multihash
+
+   > gx view '.gxDependencies[.name=go-multiaddr].hash'
+   QmWLfU4tstw2aNcTykDm44xbSTCYJ9pUJwfhQCKGwckcHx
 `,
 	Action: func(c *cli.Context) error {
 		if !c.Args().Present() {
@@ -691,30 +697,9 @@ EXAMPLE:
 		}
 
 		queryStr := c.Args()[len(c.Args())-1]
-		var query []string
-		for _, s := range strings.Split(queryStr, ".") {
-			if s != "" {
-				query = append(query, s)
-			}
-		}
-
-		cur := cfg
-		var val interface{} = cur
-		for i, q := range query {
-			v, ok := cur[q]
-			if !ok {
-				log.Fatal("key not found: %s", strings.Join(query[:i+1], "."))
-			}
-			val = v
-
-			mp, ok := v.(map[string]interface{})
-			if !ok {
-				if i == len(query)-1 {
-					break
-				}
-				log.Fatal("%s is not indexable", query[i-1])
-			}
-			cur = mp
+		val, err := processJsonQuery(cfg, queryStr)
+		if err != nil {
+			return err
 		}
 
 		jsonPrint(val)
