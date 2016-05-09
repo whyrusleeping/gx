@@ -15,6 +15,8 @@ import (
 	cli "github.com/codegangsta/cli"
 	gx "github.com/whyrusleeping/gx/gxutil"
 	log "github.com/whyrusleeping/stump"
+
+	"github.com/whyrusleeping/json-filter"
 )
 
 var (
@@ -700,7 +702,7 @@ EXAMPLE:
 		}
 
 		queryStr := c.Args()[len(c.Args())-1]
-		val, err := processJsonQuery(cfg, queryStr)
+		val, err := filter.Get(cfg, queryStr)
 		if err != nil {
 			return err
 		}
