@@ -56,7 +56,7 @@ func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 	tries := 3
 	for i := 0; i < tries; i++ {
 		if err := pm.Shell().Get(hash, outtemp); err != nil {
-			Error("from shell.Get(): ", err)
+			Error("from shell.Get(): %#v", err)
 
 			rmerr := os.RemoveAll(outtemp)
 			if rmerr != nil {

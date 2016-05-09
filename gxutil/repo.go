@@ -13,7 +13,7 @@ import (
 
 func (pm *PM) FetchRepo(rpath string, usecache bool) (map[string]string, error) {
 	if strings.HasPrefix(rpath, "/ipns/") {
-		p, err := pm.ResolveName(rpath, usecache)
+		p, err := pm.ResolveRepoName(rpath, usecache)
 		if err != nil {
 			return nil, err
 		}
@@ -36,7 +36,7 @@ func (pm *PM) FetchRepo(rpath string, usecache bool) (map[string]string, error) 
 var ErrNotFound = errors.New("cache miss")
 
 // TODO: once on ipfs 0.4.0, use the files api
-func (pm *PM) ResolveName(name string, usecache bool) (string, error) {
+func (pm *PM) ResolveRepoName(name string, usecache bool) (string, error) {
 	if usecache {
 		cache, ok, err := CheckCacheFile(name)
 		if err != nil {

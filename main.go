@@ -373,7 +373,11 @@ var GetCommand = cli.Command{
 			return fmt.Errorf("no package specified")
 		}
 
-		pkg := c.Args().First()
+		pkg, err := pm.ResolveDepName(c.Args().First())
+		if err != nil {
+			return err
+		}
+		pkg = c.Args().First()
 
 		out := c.String("o")
 		if out == "" {
@@ -381,7 +385,7 @@ var GetCommand = cli.Command{
 		}
 
 		log.Log("writing package to:", out)
-		_, err := pm.GetPackageTo(pkg, out)
+		_, err = pm.GetPackageTo(pkg, out)
 		if err != nil {
 			return fmt.Errorf("fetching package: %s", err)
 		}

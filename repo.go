@@ -229,7 +229,7 @@ var RepoUpdateCommand = cli.Command{
 				return fmt.Errorf("checking cache: %s", err)
 			}
 
-			nval, err := pm.ResolveName(path, false)
+			nval, err := pm.ResolveRepoName(path, false)
 			if err != nil {
 				return fmt.Errorf("resolving repo: %s", err)
 			}
