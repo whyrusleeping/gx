@@ -377,7 +377,6 @@ var GetCommand = cli.Command{
 		if err != nil {
 			return err
 		}
-		pkg = c.Args().First()
 
 		out := c.String("o")
 		if out == "" {
