@@ -461,25 +461,28 @@ EXAMPLE:
 		},
 	},
 	Action: func(c *cli.Context) error {
-		if len(c.Args()) < 2 {
-			log.Fatal("update requires two arguments, current and target")
-		}
-
-		existing := c.Args()[0]
-		target := c.Args()[1]
-		// TODO: ensure both args are the 'same' package (same name at least)
-
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
 			log.Fatal("error: ", err)
 		}
 
-		var oldhash string
-		olddep := pkg.FindDep(existing)
-		if olddep == nil {
-			log.Fatal("unknown package: ", existing)
+		var existing, target string
+		switch len(c.Args()) {
+		case 0:
+			log.Fatal("update requires two arguments, current and target")
+		case 1:
+			target = c.Args()[0]
+		case 2:
+			existing = c.Args()[0]
+			target = c.Args()[1]
+		default:
+			log.Log("ignoring extra arguments: %s", c.Args()[2:])
 		}
-		oldhash = olddep.Hash
+
+		trgthash, err := pm.ResolveDepName(target)
+		if err != nil {
+			return err
+		}
 
 		global := c.BoolT("global")
 		if c.Bool("local") {
@@ -491,17 +494,23 @@ EXAMPLE:
 			return err
 		}
 
-		trgthash, err := pm.ResolveDepName(target)
-		if err != nil {
-			return err
-		}
-
-		log.Log("updating %s to %s", olddep.Name, trgthash)
-
 		npkg, err := pm.InstallPackage(trgthash, ipath)
 		if err != nil {
 			log.Fatal("(installpackage) : ", err)
 		}
+
+		if existing == "" {
+			existing = npkg.Name
+		}
+
+		var oldhash string
+		olddep := pkg.FindDep(existing)
+		if olddep == nil {
+			log.Fatal("unknown package: ", existing)
+		}
+		oldhash = olddep.Hash
+
+		log.Log("updating %s to %s", olddep.Name, trgthash)
 
 		if npkg.Name != olddep.Name {
 			prompt := fmt.Sprintf(`Target package has a different name than new package:
