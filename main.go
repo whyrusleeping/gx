@@ -797,6 +797,10 @@ var DepsCommand = cli.Command{
 			Name:  "s,sort",
 			Usage: "sort output by package name",
 		},
+		cli.StringFlag{
+			Name:  "highlight",
+			Usage: "for tree printing, prune branches unrelated to arg",
+		},
 	},
 	Subcommands: []cli.Command{
 		depBundleCommand,
@@ -812,6 +816,16 @@ var DepsCommand = cli.Command{
 		}
 
 		if c.Bool("tree") {
+			if h := c.String("highlight"); h != "" {
+				dt, err := genDepsTree(pm, pkg)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				dt.printFiltered(h, quiet)
+				return nil
+			}
+
 			err := printDepsTree(pm, pkg, quiet, 0)
 			if err != nil {
 				return err

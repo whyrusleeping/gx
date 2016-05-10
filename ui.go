@@ -53,6 +53,63 @@ func jsonPrint(i interface{}) {
 	Log(outs)
 }
 
+type depTreeNode struct {
+	this     *gx.Dependency
+	children []*depTreeNode
+}
+
+func genDepsTree(pm *gx.PM, pkg *gx.Package) (*depTreeNode, error) {
+	cur := new(depTreeNode)
+
+	err := pkg.ForEachDep(func(dep *gx.Dependency, dpkg *gx.Package) error {
+		sub, err := genDepsTree(pm, dpkg)
+		if err != nil {
+			return err
+		}
+
+		sub.this = dep
+		cur.children = append(cur.children, sub)
+
+		return nil
+	})
+
+	return cur, err
+}
+
+func (dtn *depTreeNode) matches(filter string) bool {
+	if dtn.this.Hash == filter || dtn.this.Name == filter {
+		return true
+	}
+
+	for _, c := range dtn.children {
+		if c.matches(filter) {
+			return true
+		}
+	}
+	return false
+}
+
+func (dtn *depTreeNode) printFiltered(filter string, quiet bool) {
+	var rec func(*depTreeNode, int)
+	rec = func(p *depTreeNode, indent int) {
+		for _, n := range p.children {
+			if !n.matches(filter) {
+				continue
+			}
+			dep := n.this
+			label := dep.Hash
+			if !quiet {
+				label = fmt.Sprintf("%s %s %s", dep.Name, dep.Hash, dep.Version)
+			}
+			Log("%s%s", strings.Repeat("  ", indent), label)
+
+			rec(n, indent+1)
+		}
+	}
+
+	rec(dtn, 0)
+}
+
 func printDepsTree(pm *gx.PM, pkg *gx.Package, quiet bool, indent int) error {
 	return pkg.ForEachDep(func(dep *gx.Dependency, dpkg *gx.Package) error {
 		label := dep.Hash
