@@ -825,20 +825,12 @@ var DepsCommand = cli.Command{
 		}
 
 		if c.Bool("tree") {
-			if h := c.String("highlight"); h != "" {
-				dt, err := genDepsTree(pm, pkg)
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				dt.printFiltered(h, quiet)
-				return nil
-			}
-
-			err := printDepsTree(pm, pkg, quiet, 0)
+			dt, err := genDepsTree(pm, pkg)
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
+
+			dt.printFiltered(c.String("highlight"), quiet)
 			return nil
 		}
 
@@ -940,6 +932,10 @@ var depBundleCommand = cli.Command{
 }
 
 func depBundleForPkg(pkg *gx.Package) (string, error) {
+	return depBundleForPkgRec(pkg, make(map[string]bool))
+}
+
+func depBundleForPkgRec(pkg *gx.Package, done map[string]bool) (string, error) {
 	obj, err := pm.Shell().NewObject("unixfs-dir")
 	if err != nil {
 		return "", err

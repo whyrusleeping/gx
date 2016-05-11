@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 
 	gx "github.com/whyrusleeping/gx/gxutil"
 	. "github.com/whyrusleeping/stump"
@@ -77,6 +78,10 @@ func genDepsTree(pm *gx.PM, pkg *gx.Package) (*depTreeNode, error) {
 }
 
 func (dtn *depTreeNode) matches(filter string) bool {
+	if filter == "" {
+		return true
+	}
+
 	if dtn.this.Hash == filter || dtn.this.Name == filter {
 		return true
 	}
@@ -89,40 +94,59 @@ func (dtn *depTreeNode) matches(filter string) bool {
 	return false
 }
 
+const (
+	tBar  = "│"
+	tEnd  = "└"
+	tDash = "─"
+	tTree = "├"
+)
+
 func (dtn *depTreeNode) printFiltered(filter string, quiet bool) {
-	var rec func(*depTreeNode, int)
-	rec = func(p *depTreeNode, indent int) {
+	tabw := tabwriter.NewWriter(os.Stdout, 12, 4, 1, ' ', 0)
+
+	var rec func(*depTreeNode, string)
+	rec = func(p *depTreeNode, prefix string) {
+		var toprint []*depTreeNode
 		for _, n := range p.children {
-			if !n.matches(filter) {
-				continue
+			if n.matches(filter) {
+				toprint = append(toprint, n)
 			}
+		}
+		for i, n := range toprint {
+			last := i == len(toprint)-1
 			dep := n.this
 			label := dep.Hash
 			if !quiet {
-				label = fmt.Sprintf("%s %s %s", dep.Name, dep.Hash, dep.Version)
-			}
-			Log("%s%s", strings.Repeat("  ", indent), label)
+				pref := tTree
+				if last {
+					pref = tEnd
+				}
 
-			rec(n, indent+1)
+				label = fmt.Sprintf("%s%s \033[1m%s\033[0m\t%s\t%s", pref, tDash, dep.Name, dep.Hash, dep.Version)
+			}
+
+			fmt.Fprintln(tabw, prefix+label)
+
+			nextPref := prefix + tBar + "  "
+			if last {
+				nextPref = prefix + "   "
+			}
+			rec(n, nextPref)
 		}
 	}
 
-	rec(dtn, 0)
+	rec(dtn, "")
+
+	tabw.Flush()
 }
 
-func printDepsTree(pm *gx.PM, pkg *gx.Package, quiet bool, indent int) error {
-	return pkg.ForEachDep(func(dep *gx.Dependency, dpkg *gx.Package) error {
-		label := dep.Hash
-		if !quiet {
-			label = fmt.Sprintf("%s %s %s", dep.Name, dep.Hash, dep.Version)
-		}
-		Log("%s%s", strings.Repeat("  ", indent), label)
+func printDepsTree(pm *gx.PM, pkg *gx.Package, quiet bool) error {
+	t, err := genDepsTree(pm, pkg)
+	if err != nil {
+		return err
+	}
 
-		err := printDepsTree(pm, dpkg, quiet, indent+1)
-		if err != nil {
-			return err
-		}
+	t.printFiltered("", quiet)
 
-		return nil
-	})
+	return nil
 }
