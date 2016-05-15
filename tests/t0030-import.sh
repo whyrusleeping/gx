@@ -89,9 +89,9 @@ test_expect_success "deps look correct" '
 '
 
 test_expect_success "deps tree looks right" '
-	echo "c $pkgC 0.0.0" > deps_exp &&
-	echo "  a $pkgA 0.0.0" >> deps_exp &&
-	echo "  b $pkgB 0.0.0" >> deps_exp &&
+	printf "└─ \033[1mc\033[0m    %s 0.0.0\n" "$pkgC" > deps_exp &&
+	printf "   ├─ \033[1ma\033[0m %s 0.0.0\n" "$pkgA" >> deps_exp &&
+	printf "   └─ \033[1mb\033[0m %s 0.0.0\n" "$pkgB" >> deps_exp &&
 	test_cmp deps_exp deps_out
 '
 
