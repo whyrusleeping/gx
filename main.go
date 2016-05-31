@@ -978,8 +978,13 @@ func depBundleForPkgRec(pkg *gx.Package, done map[string]bool) (string, error) {
 }
 
 var DiffCommand = cli.Command{
-	Name: "diff",
+	Name:        "diff",
+	Usage:       "gx diff <old> <new>",
+	Description: "gx diff prints the changes between two given packages",
 	Action: func(c *cli.Context) error {
+		if len(c.Args()) != 2 {
+			return fmt.Errorf("gx diff takes two arguments")
+		}
 		a := c.Args()[0]
 		b := c.Args()[1]
 
