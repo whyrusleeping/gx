@@ -80,6 +80,7 @@ func main() {
 		DepsCommand,
 		GetCommand,
 		ImportCommand,
+		DiffCommand,
 		InitCommand,
 		InstallCommand,
 		PublishCommand,
@@ -974,4 +975,21 @@ func depBundleForPkgRec(pkg *gx.Package, done map[string]bool) (string, error) {
 	}
 
 	return obj, nil
+}
+
+var DiffCommand = cli.Command{
+	Name: "diff",
+	Action: func(c *cli.Context) error {
+		a := c.Args()[0]
+		b := c.Args()[1]
+
+		diff, err := DiffPackages(a, b)
+		if err != nil {
+			return err
+		}
+
+		diff.Print(true)
+		diff.Cleanup()
+		return nil
+	},
 }
