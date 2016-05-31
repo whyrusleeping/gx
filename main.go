@@ -516,7 +516,7 @@ EXAMPLE:
 			prompt := fmt.Sprintf(`Target package has a different name than new package:
 old: %s (%s)
 new: %s (%s)
-continue?`, olddep.Name, olddep.Hash, npkg.Name, target)
+continue?`, olddep.Name, olddep.Hash, npkg.Name, trgthash)
 			if !yesNoPrompt(prompt, false) {
 				log.Fatal("refusing to update package with different names")
 			}
@@ -529,7 +529,7 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, target)
 		}
 
 		if c.Bool("with-deps") {
-			err := RecursiveDepUpdate(pkg, oldhash, target)
+			err := RecursiveDepUpdate(pkg, oldhash, trgthash)
 			if err != nil {
 				return err
 			}
@@ -542,7 +542,7 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, target)
 			log.VLog("  - no collisions found for updated package")
 		}
 
-		olddep.Hash = target
+		olddep.Hash = trgthash
 		olddep.Version = npkg.Version
 
 		err = gx.SavePackageFile(pkg, PkgFileName)
@@ -551,7 +551,7 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, target)
 		}
 
 		log.VLog("running post update hook...")
-		err = gx.TryRunHook("post-update", pkg.Language, oldhash, target)
+		err = gx.TryRunHook("post-update", pkg.Language, oldhash, trgthash)
 		if err != nil {
 			return err
 		}
@@ -942,6 +942,10 @@ func depBundleForPkgRec(pkg *gx.Package, done map[string]bool) (string, error) {
 	}
 
 	for _, dep := range pkg.Dependencies {
+		if done[dep.Hash] {
+			continue
+		}
+
 		log.Log("processing dep: ", dep.Name)
 		nobj, err := pm.Shell().PatchLink(obj, dep.Name+"-"+dep.Hash, dep.Hash, false)
 		if err != nil {
@@ -954,7 +958,7 @@ func depBundleForPkgRec(pkg *gx.Package, done map[string]bool) (string, error) {
 			return "", err
 		}
 
-		child, err := depBundleForPkg(&cpkg)
+		child, err := depBundleForPkgRec(&cpkg, done)
 		if err != nil {
 			return "", err
 		}
@@ -965,6 +969,8 @@ func depBundleForPkgRec(pkg *gx.Package, done map[string]bool) (string, error) {
 		}
 
 		obj = nobj
+
+		done[dep.Hash] = true
 	}
 
 	return obj, nil
