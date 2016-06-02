@@ -74,6 +74,7 @@ func PkgFileDiff(dir string, a, b *gx.Package) (*Diff, error) {
 		} else {
 			out.Imports[dep.Name] = &Diff{
 				Version: []string{dep.Version},
+				Hashes:  []string{dep.Hash},
 			}
 		}
 	}
@@ -86,8 +87,13 @@ func (d *Diff) Print(interactive bool) {
 }
 
 func (d *Diff) recPrint(interactive bool, done map[string]bool) {
-	fmt.Printf("PACKAGE %s was changed from version\n", d.Name)
-	fmt.Printf("  %s (%s)\n    to\n  %s (%s)\n", d.Version[0], d.Hashes[0], d.Version[1], d.Hashes[1])
+	if len(d.Version) == 2 {
+		fmt.Printf("PACKAGE %s was changed from version\n", d.Name)
+		fmt.Printf("  %s (%s)\n    to\n  %s (%s)\n", d.Version[0], d.Hashes[0], d.Version[1], d.Hashes[1])
+	} else if len(d.Version) == 1 {
+		fmt.Printf("PACKAGE %s was imported at version %s (%s)\n", d.Name, d.Version[0], d.Hashes[0])
+		return
+	}
 	fmt.Printf("  There were %d changes in this packages dependencies.\n", len(d.Imports))
 	if d.hasCodeChanges() {
 		if !interactive || yesNoPrompt("  view code changes for this package?", true) {
