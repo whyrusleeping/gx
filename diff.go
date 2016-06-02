@@ -72,9 +72,26 @@ func PkgFileDiff(dir string, a, b *gx.Package) (*Diff, error) {
 				out.Imports[dep.Name] = ddiff
 			}
 		} else {
-			out.Imports[dep.Name] = &Diff{
+			ndep := &Diff{
 				Version: []string{dep.Version},
 				Hashes:  []string{dep.Hash},
+				Name:    dep.Name,
+			}
+			out.Imports[dep.Name] = ndep
+			tdir, err := ioutil.TempDir("", "gx-diff")
+			if err != nil {
+				return nil, err
+			}
+			ndep.dir = tdir
+
+			err = os.MkdirAll(filepath.Join(tdir, "a"), 0775)
+			if err != nil {
+				return nil, err
+			}
+
+			_, err = pm.GetPackageTo(dep.Hash, filepath.Join(tdir, "b"))
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -83,20 +100,27 @@ func PkgFileDiff(dir string, a, b *gx.Package) (*Diff, error) {
 }
 
 func (d *Diff) Print(interactive bool) {
-	d.recPrint(interactive, make(map[string]bool))
+	d.recPrint(interactive, make(map[string]bool), "")
 }
 
-func (d *Diff) recPrint(interactive bool, done map[string]bool) {
-	if len(d.Version) == 2 {
+func (d *Diff) recPrint(interactive bool, done map[string]bool, parent string) {
+	change := len(d.Version) == 2
+	if parent != "" {
+		fmt.Printf("IN %s:\n", parent)
+	}
+	if change {
 		fmt.Printf("PACKAGE %s was changed from version\n", d.Name)
 		fmt.Printf("  %s (%s)\n    to\n  %s (%s)\n", d.Version[0], d.Hashes[0], d.Version[1], d.Hashes[1])
-	} else if len(d.Version) == 1 {
-		fmt.Printf("PACKAGE %s was imported at version %s (%s)\n", d.Name, d.Version[0], d.Hashes[0])
-		return
+		fmt.Printf("  There were %d changes in this packages dependencies.\n", len(d.Imports))
+	} else {
+		fmt.Printf("PACKAGE %s was imported at version\n  %s (%s)\n", d.Name, d.Version[0], d.Hashes[0])
 	}
-	fmt.Printf("  There were %d changes in this packages dependencies.\n", len(d.Imports))
 	if d.hasCodeChanges() {
-		if !interactive || yesNoPrompt("  view code changes for this package?", true) {
+		prompt := "  view new code?"
+		if change {
+			prompt = "  view code changes for this package?"
+		}
+		if !interactive || yesNoPrompt(prompt, true) {
 			d.PrintCodeChanges()
 		}
 		fmt.Println()
@@ -107,7 +131,7 @@ func (d *Diff) recPrint(interactive bool, done map[string]bool) {
 	for _, cdiff := range d.Imports {
 		n := strings.Join(cdiff.Hashes, "-")
 		if !done[n] {
-			cdiff.recPrint(interactive, done)
+			cdiff.recPrint(interactive, done, d.Name)
 			done[n] = true
 		}
 	}
@@ -129,17 +153,14 @@ func (d *Diff) hasCodeChanges() bool {
 func (d *Diff) PrintCodeChanges() error {
 	var cmd *exec.Cmd
 	if _, err := exec.LookPath("git"); err == nil {
-		err := ioutil.WriteFile(filepath.Join(d.dir, ".gitignore"), []byte("package.json"), 0664)
-		if err != nil {
-			return err
-		}
-		cmd = exec.Command("git", "diff", "a", "b")
+		cmd = exec.Command("git", "diff", "--", "a", "b")
 	} else {
 		cmd = exec.Command("diff", "-r", "-x", "package.json", "a", "b")
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = d.dir
+	fmt.Println("RUNNING: ", d.dir, cmd.Dir, cmd.Args)
 	return cmd.Run()
 }
 
