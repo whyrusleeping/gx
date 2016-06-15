@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -88,6 +89,7 @@ func main() {
 		UpdateCommand,
 		VersionCommand,
 		ViewCommand,
+		SetCommand,
 	}
 
 	if err := app.Run(os.Args); err != nil {
@@ -996,5 +998,48 @@ var DiffCommand = cli.Command{
 		diff.Print(true)
 		diff.Cleanup()
 		return nil
+	},
+}
+
+var SetCommand = cli.Command{
+	Name:  "set",
+	Usage: "set package information",
+	Description: `set can be used to change package information.
+EXAMPLE:
+   > gx set license MIT
+`,
+	Flags: []cli.Flag{
+		cli.BoolFlag{
+			Name:  "in-json",
+			Usage: "Interpret input as json",
+		},
+	},
+	Action: func(c *cli.Context) error {
+		if c.NArg() < 2 {
+			log.Fatal("must speficy query and value")
+		}
+
+		var cfg map[string]interface{}
+		err := gx.LoadPackageFile(&cfg, PkgFileName)
+		if err != nil {
+			return err
+		}
+
+		queryStr := c.Args().Get(0)
+		valueStr := c.Args().Get(1)
+		var value interface{} = valueStr
+		if c.Bool("in-json") {
+			err = json.Unmarshal([]byte(valueStr), &value)
+			if err != nil {
+				return err
+			}
+		}
+
+		err = filter.Set(cfg, queryStr, value)
+		if err != nil {
+			return err
+		}
+
+		return gx.SavePackageFile(cfg, PkgFileName)
 	},
 }
