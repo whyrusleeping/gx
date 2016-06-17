@@ -697,12 +697,19 @@ EXAMPLE:
 			log.Fatal("must specify at least a query")
 		}
 
-		vendir := filepath.Join(cwd, vendorDir)
+		pkg, err := LoadPackageFile(gx.PkgFileName)
+		if err != nil {
+			return err
+		}
 
 		var cfg map[string]interface{}
 		if len(c.Args()) == 2 {
 			ref := c.Args()[0]
-			err := gx.LocalPackageByName(vendir, ref, &cfg)
+			dep := pkg.FindDep(ref)
+			if dep == nil {
+				return fmt.Errorf("no dep referenced by %s", ref)
+			}
+			err := gx.LoadPackage(&cfg, pkg.Language, dep.Hash)
 			if err != nil {
 				return err
 			}
