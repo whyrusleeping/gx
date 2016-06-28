@@ -113,13 +113,24 @@ func isTempError(err error) bool {
 
 // InstallDeps recursively installs all dependencies for the given package
 func (pm *PM) InstallDeps(pkg *Package, location string) error {
+	return pm.installDeps(pkg, location, make(map[string]bool))
+}
+
+func (pm *PM) installDeps(pkg *Package, location string, complete map[string]bool) error {
 	Log("installing package: %s-%s", pkg.Name, pkg.Version)
 
 	packages := make([]*Package, len(pkg.Dependencies))
 	pkgdirs := make([]string, len(pkg.Dependencies))
 	done := make(chan *Dependency)
 	errs := make(chan error)
+	var count int
 	for i, dep := range pkg.Dependencies {
+		if complete[dep.Hash] {
+			continue
+		}
+
+		count++
+
 		go func(i int, dep *Dependency) {
 			hash := dep.Hash
 			pkgdir := filepath.Join(location, "gx", "ipfs", hash)
@@ -155,7 +166,7 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 	}
 
 	var failed bool
-	for i := 0; i < len(pkg.Dependencies); i++ {
+	for i := 0; i < count; i++ {
 		select {
 		case dep := <-done:
 			Log("[%d / %d] fetched dep: %s", i+1, len(pkg.Dependencies), dep.Name)
@@ -172,11 +183,16 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 
 	for i, dep := range pkg.Dependencies {
 		cpkg := packages[i]
+		if cpkg == nil {
+			continue
+		}
 		VLog("  - %s depends on %s (%s)", pkg.Name, dep.Name, dep.Hash)
-		err := pm.InstallDeps(cpkg, location)
+		err := pm.installDeps(cpkg, location, complete)
 		if err != nil {
 			return err
 		}
+
+		complete[dep.Hash] = true
 
 		if err := maybeRunPostInstall(cpkg, pkgdirs[i], pm.global); err != nil {
 			return err
