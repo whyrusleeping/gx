@@ -6,3 +6,6 @@ install:
 
 test:
 	cd tests && make
+
+deps:
+	go get .
