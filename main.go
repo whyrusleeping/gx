@@ -759,9 +759,17 @@ var CleanCommand = cli.Command{
 			return err
 		}
 
-		vdir := filepath.Join(cwd, vendorDir)
+		ipath, err := gx.InstallPath(pkg.Language, cwd, false)
+		if err != nil {
+			return err
+		}
+
+		vdir := filepath.Join(ipath, "gx", "ipfs")
 		dirinfos, err := ioutil.ReadDir(vdir)
 		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
 			return err
 		}
 
@@ -773,7 +781,7 @@ var CleanCommand = cli.Command{
 			if !keep {
 				fmt.Println(di.Name())
 				if !dry {
-					err := os.RemoveAll(filepath.Join(cwd, vendorDir, di.Name()))
+					err := os.RemoveAll(filepath.Join(vdir, di.Name()))
 					if err != nil {
 						return err
 					}
