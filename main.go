@@ -642,11 +642,14 @@ EXAMPLE:
 			v.Major++
 			v.Minor = 0
 			v.Patch = 0
+			v.Pre = nil // reset prerelase info
 		case "minor":
 			v.Minor++
 			v.Patch = 0
+			v.Pre = nil
 		case "patch":
 			v.Patch++
+			v.Pre = nil
 		default:
 			if nver[0] == 'v' {
 				nver = nver[1:]
