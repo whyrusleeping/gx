@@ -169,14 +169,3 @@ func (dtn *depTreeNode) printFiltered(filter string, quiet, collapse bool) {
 
 	tabw.Flush()
 }
-
-func printDepsTree(pm *gx.PM, pkg *gx.Package, quiet, collapse bool) error {
-	t, err := genDepsTree(pm, pkg)
-	if err != nil {
-		return err
-	}
-
-	t.printFiltered("", quiet, collapse)
-
-	return nil
-}
