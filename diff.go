@@ -125,7 +125,7 @@ func (d *Diff) recPrint(interactive bool, done map[string]bool, parent string) {
 		}
 		fmt.Println()
 	} else {
-		fmt.Println("Nothing else was changed in this package.\n")
+		fmt.Printf("Nothing else was changed in this package.\n\n")
 	}
 
 	for _, cdiff := range d.Imports {

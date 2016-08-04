@@ -21,9 +21,8 @@ import (
 )
 
 var (
-	vendorDir = filepath.Join("vendor", "gx", "ipfs")
-	cwd       string
-	pm        *gx.PM
+	cwd string
+	pm  *gx.PM
 )
 
 const PkgFileName = gx.PkgFileName
@@ -239,7 +238,7 @@ var ImportCommand = cli.Command{
 
 		npkg, err := pm.InstallPackage(dephash, ipath)
 		if err != nil {
-			return fmt.Errorf("(install):", err)
+			return fmt.Errorf("(install): %s", err)
 		}
 
 		if pkg.FindDep(npkg.Name) != nil {
@@ -306,11 +305,6 @@ var InstallCommand = cli.Command{
 		pm.SetGlobal(global)
 
 		if len(c.Args()) == 0 {
-			cwd, err := os.Getwd()
-			if err != nil {
-				return err
-			}
-
 			err = gx.TryRunHook("req-check", pkg.Language, cwd)
 			if err != nil {
 				return err
@@ -323,7 +317,7 @@ var InstallCommand = cli.Command{
 
 			err = pm.InstallDeps(pkg, ipath)
 			if err != nil {
-				return fmt.Errorf("install deps:", err)
+				return fmt.Errorf("install deps: %s", err)
 			}
 			return nil
 		}
@@ -911,7 +905,7 @@ var depFindCommand = cli.Command{
 	Action: func(c *cli.Context) error {
 
 		if len(c.Args()) != 1 {
-			fmt.Errorf("must be passed exactly one argument")
+			return fmt.Errorf("must be passed exactly one argument")
 		}
 
 		pkg, err := LoadPackageFile(PkgFileName)

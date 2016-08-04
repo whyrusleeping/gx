@@ -143,7 +143,7 @@ var RepoListCommand = cli.Command{
 		rname := c.Args().First()
 		r, ok := cfg.GetRepos()[rname]
 		if !ok {
-			fmt.Errorf("no such repo: %s", rname)
+			return fmt.Errorf("no such repo: %s", rname)
 		}
 
 		repo, err := pm.FetchRepo(r, true)
