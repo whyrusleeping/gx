@@ -856,7 +856,7 @@ var DepsCommand = cli.Command{
 				return err
 			}
 
-			for k, _ := range depmap {
+			for k := range depmap {
 				deps = append(deps, k)
 			}
 		} else {
