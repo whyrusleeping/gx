@@ -8,7 +8,7 @@ import (
 	"time"
 
 	rname "github.com/jbenet/go-os-rename"
-	. "github.com/whyrusleeping/stump"
+	stump "github.com/whyrusleeping/stump"
 )
 
 type ErrAlreadyInstalled struct {
@@ -45,28 +45,28 @@ func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 	// check if a fetch was previously started and failed, cleanup if found
 	_, err = os.Stat(outtemp)
 	if err == nil {
-		VLog("Found previously failed fetch, cleaning up...")
+		stump.VLog("Found previously failed fetch, cleaning up...")
 		if err := os.RemoveAll(outtemp); err != nil {
-			Error("cleaning up aborted transfer: %s", err)
+			stump.Error("cleaning up previous aborted transfer: %s", err)
 		}
 	}
 
 	begin := time.Now()
-	VLog("  - fetching %s via ipfs api", hash)
+	stump.VLog("  - fetching %s via ipfs api", hash)
 	tries := 3
 	for i := 0; i < tries; i++ {
 		if err := pm.Shell().Get(hash, outtemp); err != nil {
-			Error("from shell.Get(): %#v", err)
+			stump.Error("from shell.Get(): %v", err)
 
 			rmerr := os.RemoveAll(outtemp)
 			if rmerr != nil {
-				Error("cleaning up temp download directory: %s", rmerr)
+				stump.Error("cleaning up temp download directory: %s", rmerr)
 			}
 
 			if i == tries-1 {
 				return nil, err
 			}
-			Log("retrying fetch %s after a second...", hash)
+			stump.Log("retrying fetch %s after a second...", hash)
 			time.Sleep(time.Second)
 		} else {
 			if err := rname.Rename(outtemp, out); err != nil {
@@ -75,7 +75,7 @@ func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 			break
 		}
 	}
-	VLog("  - fetch finished in %s", time.Now().Sub(begin))
+	stump.VLog("  - fetch finished in %s", time.Now().Sub(begin))
 
 	err = FindPackageInDir(&pkg, out)
 	if err != nil {
