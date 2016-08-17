@@ -831,6 +831,10 @@ var DepsCommand = cli.Command{
 			Name:  "highlight",
 			Usage: "for tree printing, prune branches unrelated to arg",
 		},
+		cli.BoolFlag{
+			Name:  "collapse",
+			Usage: "for tree printing, prune branches already printed",
+		},
 	},
 	Subcommands: []cli.Command{
 		depBundleCommand,
@@ -851,7 +855,7 @@ var DepsCommand = cli.Command{
 				log.Fatal(err)
 			}
 
-			dt.printFiltered(c.String("highlight"), quiet)
+			dt.printFiltered(c.String("highlight"), quiet, c.Bool("collapse"))
 			return nil
 		}
 

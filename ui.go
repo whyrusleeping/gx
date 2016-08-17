@@ -60,21 +60,35 @@ type depTreeNode struct {
 }
 
 func genDepsTree(pm *gx.PM, pkg *gx.Package) (*depTreeNode, error) {
-	cur := new(depTreeNode)
 
-	err := pkg.ForEachDep(func(dep *gx.Dependency, dpkg *gx.Package) error {
-		sub, err := genDepsTree(pm, dpkg)
-		if err != nil {
-			return err
-		}
+	complete := make(map[string]*depTreeNode)
 
-		sub.this = dep
-		cur.children = append(cur.children, sub)
+	var rec func(pkg *gx.Package) (*depTreeNode, error)
+	rec = func(pkg *gx.Package) (*depTreeNode, error) {
+		cur := new(depTreeNode)
+		cur.this = new(gx.Dependency)
 
-		return nil
-	})
+		err := pkg.ForEachDep(func(dep *gx.Dependency, dpkg *gx.Package) error {
+			sub := complete[dep.Hash]
+			if sub == nil {
+				var err error
+				sub, err = rec(dpkg)
+				if err != nil {
+					return err
+				}
+				complete[dep.Hash] = sub
+			}
 
-	return cur, err
+			sub.this = dep
+			cur.children = append(cur.children, sub)
+
+			return nil
+		})
+
+		return cur, err
+	}
+
+	return rec(pkg)
 }
 
 func (dtn *depTreeNode) matches(filter string) bool {
@@ -101,15 +115,29 @@ const (
 	tTree = "├"
 )
 
-func (dtn *depTreeNode) printFiltered(filter string, quiet bool) {
+func (dtn *depTreeNode) printFiltered(filter string, quiet, collapse bool) {
 	tabw := tabwriter.NewWriter(os.Stdout, 12, 4, 1, ' ', 0)
 
+	printed := make(map[string]bool)
 	var rec func(*depTreeNode, string)
 	rec = func(p *depTreeNode, prefix string) {
+		if len(p.children) == 0 {
+			return
+		}
+
 		var toprint []*depTreeNode
 		for _, n := range p.children {
 			if n.matches(filter) {
 				toprint = append(toprint, n)
+			}
+		}
+		if printed[p.this.Hash] && collapse {
+			toprint = []*depTreeNode{
+				{
+					this: &gx.Dependency{
+						Name: "...",
+					},
+				},
 			}
 		}
 		for i, n := range toprint {
@@ -133,6 +161,8 @@ func (dtn *depTreeNode) printFiltered(filter string, quiet bool) {
 			}
 			rec(n, nextPref)
 		}
+
+		printed[p.this.Hash] = true
 	}
 
 	rec(dtn, "")
@@ -140,13 +170,13 @@ func (dtn *depTreeNode) printFiltered(filter string, quiet bool) {
 	tabw.Flush()
 }
 
-func printDepsTree(pm *gx.PM, pkg *gx.Package, quiet bool) error {
+func printDepsTree(pm *gx.PM, pkg *gx.Package, quiet, collapse bool) error {
 	t, err := genDepsTree(pm, pkg)
 	if err != nil {
 		return err
 	}
 
-	t.printFiltered("", quiet)
+	t.printFiltered("", quiet, collapse)
 
 	return nil
 }
