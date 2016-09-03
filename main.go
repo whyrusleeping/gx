@@ -29,6 +29,15 @@ var (
 const PkgFileName = gx.PkgFileName
 
 func LoadPackageFile(path string) (*gx.Package, error) {
+	if path == PkgFileName {
+		root, err := gx.GetPackageRoot()
+		if err != nil {
+			return nil, err
+		}
+
+		path = filepath.Join(root, PkgFileName)
+	}
+
 	var pkg gx.Package
 	err := gx.LoadPackageFile(&pkg, path)
 	if err != nil {
@@ -700,24 +709,29 @@ EXAMPLE:
 			log.Fatal("must specify at least a query")
 		}
 
-		pkg, err := LoadPackageFile(gx.PkgFileName)
-		if err != nil {
-			return err
-		}
-
 		var cfg map[string]interface{}
 		if len(c.Args()) == 2 {
+			pkg, err := LoadPackageFile(gx.PkgFileName)
+			if err != nil {
+				return err
+			}
+
 			ref := c.Args()[0]
 			dep := pkg.FindDep(ref)
 			if dep == nil {
 				return fmt.Errorf("no dep referenced by %s", ref)
 			}
-			err := gx.LoadPackage(&cfg, pkg.Language, dep.Hash)
+			err = gx.LoadPackage(&cfg, pkg.Language, dep.Hash)
 			if err != nil {
 				return err
 			}
 		} else {
-			err := gx.LoadPackageFile(&cfg, PkgFileName)
+			root, err := gx.GetPackageRoot()
+			if err != nil {
+				return err
+			}
+
+			err = gx.LoadPackageFile(&cfg, filepath.Join(root, PkgFileName))
 			if err != nil {
 				return err
 			}

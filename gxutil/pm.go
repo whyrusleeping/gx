@@ -39,6 +39,27 @@ func NewPM(cfg *Config) (*PM, error) {
 	}, nil
 }
 
+func GetPackageRoot() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	for cwd != "/" {
+		_, err := os.Stat(filepath.Join(cwd, "package.json"))
+		switch {
+		case err == nil:
+			return cwd, nil
+		case os.IsNotExist(err):
+			cwd = filepath.Join(cwd, "..")
+		default:
+			return "", err
+		}
+	}
+
+	return "", fmt.Errorf("no package found in this directory or any above")
+}
+
 func (pm *PM) Shell() *sh.Shell {
 	if pm.ipfssh == nil {
 		pm.ipfssh = NewShell()
