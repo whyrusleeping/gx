@@ -5,7 +5,7 @@ os:
 language: go
 
 go:
-    - 1.5.3
+    - 1.7
 
 env:
     - TEST_VERBOSE=1
