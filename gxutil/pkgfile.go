@@ -84,7 +84,9 @@ func SavePackageFile(pkg interface{}, fname string) error {
 	}
 
 	buf := new(bytes.Buffer)
-	if err := json.NewEncoder(buf).Encode(pkg); err != nil {
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(pkg); err != nil {
 		return err
 	}
 
@@ -103,11 +105,19 @@ func writeJson(i interface{}, fname string) error {
 	}
 	defer fi.Close()
 
-	out, err := json.MarshalIndent(i, "", "  ")
-	if err != nil {
+	buf := new(bytes.Buffer)
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(i); err != nil {
 		return err
 	}
-	_, err = fi.Write(out)
+
+	out := new(bytes.Buffer)
+	if json.Indent(out, buf.Bytes(), "", " ") != nil {
+		return err
+	}
+
+	_, err = fi.Write(out.Bytes())
 	fi.WriteString("\n")
 	return err
 }

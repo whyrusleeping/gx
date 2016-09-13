@@ -11,13 +11,17 @@ test_description="test package init"
 test_init_ipfs
 test_launch_ipfs_daemon
 
-pkg_hash="QmPKjGmE57YaeNePfQivpaZJkpiVJtacJTi7W4TDK2GMrw"
+pkg_hash="QmQnaq1hCywKUfEMMNdA6RmnBAoTrDTZd8hKVeAsUS25qx"
 
 test_expect_success "setup test package" '
 	which gx &&
 	mkdir mypkg &&
-	echo "{\"User\":{\"Name\":\"gxguy\"}}" > mypkg/.gxrc &&
+	echo "{\"User\":{\"Name\":\"gxguy <gxguy@gx.io>\"}}" > mypkg/.gxrc &&
 	(cd mypkg && gx init --lang=none)
+'
+
+test_expect_success "author string intact" '
+	grep "gxguy <gxguy@gx.io>" mypkg/package.json
 '
 
 test_expect_success "package.json has right values" '
