@@ -11,7 +11,7 @@ test_description="test package init"
 test_init_ipfs
 test_launch_ipfs_daemon
 
-pkg_hash="QmTc3CuMBHooVrGmQ1CnrDLYMhDdXqkBSTNv43SHtGhDr7"
+pkg_hash="QmNfWQiK9bDfTYDQQzWof6jAsBnsVxqhgGp3i4e8vssdJC"
 
 test_expect_success "setup test package" '
 	which gx &&
