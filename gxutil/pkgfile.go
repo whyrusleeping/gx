@@ -113,7 +113,7 @@ func writeJson(i interface{}, fname string) error {
 	}
 
 	out := new(bytes.Buffer)
-	if json.Indent(out, buf.Bytes(), "", " ") != nil {
+	if json.Indent(out, buf.Bytes(), "", "  ") != nil {
 		return err
 	}
 
