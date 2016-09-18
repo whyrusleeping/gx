@@ -548,19 +548,39 @@ func resolveDepName(pkg *Package, out interface{}, dir, name string, checked map
 	return ErrUnrecognizedName
 }
 
-func TryRunHook(hook, env string, args ...string) error {
+func getSubtoolPath(env string) (string, error) {
 	if env == "" {
-		return nil
+		return "", nil
 	}
 
 	binname := "gx-" + env
 	_, err := exec.LookPath(binname)
 	if err != nil {
-		if strings.Contains(err.Error(), "file not found") {
-			VLog("runhook(%s): No gx helper tool found for", hook, env)
-			return nil
+		if !strings.Contains(err.Error(), "file not found") {
+			return "", err
 		}
+
+		if strings.HasSuffix(os.Args[0], "/gx") {
+			nearBin := os.Args[0] + "-" + env
+			if _, err := os.Stat(nearBin); err != nil {
+				VLog("subtool_exec: No gx helper tool found for", env)
+				return "", nil
+			}
+			binname = nearBin
+		}
+	}
+
+	return binname, nil
+}
+
+func TryRunHook(hook, env string, args ...string) error {
+	binname, err := getSubtoolPath(env)
+	if err != nil {
 		return err
+	}
+
+	if binname == "" {
+		return nil
 	}
 
 	args = append([]string{"hook", hook}, args...)
@@ -585,13 +605,8 @@ func InstallPath(env, relpath string, global bool) (string, error) {
 		return defaultLocalPath, nil
 	}
 
-	binname := "gx-" + env
-	_, err := exec.LookPath(binname)
+	binname, err := getSubtoolPath(env)
 	if err != nil {
-		if strings.Contains(err.Error(), "file not found") {
-			VLog("runhook(install-path): No gx helper tool found for", env)
-			return defaultLocalPath, nil
-		}
 		return "", err
 	}
 
