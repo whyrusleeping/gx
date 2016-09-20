@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	sh "github.com/ipfs/go-ipfs-api"
-	ma "github.com/jbenet/go-multiaddr"
-	manet "github.com/jbenet/go-multiaddr-net"
 	homedir "github.com/mitchellh/go-homedir"
+	ma "github.com/multiformats/go-multiaddr"
+	manet "github.com/multiformats/go-multiaddr-net"
 	log "github.com/whyrusleeping/stump"
 )
 
