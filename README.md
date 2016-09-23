@@ -37,7 +37,7 @@ distributed fashion, and pulls ideas from other beloved package managers (like
 gx was designed with the following major goals in mind:
 
 1. Be language/ecosystem agnostic by providing [git-like hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks) for adding [new ecosystems](https://github.com/whyrusleeping/gx-go).
-2. Built-in [semantic versioning](http://semver.org).
+2. Provide completely reproducible packages through content addressing.
 3. Use [a flexible, distributed storage backend](http://ipfs.io/).
 
 
