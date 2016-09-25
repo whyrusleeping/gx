@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -94,6 +95,7 @@ func main() {
 		InitCommand,
 		InstallCommand,
 		PublishCommand,
+		ReleaseCommand,
 		RepoCommand,
 		UpdateCommand,
 		VersionCommand,
@@ -141,6 +143,7 @@ number. This is a soft requirement and can be skipped by specifying the
 			log.Log("please run an ipfs node and try again.")
 			return nil
 		}
+
 		pkg, err := LoadPackageFile(PkgFileName)
 		if err != nil {
 			return err
@@ -152,30 +155,34 @@ number. This is a soft requirement and can be skipped by specifying the
 			}
 		}
 
-		err = gx.TryRunHook("pre-publish", pkg.Language)
-		if err != nil {
-			return err
-		}
-
-		hash, err := pm.PublishPackage(cwd, &pkg.PackageBase)
-		if err != nil {
-			return fmt.Errorf("publishing: %s", err)
-		}
-		log.Log("package %s published with hash: %s", pkg.Name, hash)
-
-		// write out version hash
-		err = writeLastPub(pkg.Version, hash)
-		if err != nil {
-			return err
-		}
-
-		err = gx.TryRunHook("post-publish", pkg.Language, hash)
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return doPublish(pkg)
 	},
+}
+
+func doPublish(pkg *gx.Package) error {
+	err := gx.TryRunHook("pre-publish", pkg.Language)
+	if err != nil {
+		return err
+	}
+
+	hash, err := pm.PublishPackage(cwd, &pkg.PackageBase)
+	if err != nil {
+		return fmt.Errorf("publishing: %s", err)
+	}
+	log.Log("package %s published with hash: %s", pkg.Name, hash)
+
+	// write out version hash
+	err = writeLastPub(pkg.Version, hash)
+	if err != nil {
+		return err
+	}
+
+	err = gx.TryRunHook("post-publish", pkg.Language, hash)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func writeLastPub(vers string, hash string) error {
@@ -522,7 +529,7 @@ EXAMPLE:
 		}
 		oldhash = olddep.Hash
 
-		log.Log("updating %s to %s", olddep.Name, trgthash)
+		log.Log("updating %s to version %s (%s)", olddep.Name, npkg.Version, trgthash)
 
 		if npkg.Name != olddep.Name {
 			prompt := fmt.Sprintf(`Target package has a different name than new package:
@@ -547,7 +554,7 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, trgthash)
 			}
 		} else {
 			log.VLog("checking for potential package naming collisions...")
-			err = updateCollisionCheck(pkg, olddep, nil)
+			err = updateCollisionCheck(pkg, olddep, trgthash, nil)
 			if err != nil {
 				log.Fatal("update sanity check: ", err)
 			}
@@ -574,18 +581,18 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, trgthash)
 	},
 }
 
-func updateCollisionCheck(ipkg *gx.Package, idep *gx.Dependency, chain []string) error {
+func updateCollisionCheck(ipkg *gx.Package, idep *gx.Dependency, trgt string, chain []string) error {
 	return ipkg.ForEachDep(func(dep *gx.Dependency, pkg *gx.Package) error {
 		if dep == idep {
 			return nil
 		}
 
-		if dep.Name == idep.Name || dep.Hash == idep.Hash {
+		if (dep.Name == idep.Name && dep.Hash != trgt) || (dep.Hash == idep.Hash && dep.Name != idep.Name) {
 			log.Log("dep %s also imports %s (%s)", strings.Join(chain, "/"), dep.Name, dep.Hash)
 			return nil
 		}
 
-		return updateCollisionCheck(pkg, idep, append(chain, dep.Name))
+		return updateCollisionCheck(pkg, idep, trgt, append(chain, dep.Name))
 	})
 }
 
@@ -621,61 +628,62 @@ EXAMPLE:
 		if err != nil {
 			return err
 		}
-
 		if !c.Args().Present() {
 			fmt.Println(pkg.Version)
-			return nil
 		}
 
-		defer func() {
-			err := gx.SavePackageFile(pkg, PkgFileName)
-			if err != nil {
-				outerr = err
-			}
-		}()
+		return updateVersion(pkg, c.Args().First())
+	},
+}
 
-		nver := c.Args().First()
-		// if argument is a semver, set version to it
-		_, err = semver.Make(nver)
-		if err == nil {
-			pkg.Version = nver
+func updateVersion(pkg *gx.Package, nver string) (outerr error) {
+	defer func() {
+		err := gx.SavePackageFile(pkg, PkgFileName)
+		if err != nil {
+			outerr = err
+		}
+	}()
+
+	// if argument is a semver, set version to it
+	_, err := semver.Make(nver)
+	if err == nil {
+		pkg.Version = nver
+		return nil
+	}
+
+	v, err := semver.Make(pkg.Version)
+	if err != nil {
+		return err
+	}
+	switch nver {
+	case "major":
+		v.Major++
+		v.Minor = 0
+		v.Patch = 0
+		v.Pre = nil // reset prerelase info
+	case "minor":
+		v.Minor++
+		v.Patch = 0
+		v.Pre = nil
+	case "patch":
+		v.Patch++
+		v.Pre = nil
+	default:
+		if nver[0] == 'v' {
+			nver = nver[1:]
+		}
+		newver, err := semver.Make(nver)
+		if err != nil {
+			log.Error(err)
 			return
 		}
+		v = newver
+	}
+	log.Log("updated version to: %s", v)
 
-		v, err := semver.Make(pkg.Version)
-		if err != nil {
-			return err
-		}
-		switch nver {
-		case "major":
-			v.Major++
-			v.Minor = 0
-			v.Patch = 0
-			v.Pre = nil // reset prerelase info
-		case "minor":
-			v.Minor++
-			v.Patch = 0
-			v.Pre = nil
-		case "patch":
-			v.Patch++
-			v.Pre = nil
-		default:
-			if nver[0] == 'v' {
-				nver = nver[1:]
-			}
-			newver, err := semver.Make(nver)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			v = newver
-		}
-		log.Log("updated version to: %s", v)
+	pkg.Version = v.String()
 
-		pkg.Version = v.String()
-
-		return nil
-	},
+	return nil
 }
 
 var ViewCommand = cli.Command{
@@ -1052,7 +1060,7 @@ EXAMPLE:
 	},
 	Action: func(c *cli.Context) error {
 		if c.NArg() < 2 {
-			log.Fatal("must speficy query and value")
+			log.Fatal("must specify query and value")
 		}
 
 		var cfg map[string]interface{}
@@ -1078,4 +1086,91 @@ EXAMPLE:
 
 		return gx.SavePackageFile(cfg, PkgFileName)
 	},
+}
+
+var ReleaseCommand = cli.Command{
+	Name:        "release",
+	Usage:       "perform a release of a package",
+	Description: `release updates the package version, publishes the package, and runs a configured release script.`,
+	Action: func(c *cli.Context) error {
+		if c.NArg() < 1 {
+			log.Fatal("must specify release severity (major, minor, patch)")
+		}
+
+		pkg, err := LoadPackageFile(PkgFileName)
+		if err != nil {
+			return err
+		}
+
+		err = updateVersion(pkg, c.Args().First())
+		if err != nil {
+			return err
+		}
+
+		err = doPublish(pkg)
+		if err != nil {
+			return err
+		}
+
+		return runRelease(pkg)
+	},
+}
+
+func splitArgs(in string) []string {
+	var out []string
+
+	var inquotes bool
+	cur := 0
+	for i, c := range in {
+		switch {
+		case c == '"':
+			if inquotes {
+				out = append(out, in[cur:i])
+				inquotes = false
+			} else {
+				inquotes = true
+			}
+			cur = i + 1
+		case c == ' ':
+			if inquotes {
+				continue
+			}
+			if i == cur {
+				cur++
+				continue
+			}
+
+			out = append(out, in[cur:i])
+			cur = i + 1
+		}
+	}
+
+	final := in[cur:]
+	if final != "" {
+		out = append(out, final)
+	}
+
+	return out
+}
+
+func escapeReleaseCmd(pkg *gx.Package, cmd string) string {
+	cmd = strings.Replace(cmd, "$VERSION", pkg.Version, -1)
+
+	return cmd
+}
+
+func runRelease(pkg *gx.Package) error {
+	if pkg.ReleaseCmd == "" {
+		return nil
+	}
+
+	replaced := escapeReleaseCmd(pkg, pkg.ReleaseCmd)
+
+	parts := splitArgs(replaced)
+	cmd := exec.Command(parts[0], parts[1:]...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+
+	return cmd.Run()
 }

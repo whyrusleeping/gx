@@ -20,6 +20,7 @@ type PackageBase struct {
 	Bin          string        `json:"bin,omitempty"`
 	Build        string        `json:"build,omitempty"`
 	Test         string        `json:"test,omitempty"`
+	ReleaseCmd   string        `json:"releaseCmd,omitempty"`
 	Language     string        `json:"language,omitempty"`
 	License      string        `json:"license"`
 	Bugs         BugsObj       `json:"bugs"`
