@@ -476,6 +476,68 @@ func (pm *PM) enumerateDepsRec(pkg *Package, set map[string]string) error {
 	return nil
 }
 
+type PkgStats struct {
+	totalDepth   int
+	AverageDepth float64
+
+	TotalImports int
+}
+
+type DepStats struct {
+	TotalCount  int
+	TotalUnique int
+
+	AverageDepth float64
+	totalDepth   int
+
+	Packages map[string]*PkgStats
+}
+
+func (ds *DepStats) Finalize() {
+	ds.AverageDepth = float64(ds.totalDepth) / float64(ds.TotalCount)
+
+	for _, pkg := range ds.Packages {
+		pkg.AverageDepth = float64(pkg.totalDepth) / float64(pkg.TotalImports)
+	}
+}
+
+func newDepStats() *DepStats {
+	return &DepStats{
+		Packages: make(map[string]*PkgStats),
+	}
+}
+
+func GetDepStats(pkg *Package) (*DepStats, error) {
+	ds := newDepStats()
+	err := getDepStatsRec(pkg, ds, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	ds.Finalize()
+
+	return ds, nil
+}
+
+func getDepStatsRec(pkg *Package, stats *DepStats, depth int) error {
+	return pkg.ForEachDep(func(dep *Dependency, dpkg *Package) error {
+		stats.TotalCount++
+		stats.totalDepth += depth
+
+		ps, ok := stats.Packages[dep.Hash]
+		if !ok {
+			stats.TotalUnique++
+			ps = new(PkgStats)
+			stats.Packages[dep.Hash] = ps
+		}
+
+		ps.totalDepth += depth
+		ps.TotalImports++
+
+		return getDepStatsRec(dpkg, stats, depth+1)
+	})
+}
+
 func LocalPackageByName(dir, name string, out interface{}) error {
 	if IsHash(name) {
 		return FindPackageInDir(out, filepath.Join(dir, name))

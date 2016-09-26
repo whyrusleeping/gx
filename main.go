@@ -861,6 +861,7 @@ var DepsCommand = cli.Command{
 	Subcommands: []cli.Command{
 		depBundleCommand,
 		depFindCommand,
+		depStatsCommand,
 		depDupesCommand,
 	},
 	Action: func(c *cli.Context) error {
@@ -984,6 +985,28 @@ var depDupesCommand = cli.Command{
 
 			byname[name] = hash
 		}
+
+		return nil
+	},
+}
+
+var depStatsCommand = cli.Command{
+	Name:  "stats",
+	Usage: "print out statistics about this packages dependency tree",
+	Action: func(c *cli.Context) error {
+		pkg, err := LoadPackageFile(PkgFileName)
+		if err != nil {
+			return err
+		}
+
+		ds, err := gx.GetDepStats(pkg)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Total Import Count: %d\n", ds.TotalCount)
+		fmt.Printf("Unique Import Count: %d\n", ds.TotalUnique)
+		fmt.Printf("Average Import Depth: %.2f\n", ds.AverageDepth)
 
 		return nil
 	},
