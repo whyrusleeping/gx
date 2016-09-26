@@ -630,6 +630,7 @@ EXAMPLE:
 		}
 		if !c.Args().Present() {
 			fmt.Println(pkg.Version)
+			return
 		}
 
 		return updateVersion(pkg, c.Args().First())
