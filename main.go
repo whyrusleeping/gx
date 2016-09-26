@@ -861,6 +861,7 @@ var DepsCommand = cli.Command{
 	Subcommands: []cli.Command{
 		depBundleCommand,
 		depFindCommand,
+		depDupesCommand,
 	},
 	Action: func(c *cli.Context) error {
 		rec := c.Bool("r")
@@ -954,6 +955,35 @@ var depFindCommand = cli.Command{
 			}
 		}
 		log.Fatal("no dependency named '%s' found", dep)
+
+		return nil
+	},
+}
+
+var depDupesCommand = cli.Command{
+	Name:  "dupes",
+	Usage: "print out packages with same names, but different hashes",
+	Action: func(c *cli.Context) error {
+		pkg, err := LoadPackageFile(PkgFileName)
+		if err != nil {
+			return err
+		}
+
+		depmap, err := pm.EnumerateDependencies(pkg)
+		if err != nil {
+			return err
+		}
+
+		byname := make(map[string]string)
+		for hash, name := range depmap {
+			h, ok := byname[name]
+			if ok {
+				fmt.Printf("package %s imported as both %s and %s\n", name, h, hash)
+				continue
+			}
+
+			byname[name] = hash
+		}
 
 		return nil
 	},
@@ -1107,6 +1137,7 @@ var ReleaseCommand = cli.Command{
 			return err
 		}
 
+		fmt.Printf("publishing package...\r")
 		err = doPublish(pkg)
 		if err != nil {
 			return err

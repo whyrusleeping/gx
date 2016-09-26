@@ -444,8 +444,8 @@ func (pm *PM) resolveNameInRepos(name string) (string, error) {
 	return "", fmt.Errorf("ambiguous ref, appears in multiple repos")
 }
 
-func (pm *PM) EnumerateDependencies(pkg *Package) (map[string]struct{}, error) {
-	deps := make(map[string]struct{})
+func (pm *PM) EnumerateDependencies(pkg *Package) (map[string]string, error) {
+	deps := make(map[string]string)
 	err := pm.enumerateDepsRec(pkg, deps)
 	if err != nil {
 		return nil, err
@@ -454,13 +454,13 @@ func (pm *PM) EnumerateDependencies(pkg *Package) (map[string]struct{}, error) {
 	return deps, nil
 }
 
-func (pm *PM) enumerateDepsRec(pkg *Package, set map[string]struct{}) error {
+func (pm *PM) enumerateDepsRec(pkg *Package, set map[string]string) error {
 	for _, d := range pkg.Dependencies {
 		if _, ok := set[d.Hash]; ok {
 			continue
 		}
 
-		set[d.Hash] = struct{}{}
+		set[d.Hash] = d.Name
 
 		var depkg Package
 		err := LoadPackage(&depkg, pkg.Language, d.Hash)
