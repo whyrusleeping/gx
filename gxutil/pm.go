@@ -82,7 +82,7 @@ func maybeRunPostInstall(pkg *Package, pkgdir string, global bool) error {
 		if global {
 			args = append(args, "--global")
 		}
-		err := TryRunHook("post-install", pkg.Language, args...)
+		err := TryRunHook("post-install", pkg.Language, pkg.SubtoolRequired, args...)
 		if err != nil {
 			return err
 		}
@@ -288,7 +288,7 @@ func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
 		return err
 	}
 
-	err = TryRunHook("post-init", lang, dir)
+	err = TryRunHook("post-init", lang, pkg.SubtoolRequired, dir)
 	if err != nil {
 		return err
 	}
@@ -346,7 +346,7 @@ func (pm *PM) ImportPackage(dir, dephash string) (*Dependency, error) {
 		}
 	}
 
-	err = TryRunHook("post-import", ndep.Language, dephash)
+	err = TryRunHook("post-import", ndep.Language, ndep.SubtoolRequired, dephash)
 	if err != nil {
 		return nil, err
 	}
@@ -635,13 +635,16 @@ func getSubtoolPath(env string) (string, error) {
 	return binname, nil
 }
 
-func TryRunHook(hook, env string, args ...string) error {
+func TryRunHook(hook, env string, req bool, args ...string) error {
 	binname, err := getSubtoolPath(env)
 	if err != nil {
 		return err
 	}
 
 	if binname == "" {
+		if req {
+			return fmt.Errorf("no binary named gx-%s was found.", env)
+		}
 		return nil
 	}
 

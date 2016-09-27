@@ -11,20 +11,21 @@ import (
 )
 
 type PackageBase struct {
-	Name         string        `json:"name,omitempty"`
-	Author       string        `json:"author,omitempty"`
-	Description  string        `json:"description,omitempty"`
-	Keywords     []string      `json:"keywords,omitempty"`
-	Version      string        `json:"version,omitempty"`
-	Dependencies []*Dependency `json:"gxDependencies,omitempty"`
-	Bin          string        `json:"bin,omitempty"`
-	Build        string        `json:"build,omitempty"`
-	Test         string        `json:"test,omitempty"`
-	ReleaseCmd   string        `json:"releaseCmd,omitempty"`
-	Language     string        `json:"language,omitempty"`
-	License      string        `json:"license"`
-	Bugs         BugsObj       `json:"bugs"`
-	GxVersion    string        `json:"gxVersion"`
+	Name            string        `json:"name,omitempty"`
+	Author          string        `json:"author,omitempty"`
+	Description     string        `json:"description,omitempty"`
+	Keywords        []string      `json:"keywords,omitempty"`
+	Version         string        `json:"version,omitempty"`
+	Dependencies    []*Dependency `json:"gxDependencies,omitempty"`
+	Bin             string        `json:"bin,omitempty"`
+	Build           string        `json:"build,omitempty"`
+	Test            string        `json:"test,omitempty"`
+	ReleaseCmd      string        `json:"releaseCmd,omitempty"`
+	SubtoolRequired bool          `json:"subtoolRequired,omitempty"`
+	Language        string        `json:"language,omitempty"`
+	License         string        `json:"license"`
+	Bugs            BugsObj       `json:"bugs"`
+	GxVersion       string        `json:"gxVersion"`
 }
 
 type BugsObj struct {

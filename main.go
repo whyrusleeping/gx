@@ -160,7 +160,7 @@ number. This is a soft requirement and can be skipped by specifying the
 }
 
 func doPublish(pkg *gx.Package) error {
-	err := gx.TryRunHook("pre-publish", pkg.Language)
+	err := gx.TryRunHook("pre-publish", pkg.Language, pkg.SubtoolRequired)
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func doPublish(pkg *gx.Package) error {
 		return err
 	}
 
-	err = gx.TryRunHook("post-publish", pkg.Language, hash)
+	err = gx.TryRunHook("post-publish", pkg.Language, pkg.SubtoolRequired, hash)
 	if err != nil {
 		return err
 	}
@@ -279,7 +279,7 @@ var ImportCommand = cli.Command{
 			return fmt.Errorf("writing pkgfile: %s", err)
 		}
 
-		err = gx.TryRunHook("post-import", npkg.Language, dephash)
+		err = gx.TryRunHook("post-import", npkg.Language, npkg.SubtoolRequired, dephash)
 		if err != nil {
 			return fmt.Errorf("running post-import: %s", err)
 		}
@@ -327,7 +327,7 @@ var InstallCommand = cli.Command{
 				return err
 			}
 
-			err = gx.TryRunHook("req-check", pkg.Language, cwd)
+			err = gx.TryRunHook("req-check", pkg.Language, pkg.SubtoolRequired, cwd)
 			if err != nil {
 				return err
 			}
@@ -542,7 +542,7 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, trgthash)
 		}
 
 		log.VLog("running pre update hook...")
-		err = gx.TryRunHook("pre-update", pkg.Language, existing)
+		err = gx.TryRunHook("pre-update", pkg.Language, pkg.SubtoolRequired, existing)
 		if err != nil {
 			return err
 		}
@@ -570,7 +570,7 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, trgthash)
 		}
 
 		log.VLog("running post update hook...")
-		err = gx.TryRunHook("post-update", pkg.Language, oldhash, trgthash)
+		err = gx.TryRunHook("post-update", pkg.Language, pkg.SubtoolRequired, oldhash, trgthash)
 		if err != nil {
 			return err
 		}
@@ -638,6 +638,10 @@ EXAMPLE:
 }
 
 func updateVersion(pkg *gx.Package, nver string) (outerr error) {
+	if nver == "" {
+		return fmt.Errorf("must specify version with non-zero length")
+	}
+
 	defer func() {
 		err := gx.SavePackageFile(pkg, PkgFileName)
 		if err != nil {
