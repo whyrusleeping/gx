@@ -211,7 +211,7 @@ update. For every package deep a dependency is, you have to update, test,
 commit, review and merge another package. Thats a lot of work, and also a lot
 of extra room for problems to sneak in.
 
-#### 2. Minimize the width of the tree, but not at the cost of increasing depth.
+#### 2. The width of the tree is minimized, but not at the cost of increasing depth.
 This should be fairly common sense, but striving to import packages only where
 they are actually needed helps to improve code quality. Imagine having a helper
 function in one package, simply because its convenient to have it there, that
