@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/blang/semver"
 	cli "github.com/codegangsta/cli"
@@ -28,6 +30,10 @@ var (
 )
 
 const PkgFileName = gx.PkgFileName
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func LoadPackageFile(path string) (*gx.Package, error) {
 	if path == PkgFileName {
@@ -108,6 +114,7 @@ func main() {
 		ReleaseCommand,
 		RepoCommand,
 		UpdateCommand,
+		UpdateTreeCommand,
 		VersionCommand,
 		ViewCommand,
 		SetCommand,
@@ -166,50 +173,57 @@ number. This is a soft requirement and can be skipped by specifying the
 			}
 		}
 
-		return doPublish(pkg)
+		_, err = doPublish(pkg)
+		return err
 	},
 }
 
-func doPublish(pkg *gx.Package) error {
+func doPublish(pkg *gx.Package) (string, error) {
 	err := gx.TryRunHook("pre-publish", pkg.Language, pkg.SubtoolRequired)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	hash, err := pm.PublishPackage(cwd, &pkg.PackageBase)
+	curCwd, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("publishing: %s", err)
+		return "", err
 	}
-	log.Log("package %s published with hash: %s", pkg.Name, hash)
+
+	hash, err := pm.PublishPackage(curCwd, &pkg.PackageBase)
+	if err != nil {
+		return "", fmt.Errorf("publishing: %s", err)
+	}
+	// log.Log("package %s published with hash: %s", pkg.Name, hash)
 
 	// write out version hash
-	err = writeLastPub(pkg.Version, hash)
+	err = writeLastPub(curCwd, pkg.Version, hash)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	err = gx.TryRunHook("post-publish", pkg.Language, pkg.SubtoolRequired, hash)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return hash, nil
 }
 
-func writeLastPub(vers string, hash string) error {
-	err := os.MkdirAll(".gx", 0755)
+func writeLastPub(dir, vers string, hash string) error {
+	err := os.MkdirAll(filepath.Join(dir, ".gx"), 0755)
 	if err != nil {
 		return err
 	}
 
-	fi, err := os.Create(".gx/lastpubver")
+	fp := filepath.Join(dir, "/.gx/lastpubver")
+	fi, err := os.Create(fp)
 	if err != nil {
 		return fmt.Errorf("failed to create version file: %s", err)
 	}
 
 	defer fi.Close()
 
-	log.VLog("writing published version to .gx/lastpubver")
+	log.VLog("writing published version to %s", fp)
 	_, err = fmt.Fprintf(fi, "%s: %s\n", vers, hash)
 	if err != nil {
 		return fmt.Errorf("failed to write version file: %s", err)
@@ -459,6 +473,226 @@ var InitCommand = cli.Command{
 	},
 }
 
+type packageInWorkspace struct {
+	Dir  string
+	Pkg  *gx.Package
+	Deps map[string]bool
+}
+
+var UpdateTreeCommand = cli.Command{
+	Name:      "update-tree",
+	Usage:     "Update packages in a tree of packages",
+	ArgsUsage: "[dir] [package1 package2 ...]",
+	Description: `Publish the specified packages
+
+EXAMPLE:
+   Update 'myPkg' to a given version (referencing it by package name):
+
+   $ gx update-tree ~/workspace myPkg otherPkg
+`,
+	Flags: []cli.Flag{
+		cli.Int64Flag{
+			Name:  "depth, d",
+			Usage: "How many levels of subdirectories to scan for packages.",
+			Value: 2,
+		},
+	},
+	Action: func(c *cli.Context) error {
+		workspace := c.Args()[0]
+		fmt.Printf("scanning %s for packages\n", workspace)
+		pkgs, err := scanPkgTree(workspace, c.Int64("depth"))
+		if err != nil {
+			return err
+		}
+		fmt.Printf("found %d packages in %s\n", len(pkgs), workspace)
+
+		branch := "feat/gx-update-tree-" + branchName()
+		fmt.Printf("branch is %s\n", branch)
+
+		theCwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		done := []string{}
+		todo := map[string]bool{}
+		for _, arg := range c.Args()[1:] {
+			todo[arg] = true
+		}
+
+		for len(todo) > 0 {
+			// fmt.Printf("todo: %+v\n", todo)
+
+			// find a package which doesn't have todo dependencies
+			p, err := pkgFromTodos(todo, pkgs)
+			if err != nil {
+				return err
+			}
+
+			err = os.Chdir(pkgs[p].Dir)
+			if err != nil {
+				return err
+			}
+
+			cmd := exec.Command("git", "checkout", "-qb", branch)
+			cmd.Stderr = os.Stderr
+			// cmd.Stdout = os.Stdout
+			// cmd.Stdin = os.Stdin
+			if err = cmd.Run(); err != nil {
+				return err
+			}
+
+			pkg, err := LoadPackageFile(PkgFileName)
+			if err != nil {
+				return err
+			}
+
+			if pkg.ReleaseCmd != "" {
+				err = updateVersion(pkg, "patch")
+				if err != nil {
+					return err
+				}
+			}
+
+			h, err := doPublish(pkg)
+			if err != nil {
+				return err
+			}
+
+			mustRelease := false
+		L:
+			for _, dp := range pkgs {
+				for _, dep := range dp.Pkg.Dependencies {
+					if dep.Name == pkg.Name {
+						mustRelease = true
+						break L
+					}
+				}
+			}
+
+			if mustRelease && pkg.ReleaseCmd != "" {
+				if err = runRelease(pkg); err != nil {
+					return err
+				}
+			}
+
+			fmt.Printf("published %s %s @ %s\n", p, pkg.Version, h)
+
+			err = os.Chdir(theCwd)
+			if err != nil {
+				return err
+			}
+
+			// update it within its dependants
+			for _, dp := range pkgs {
+				changed := false
+				for _, dep := range dp.Pkg.Dependencies {
+					if dep.Name == pkg.Name {
+						dep.Hash = h
+						dep.Version = pkg.Version
+						todo[dp.Pkg.Name] = true
+						changed = true
+					}
+				}
+				if changed {
+					err = gx.SavePackageFile(dp.Pkg, filepath.Join(dp.Dir, PkgFileName))
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+			delete(todo, p)
+			// TODO: this should be gx.dvcsimport
+			done = append(done, pkg.Name)
+		}
+
+		fmt.Printf("\ndone, updated repos:\n\t%s\n", strings.Join(done, "\n\t"))
+		return nil
+	},
+}
+
+var branchAlphabet = []rune("abcdefghijklmnopqrstuvwxyz")
+
+func branchName() string {
+	b := make([]rune, 6)
+	for i := range b {
+		b[i] = branchAlphabet[rand.Intn(len(branchAlphabet))]
+	}
+	return string(b)
+}
+
+// finds a package in `round` which doesn't depend on any other packages in `round`.
+func pkgFromTodos(todo map[string]bool, pkgs map[string]packageInWorkspace) (string, error) {
+	for p := range todo {
+		_, ok := pkgs[p]
+		if !ok {
+			return "", fmt.Errorf("unknown package in this round: %s", p)
+		}
+
+		depsInThisRound := false
+		for tr := range todo {
+			_, ok := pkgs[p].Deps[tr]
+			if ok {
+				depsInThisRound = true
+				break
+			}
+		}
+		if !depsInThisRound {
+			return p, nil
+		}
+	}
+
+	return "", fmt.Errorf("circular dependencies in %+v", todo)
+}
+
+func scanPkgTree(dir string, depth int64) (map[string]packageInWorkspace, error) {
+	pkgs := map[string]packageInWorkspace{}
+
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return pkgs, err
+	}
+
+	for _, fi := range files {
+		fp := filepath.Join(dir, fi.Name())
+
+		// yay it's a package!
+		if fi.Name() == PkgFileName {
+			pkg, err := LoadPackageFile(fp)
+			if err != nil {
+				fmt.Printf("skipping %s: %s \n", dir, err)
+				continue
+			}
+			pkgs[pkg.Name] = packageInWorkspace{
+				Dir:  dir,
+				Pkg:  pkg,
+				Deps: map[string]bool{},
+			}
+			deps, err := pm.EnumerateDependencies(pkg)
+			if err != nil {
+				return pkgs, err
+			}
+			for _, p := range deps {
+				pkgs[pkg.Name].Deps[p] = true
+			}
+		}
+
+		// let's go deeper if we can
+		if fi.IsDir() && depth >= 1 {
+			deeperPkgs, err := scanPkgTree(fp, depth-1)
+			if err != nil {
+				return pkgs, err
+			}
+			for k, v := range deeperPkgs {
+				pkgs[k] = v
+			}
+		}
+	}
+
+	return pkgs, nil
+}
+
 var UpdateCommand = cli.Command{
 	Name:      "update",
 	Usage:     "update a package dependency",
@@ -700,7 +934,7 @@ func updateVersion(pkg *gx.Package, nver string) (outerr error) {
 		}
 		v = newver
 	}
-	log.Log("updated version to: %s", v)
+	log.VLog("updated version to: %s", v)
 
 	pkg.Version = v.String()
 
@@ -1185,7 +1419,7 @@ var ReleaseCommand = cli.Command{
 		}
 
 		fmt.Printf("publishing package...\r")
-		err = doPublish(pkg)
+		_, err = doPublish(pkg)
 		if err != nil {
 			return err
 		}
@@ -1279,8 +1513,8 @@ func runRelease(pkg *gx.Package) error {
 	parts := splitArgs(replaced)
 	cmd := exec.Command(parts[0], parts[1:]...)
 	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
+	// cmd.Stdout = os.Stdout
+	// cmd.Stdin = os.Stdin
 
 	return cmd.Run()
 }
