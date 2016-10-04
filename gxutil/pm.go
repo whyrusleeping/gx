@@ -268,11 +268,12 @@ func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
 
 	pkg := &Package{
 		PackageBase: PackageBase{
-			Name:      name,
-			Author:    username,
-			Language:  lang,
-			Version:   "0.0.0",
-			GxVersion: GxVersion,
+			Name:       name,
+			Author:     username,
+			Language:   lang,
+			Version:    "0.0.0",
+			GxVersion:  GxVersion,
+			ReleaseCmd: "git commit -a -m \"gx publish $VERSION\"",
 		},
 	}
 
