@@ -101,6 +101,7 @@ func main() {
 		VersionCommand,
 		ViewCommand,
 		SetCommand,
+		TestCommand,
 	}
 
 	if err := app.Run(os.Args); err != nil {
@@ -1172,6 +1173,38 @@ var ReleaseCommand = cli.Command{
 		}
 
 		return runRelease(pkg)
+	},
+}
+
+var TestCommand = cli.Command{
+	Name:            "test",
+	Usage:           "run package tests",
+	Description:     `Runs a pre-test setup hook, the test command itself, and then a post-test cleanup hook.`,
+	SkipFlagParsing: true,
+	Action: func(c *cli.Context) error {
+		pkg, err := LoadPackageFile(PkgFileName)
+		if err != nil {
+			return err
+		}
+
+		err = gx.TryRunHook("pre-test", pkg.Language, pkg.SubtoolRequired)
+		if err != nil {
+			return err
+		}
+
+		var testErr error
+		if pkg.Test != "" {
+			testErr = fmt.Errorf("don't support running custom test script yet, bug whyrusleeping")
+		} else {
+			testErr = gx.TryRunHook("test", pkg.Language, pkg.SubtoolRequired, c.Args()...)
+		}
+
+		err = gx.TryRunHook("post-test", pkg.Language, pkg.SubtoolRequired)
+		if err != nil {
+			return err
+		}
+
+		return testErr
 	},
 }
 

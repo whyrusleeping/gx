@@ -138,7 +138,7 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 }
 
 func (pm *PM) installDeps(pkg *Package, location string, complete map[string]bool) error {
-	Log("installing package: %s-%s", pkg.Name, pkg.Version)
+	VLog("installing package: %s-%s", pkg.Name, pkg.Version)
 
 	packages := make([]*Package, len(pkg.Dependencies))
 	pkgdirs := make([]string, len(pkg.Dependencies))
@@ -190,7 +190,7 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 	for i := 0; i < count; i++ {
 		select {
 		case dep := <-done:
-			Log("[%d / %d] fetched dep: %s", i+1, len(pkg.Dependencies), dep.Name)
+			VLog("[%d / %d] fetched dep: %s", i+1, len(pkg.Dependencies), dep.Name)
 		case err := <-errs:
 			Error("[%d / %d ] parallel fetch: %s", i+1, len(pkg.Dependencies), err)
 			failed = true
@@ -200,7 +200,7 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 	if failed {
 		return errors.New("failed to fetch dependencies")
 	}
-	Log("successfully found all deps for %s", pkg.Name)
+	VLog("successfully found all deps for %s", pkg.Name)
 
 	for i, dep := range pkg.Dependencies {
 		cpkg := packages[i]
@@ -219,7 +219,7 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 			return err
 		}
 	}
-	Log("installation of %s complete!", pkg.Name)
+	Log("installation of dep %s complete!", pkg.Name)
 	return nil
 }
 
