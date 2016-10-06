@@ -630,6 +630,8 @@ func getSubtoolPath(env string) (string, error) {
 				return "", nil
 			}
 			binname = nearBin
+		} else {
+			return "", nil
 		}
 	}
 
@@ -674,6 +676,9 @@ func InstallPath(env, relpath string, global bool) (string, error) {
 	binname, err := getSubtoolPath(env)
 	if err != nil {
 		return "", err
+	}
+	if binname == "" {
+		return defaultLocalPath, nil
 	}
 
 	args := []string{"hook", "install-path"}

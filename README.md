@@ -42,7 +42,7 @@ gx was designed with the following major goals in mind:
 
 
 ## Requirements
-Users are encouraged to have a running [IPFS daemon](//github.com/ipfs/go-ipfs) of at least version 0.4.0 on their machines.
+Users are encouraged to have a running [IPFS daemon](//github.com/ipfs/go-ipfs) of at least version 0.4.2 on their machines.
 If not present, gx will use the public gateway.
 If you wish to publish a package, a local running daemon is a hard requirement.
 
@@ -70,6 +70,9 @@ This will output a 'package-hash' which is unique to the exact content of your
 package at the time of publishing. If someone were to download your package and
 republish it, it would produce the *exact* same hash.
 
+## Installing a gx package
+If you've cloned down a gx package, simply run `gx install` or `gx i` to
+install it (and its dependencies).
 
 ## Dependencies
 To add a dependency of another package to your package, simply import it by its
@@ -82,6 +85,146 @@ $ gx import QmaDFJvcHAnxpnMwcEh6VStYN4v4PB4S16j4pAuC2KSHVr
 This downloads the package specified by the hash into the `vendor` directory in your
 workspace. It also adds an entry referencing the package to the local `package.json`.
 
+Gx has a few nice tools to view and analyze dependencies. First off, the simple:
+
+```bash
+$ gx deps
+go-log              QmSpJByNKFX1sCsHBEp3R73FL4NF6FnQTEGyNAXHm2GS52 1.2.0
+go-libp2p-peer      QmWXjJo15p4pzT7cayEwZi2sWgJqLnGDof6ZGMh9xBgU1p 2.0.4
+go-libp2p-peerstore QmYkwVGkwoPbMVQEbf6LonZg4SsCxGP3H7PBEtdNCNRyxD 1.2.5
+go-testutil         QmYpVUnnedgGrp6cX2pBii5HRQgcSr778FiKVe7o7nF5Z3 1.0.2
+go-ipfs-util        QmZNVWh8LLjAavuQ2JXuFmuYH3C11xo988vSgp7UQrTRj1 1.0.0
+```
+
+This just lists out the immediate dependencies of this package. To see
+dependencies of dependencies, use the `-r` option: (and optionally the `-s`
+option to sort them)
+
+```bash
+$ gx deps -r -s
+go-base58           QmT8rehPR3F6bmwL6zjUN8XpiDBFFpMP2myPdC6ApsWfJf 0.0.0
+go-crypto           Qme1boxspcQWR8FBzMxeppqug2fYgYc15diNWmqgDVnvn2 0.0.0
+go-datastore        QmbzuUusHqaLLoNTDEVLcSF6vZDHZDLPC7p4bztRvvkXxU 1.0.0
+go-ipfs-util        QmZNVWh8LLjAavuQ2JXuFmuYH3C11xo988vSgp7UQrTRj1 1.0.0
+go-keyspace         QmUusaX99BZoELh7dmPgirqRQ1FAmMnmnBn3oiqDFGBUSc 1.0.0
+go-libp2p-crypto    QmVoi5es8D5fNHZDqoW6DgDAEPEV5hQp8GBz161vZXiwpQ 1.0.4
+go-libp2p-peer      QmWXjJo15p4pzT7cayEwZi2sWgJqLnGDof6ZGMh9xBgU1p 2.0.4
+go-libp2p-peerstore QmYkwVGkwoPbMVQEbf6LonZg4SsCxGP3H7PBEtdNCNRyxD 1.2.5
+go-log              QmSpJByNKFX1sCsHBEp3R73FL4NF6FnQTEGyNAXHm2GS52 1.2.0
+go-logging          QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV 0.0.0
+go-multiaddr        QmYzDkkgAEmrcNzFCiYo6L1dTX4EAG1gZkbtdbd9trL4vd 0.0.0
+go-multiaddr-net    QmY83KqqnQ286ZWbV2x7ixpeemH3cBpk8R54egS619WYff 1.3.0
+go-multihash        QmYf7ng2hG5XBtJA3tN34DQ2GUN5HNksEw1rLDkmr6vGku 0.0.0
+go-net              QmZy2y8t9zQH2a1b8q2ZSLKp17ATuJoCNxxyMFG5qFExpt 0.0.0
+go-testutil         QmYpVUnnedgGrp6cX2pBii5HRQgcSr778FiKVe7o7nF5Z3 1.0.2
+go-text             Qmaau1d1WjnQdTYfRYfFVsCS97cgD8ATyrKuNoEfexL7JZ 0.0.0
+go.uuid             QmcyaFHbyiZfoX5GTpcqqCPYmbjYNAhRDekXSJPFHdYNSV 1.0.0
+gogo-protobuf       QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV 0.0.0
+goprocess           QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP 1.0.0
+mafmt               QmeLQ13LftT9XhNn22piZc3GP56fGqhijuL5Y8KdUaRn1g 1.1.1
+```
+
+Thats pretty useful, I now know the full set of packages my package depends on.
+But whats difficult now is being able to tell what is imported where. To
+address that, gx has a `--tree` option:
+
+```bash
+$ gx deps --tree
+├─ go-base58          QmT8rehPR3F6bmwL6zjUN8XpiDBFFpMP2myPdC6ApsWfJf 0.0.0
+├─ go-multihash       QmYf7ng2hG5XBtJA3tN34DQ2GUN5HNksEw1rLDkmr6vGku 0.0.0
+│  ├─ go-base58       QmT8rehPR3F6bmwL6zjUN8XpiDBFFpMP2myPdC6ApsWfJf 0.0.0
+│  └─ go-crypto       Qme1boxspcQWR8FBzMxeppqug2fYgYc15diNWmqgDVnvn2 0.0.0
+├─ go-ipfs-util       QmZNVWh8LLjAavuQ2JXuFmuYH3C11xo988vSgp7UQrTRj1 1.0.0
+│  ├─ go-base58       QmT8rehPR3F6bmwL6zjUN8XpiDBFFpMP2myPdC6ApsWfJf 0.0.0
+│  └─ go-multihash    QmYf7ng2hG5XBtJA3tN34DQ2GUN5HNksEw1rLDkmr6vGku 0.0.0
+│     ├─ go-base58    QmT8rehPR3F6bmwL6zjUN8XpiDBFFpMP2myPdC6ApsWfJf 0.0.0
+│     └─ go-crypto    Qme1boxspcQWR8FBzMxeppqug2fYgYc15diNWmqgDVnvn2 0.0.0
+├─ go-log             QmNQynaz7qfriSUJkiEZUrm2Wen1u3Kj9goZzWtrPyu7XR 1.1.2
+│  ├─ randbo          QmYvsG72GsfLgUeSojXArjnU6L4Wmwk7wuAxtNLuyXcc1T 0.0.0
+│  ├─ go-net          QmZy2y8t9zQH2a1b8q2ZSLKp17ATuJoCNxxyMFG5qFExpt 0.0.0
+│  │  ├─ go-text      Qmaau1d1WjnQdTYfRYfFVsCS97cgD8ATyrKuNoEfexL7JZ 0.0.0
+│  │  └─ go-crypto    Qme1boxspcQWR8FBzMxeppqug2fYgYc15diNWmqgDVnvn2 0.0.0
+│  └─ go-logging      QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV 0.0.0
+└─ go-libp2p-crypto   QmUEUu1CM8bxBJxc3ZLojAi8evhTr4byQogWstABet79oY 1.0.2
+   ├─ gogo-protobuf   QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV 0.0.0
+   ├─ go-log          Qmazh5oNUVsDZTs2g59rq8aYQqwpss8tcUWQzor5sCCEuH 0.0.0
+   │  ├─ go.uuid      QmPC2dW6jyNzzBKYuHLBhxzfWaUSkyC9qaGMz7ciytRSFM 0.0.0
+   │  ├─ go-logging   QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV 0.0.0
+   │  ├─ go-net       QmZy2y8t9zQH2a1b8q2ZSLKp17ATuJoCNxxyMFG5qFExpt 0.0.0
+   │  │  ├─ go-text   Qmaau1d1WjnQdTYfRYfFVsCS97cgD8ATyrKuNoEfexL7JZ 0.0.0
+   │  │  └─ go-crypto Qme1boxspcQWR8FBzMxeppqug2fYgYc15diNWmqgDVnvn2 0.0.0
+   │  └─ randbo       QmYvsG72GsfLgUeSojXArjnU6L4Wmwk7wuAxtNLuyXcc1T 0.0.0
+   ├─ go-ipfs-util    QmZNVWh8LLjAavuQ2JXuFmuYH3C11xo988vSgp7UQrTRj1 1.0.0
+   │  ├─ go-base58    QmT8rehPR3F6bmwL6zjUN8XpiDBFFpMP2myPdC6ApsWfJf 0.0.0
+   │  └─ go-multihash QmYf7ng2hG5XBtJA3tN34DQ2GUN5HNksEw1rLDkmr6vGku 0.0.0
+   │     ├─ go-base58 QmT8rehPR3F6bmwL6zjUN8XpiDBFFpMP2myPdC6ApsWfJf 0.0.0
+   │     └─ go-crypto Qme1boxspcQWR8FBzMxeppqug2fYgYc15diNWmqgDVnvn2 0.0.0
+   └─ go-msgio        QmRQhVisS8dmPbjBUthVkenn81pBxrx1GxE281csJhm2vL 0.0.0
+      └─ go-randbuf   QmYNGtJHgaGZkpzq8yG6Wxqm6EQTKqgpBfnyyGBKbZeDUi 0.0.0
+```
+
+Now you can see the *entire* tree of dependencies for this project. Although,
+for larger projects, this will get messy. If you're just interested in the
+dependency tree of a single package, you can use the `--highlight` option
+to filter the trees printing:
+
+```bash
+$ gx deps --tree --highlight=go-crypto
+├─ go-multihash       QmYf7ng2hG5XBtJA3tN34DQ2GUN5HNksEw1rLDkmr6vGku 0.0.0
+│  └─ go-crypto       Qme1boxspcQWR8FBzMxeppqug2fYgYc15diNWmqgDVnvn2 0.0.0
+├─ go-ipfs-util       QmZNVWh8LLjAavuQ2JXuFmuYH3C11xo988vSgp7UQrTRj1 1.0.0
+│  └─ go-multihash    QmYf7ng2hG5XBtJA3tN34DQ2GUN5HNksEw1rLDkmr6vGku 0.0.0
+│     └─ go-crypto    Qme1boxspcQWR8FBzMxeppqug2fYgYc15diNWmqgDVnvn2 0.0.0
+├─ go-log             QmNQynaz7qfriSUJkiEZUrm2Wen1u3Kj9goZzWtrPyu7XR 1.1.2
+│  └─ go-net          QmZy2y8t9zQH2a1b8q2ZSLKp17ATuJoCNxxyMFG5qFExpt 0.0.0
+│     └─ go-crypto    Qme1boxspcQWR8FBzMxeppqug2fYgYc15diNWmqgDVnvn2 0.0.0
+└─ go-libp2p-crypto   QmUEUu1CM8bxBJxc3ZLojAi8evhTr4byQogWstABet79oY 1.0.2
+   ├─ go-log          Qmazh5oNUVsDZTs2g59rq8aYQqwpss8tcUWQzor5sCCEuH 0.0.0
+   │  └─ go-net       QmZy2y8t9zQH2a1b8q2ZSLKp17ATuJoCNxxyMFG5qFExpt 0.0.0
+   │     └─ go-crypto Qme1boxspcQWR8FBzMxeppqug2fYgYc15diNWmqgDVnvn2 0.0.0
+   └─ go-ipfs-util    QmZNVWh8LLjAavuQ2JXuFmuYH3C11xo988vSgp7UQrTRj1 1.0.0
+      └─ go-multihash QmYf7ng2hG5XBtJA3tN34DQ2GUN5HNksEw1rLDkmr6vGku 0.0.0
+         └─ go-crypto Qme1boxspcQWR8FBzMxeppqug2fYgYc15diNWmqgDVnvn2 0.0.0
+```
+
+This tree is a subset of the previous one, filtered to only show leaves that
+end in the selected package.
+
+The gx deps command also has two other smaller subcommands, `dupes` and
+`stats`. `gx deps dupes` will print out packages that are imported multiple
+times with the same name, but different hashes. This can be useful to see if
+different versions of the same package have been imported in different places
+in the dependency tree. Allowing the user to more easily go and address the
+discrepancy. `gx deps stats` will output the total number of packages imported
+(total and unique) as well as the average depth of imports in the tree. This
+can be used to give you a rough idea of the complexity of your package.
+
+### The gx dependency graph manifesto
+I firmly beleive that packages are better when:
+
+#### 1. The depth of the dependency tree is minimized.
+This means restructuring your code in such a way that flattens (and perhaps
+widens as a consequence) the tree. For example, in Go, this often times means
+making an interface its own package, and implementations into their own
+separate packages. The benefits here are that flatter trees are far easier to
+update. For every package deep a dependency is, you have to update, test,
+commit, review and merge another package. Thats a lot of work, and also a lot
+of extra room for problems to sneak in.
+
+#### 2. The width of the tree is minimized, but not at the cost of increasing depth.
+This should be fairly common sense, but striving to import packages only where
+they are actually needed helps to improve code quality. Imagine having a helper
+function in one package, simply because its convenient to have it there, that
+depends on a bunch of other imports from elsewhere in the tree. Sure its nice,
+and doesnt actually increase the 'total' number of packages you depend on. But
+now you've created an extra batch of work for you to do any time any of these
+are updated, and you also now force anyone who wants to import the package with
+your helper function to also import all those other dependencies.
+
+Adhering to the above two rules should (i'm very open to discussion on this)
+improve overall code quality, and make your codebase far easier to navigate and
+work on.
+
 ## Updating
 Updating packages in gx is simple:
 
@@ -92,13 +235,72 @@ $ gx update mypkg QmbH7fpAV1FgMp6J7GZXUV6rj6Lck5tDix9JJGBSjFPgUd
 This looks into your `package.json` for a dependency named `mypkg` and replaces
 its hash reference with the one given.
 
-Note, this will not touch your code at all, so any references to that hash you
-have in your code will need to be updated. If you have a language tool
-(e.g. `gx-go`) installed, and it has a `post-update` hook, references to the
-given package should be updated correctly. If not, you may have to run sed over
-the package to update everything. The bright side of that is that you are very
-unlikely to have those hashes sitting around for any other reason so a global
-find-replace should be just fine.
+Alternatively, you can just specify the hash you want to update to:
+
+```bash
+$ gx update QmbH7fpAV1FgMp6J7GZXUV6rj6Lck5tDix9JJGBSjFPgUd
+```
+
+Doing it this way will pull down the package, check its name, and then update
+that dependency.
+
+Note that by default, this will not touch your code at all, so any references
+to that hash you have in your code will need to be updated. If you have a
+language tool (e.g. `gx-go`) installed, and it has a `post-update` hook,
+references to the given package should be updated correctly. If not, you may
+have to run sed over the package to update everything. The bright side of that
+is that you are very unlikely to have those hashes sitting around for any other
+reason so a global find-replace should be just fine.
+
+## Publishing and Releasing
+Gx by default will not let you publish a package twice if you haven't updated
+its version. To get around this, you can pass the `-f` flag. Though this is not
+recommended, its still perfectly possible to do.
+
+To update the version easily, use the `gx version` subcommand. You can either set the version manually:
+
+```bash
+$ gx version 5.11.4
+```
+
+Or just do a 'version bump':
+
+```bash
+$ gx version patch
+updated version to: 5.11.5
+$ gx version minor
+updated version to: 5.12.0
+$ gx version major
+updated version to: 6.0.0
+```
+
+Most of the time, your process will look something like:
+
+```bash
+$ gx version minor
+updated version to: 6.1.0
+$ gx publish
+package whys-awesome-package published with hash: QmaoaEi6uNMuuXKeYcXM3gGUEQLzbDWGcFUdd3y49crtZK
+$ git commit -a -m "gx publish 6.1.0"
+[master 5c4d36c] gx publish 6.1.0
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+```
+
+To automate this, you can use the `release` subcommand. `gx release <version>`
+will automatically do a version update (using the same inputs as the normal
+`version` command), run a `gx publish`, and then execute whatever you have set
+in your `package.json` as your `releaseCmd`. To get the above git commit flow,
+you can set it to: `git commit -a -m \"gx publish $VERSION\"` and gx will
+replace `$VERSION` with the newly changed version before executing the git
+commit.
+
+### Ignoring files from a publish
+You can use a `.gxignore` file to make gx ignore certain files during a publish.
+This has the same behaviour as a `.gitignore`.
+
+Gx also respects a `.gitignore` file if present, and will not publish any file
+excluded by it.
+
 
 ## Repos
 gx supports named packages via user configured repositories. A repository is
@@ -180,13 +382,6 @@ instead.
 Gx also supports a global installation path, to set this one you must handle
 the `--global` flag on your `install-path` hook. Global gx packages are shared
 across all packages that depend on them.
-
-## Ignoring files from a publish
-You can use a `.gxignore` file to make gx ignore certain files during a publish.
-This has the same behaviour as a `.gitignore`.
-
-Gx also respects a `.gitignore` file if present, and will not publish any file
-excluded by it.
 
 ## Using gx as a Go package manager
 
