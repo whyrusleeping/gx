@@ -13,7 +13,7 @@ import (
 	"time"
 
 	sh "github.com/ipfs/go-ipfs-api"
-	mh "github.com/jbenet/go-multihash"
+	mh "github.com/multiformats/go-multihash"
 	. "github.com/whyrusleeping/stump"
 )
 
