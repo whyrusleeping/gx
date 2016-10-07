@@ -89,7 +89,12 @@ func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
 		return "", err
 	}
 
-	return pm.Shell().Patch(pm.blankDir, "add-link", pkg.Name, pkgdir)
+	final, err := pm.Shell().Patch(pm.blankDir, "add-link", pkg.Name, pkgdir)
+	if err != nil {
+		return "", err
+	}
+
+	return final, pm.Shell().Pin(final)
 }
 
 type filetree struct {
