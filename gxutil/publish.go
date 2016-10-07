@@ -158,7 +158,7 @@ func (pm *PM) addFile(p string) (string, error) {
 	}
 	defer fi.Close()
 
-	return pm.Shell().Add(fi)
+	return pm.Shell().AddNoPin(fi)
 }
 
 func (pm *PM) addPathElem(v *filetree, f, cwd string) (string, error) {
