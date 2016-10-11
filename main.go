@@ -851,7 +851,7 @@ var DepsCommand = cli.Command{
 			Name:  "tree",
 			Usage: "print deps as a tree",
 		},
-		cli.BoolFlag{
+		cli.BoolTFlag{
 			Name:  "s,sort",
 			Usage: "sort output by package name",
 		},
