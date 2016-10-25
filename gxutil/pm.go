@@ -33,8 +33,10 @@ type PM struct {
 }
 
 func NewPM(cfg *Config) (*PM, error) {
+	sh := NewShell()
+	sh.SetTimeout(time.Minute * 8)
 	return &PM{
-		ipfssh: NewShell(),
+		ipfssh: sh,
 		cfg:    cfg,
 	}, nil
 }
