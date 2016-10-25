@@ -555,7 +555,7 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, trgthash)
 			}
 		} else {
 			log.VLog("checking for potential package naming collisions...")
-			err = updateCollisionCheck(pkg, olddep, trgthash, nil)
+			err = updateCollisionCheck(pkg, olddep, trgthash, nil, make(map[string]struct{}))
 			if err != nil {
 				log.Fatal("update sanity check: ", err)
 			}
@@ -582,18 +582,23 @@ continue?`, olddep.Name, olddep.Hash, npkg.Name, trgthash)
 	},
 }
 
-func updateCollisionCheck(ipkg *gx.Package, idep *gx.Dependency, trgt string, chain []string) error {
+func updateCollisionCheck(ipkg *gx.Package, idep *gx.Dependency, trgt string, chain []string, skip map[string]struct{}) error {
 	return ipkg.ForEachDep(func(dep *gx.Dependency, pkg *gx.Package) error {
+		if _, ok := skip[dep.Hash]; ok {
+			return nil
+		}
+
 		if dep == idep {
 			return nil
 		}
+		skip[dep.Hash] = struct{}{}
 
 		if (dep.Name == idep.Name && dep.Hash != trgt) || (dep.Hash == idep.Hash && dep.Name != idep.Name) {
 			log.Log("dep %s also imports %s (%s)", strings.Join(chain, "/"), dep.Name, dep.Hash)
 			return nil
 		}
 
-		return updateCollisionCheck(pkg, idep, trgt, append(chain, dep.Name))
+		return updateCollisionCheck(pkg, idep, trgt, append(chain, dep.Name), skip)
 	})
 }
 
