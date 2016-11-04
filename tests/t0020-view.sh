@@ -18,11 +18,12 @@ test_expect_success "setup test package" '
 '
 
 test_expect_success "gx view . succeeds" '
-	gx view . | jq -S . > full_out
+	gx view . > gx_out &&
+	jq -S . gx_out > full_out
 '
 
 test_expect_success "output looks good" '
-	cat package.json | jq -S . > sorted_pkg &&
+	jq -S . package.json > sorted_pkg &&
 	test_cmp sorted_pkg full_out
 '
 
