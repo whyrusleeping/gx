@@ -221,6 +221,11 @@ func writeLastPub(vers string, hash string) error {
 var ImportCommand = cli.Command{
 	Name:  "import",
 	Usage: "import a package as a dependency",
+	Description: `Download packages and add them as a dependency in package.json.
+
+EXAMPLE
+  > gx import QmUAQaWbKxGCUTuoQVvvicbQNZ9APF5pDGWyAZSe93AtKH
+`,
 	Flags: []cli.Flag{
 		cli.BoolTFlag{
 			Name:  "global",
