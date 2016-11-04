@@ -84,7 +84,6 @@ test_expect_success "updating package c works" '
 '
 
 test_expect_success "update printed correct warning" '
-	grep "installing package: c-1.2.0" update_out &&
 	grep "dep b also imports c ($pkgC)" update_out
 '
 
