@@ -79,6 +79,22 @@ test_expect_success "should be a different hash" '
 	test "$pkgC" != "$pkgCnew"
 '
 
+test_expect_success "gx diff works" '
+	echo n | gx diff "$pkgC" "$pkgCnew" >diff_out
+'
+
+test_expect_success "gx diff output looks good" '
+	cat >expected <<EOF &&
+PACKAGE c was changed from version
+  0.0.0 ($pkgC)
+    to
+  1.2.0 ($pkgCnew)
+  There were 0 changes in this packages dependencies.
+  view code changes for this package? [Y/n] 
+EOF
+	test_cmp expected diff_out
+'
+
 test_expect_success "updating package c works" '
 	pkg_run a gx update c $pkgCnew > update_out
 '
