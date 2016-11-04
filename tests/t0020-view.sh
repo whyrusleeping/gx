@@ -36,6 +36,26 @@ test_expect_success "gx view individual field works" '
 	test_cmp lang_exp lang_out
 '
 
+test_expect_success "gx set language field works" '
+	gx set .language testLang
+'
+
+test_expect_success "gx view language field still works" '
+	echo testLang >expected &&
+	gx view .language >actual &&
+	test_cmp expected actual
+'
+
+test_expect_success "gx set license field works" '
+	gx set .license MIT
+'
+
+test_expect_success "gx view license field works" '
+	echo MIT >expected &&
+	gx view .license >actual &&
+	test_cmp expected actual
+'
+
 test_kill_ipfs_daemon
 
 test_done
