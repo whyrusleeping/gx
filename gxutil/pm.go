@@ -468,6 +468,9 @@ func (pm *PM) enumerateDepsRec(pkg *Package, set map[string]string) error {
 		var depkg Package
 		err := LoadPackage(&depkg, pkg.Language, d.Hash)
 		if err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("package %s (%s) not found", d.Name, d.Hash)
+			}
 			return err
 		}
 

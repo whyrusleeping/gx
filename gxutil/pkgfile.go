@@ -140,8 +140,11 @@ func (pkg *PackageBase) ForEachDep(cb func(dep *Dependency, pkg *Package) error)
 		var cpkg Package
 		err := LoadPackage(&cpkg, pkg.Language, dep.Hash)
 		if err != nil {
-			log.VLog("LoadPackage error: ", err)
-			return fmt.Errorf("package %s (%s) not found", dep.Name, dep.Hash)
+			if os.IsNotExist(err) {
+				log.VLog("LoadPackage error: ", err)
+				return fmt.Errorf("package %s (%s) not found", dep.Name, dep.Hash)
+			}
+			return err
 		}
 
 		err = cb(dep, &cpkg)

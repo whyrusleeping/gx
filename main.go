@@ -919,6 +919,9 @@ var DepsCommand = cli.Command{
 				var dpkg gx.Package
 				err := gx.LoadPackage(&dpkg, pkg.Language, d)
 				if err != nil {
+					if os.IsNotExist(err) {
+						return fmt.Errorf("package %s not found", d)
+					}
 					return err
 				}
 
