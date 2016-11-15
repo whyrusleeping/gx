@@ -299,12 +299,12 @@ func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
 }
 
 func CheckForHelperTools(lang string) {
-	_, err := exec.LookPath("gx-" + lang)
-	if err == nil {
+	p, err := getSubtoolPath(lang)
+	if err == nil && p != "" {
 		return
 	}
 
-	if strings.Contains(err.Error(), "file not found") {
+	if p == "" || strings.Contains(err.Error(), "file not found") {
 		Log("notice: no helper tool found for", lang)
 		return
 	}
@@ -614,6 +614,14 @@ func resolveDepName(pkg *Package, out interface{}, dir, name string, checked map
 	}
 
 	return ErrUnrecognizedName
+}
+func IsSubtoolInstalled(env string) (bool, error) {
+	p, err := getSubtoolPath(env)
+	if err != nil {
+		return false, err
+	}
+
+	return p != "", nil
 }
 
 func getSubtoolPath(env string) (string, error) {

@@ -49,6 +49,16 @@ func LoadPackageFile(path string) (*gx.Package, error) {
 		pkg.GxVersion = gx.GxVersion
 	}
 
+	if pkg.SubtoolRequired {
+		found, err := gx.IsSubtoolInstalled(pkg.Language)
+		if err != nil {
+			return nil, err
+		}
+		if !found {
+			return nil, fmt.Errorf("package requires a subtool (gx-%s) and none was found.", pkg.Language)
+		}
+	}
+
 	return &pkg, nil
 }
 
