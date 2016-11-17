@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	homedir "github.com/mitchellh/go-homedir"
 	gi "github.com/sabhiram/go-git-ignore"
 )
 
@@ -23,6 +24,22 @@ func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
 	gitig, err := gi.CompileIgnoreFile(filepath.Join(dir, ".gitignore"))
 	if err != nil && !os.IsNotExist(err) {
 		return "", err
+	}
+
+	home, err := homedir.Dir()
+	if err != nil {
+		return "", err
+	}
+
+	pgig := filepath.Join(home, ".gitignore")
+	var ggitig *gi.GitIgnore
+
+	if _, err := os.Stat(pgig); err == nil {
+		var err error
+		ggitig, err = gi.CompileIgnoreFile(pgig)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	gxig, err := gi.CompileIgnoreFile(filepath.Join(dir, ".gxignore"))
@@ -49,6 +66,11 @@ func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
 
 		// respect gitignore
 		if gitig != nil && gitig.MatchesPath(rel) {
+			return nil
+		}
+
+		// respect global gitignore
+		if ggitig != nil && ggitig.MatchesPath(rel) {
 			return nil
 		}
 
