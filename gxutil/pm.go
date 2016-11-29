@@ -21,6 +21,12 @@ const GxVersion = "0.10.0"
 
 const PkgFileName = "package.json"
 
+var installPathsCache map[string]string
+
+func init() {
+	installPathsCache = make(map[string]string)
+}
+
 type PM struct {
 	ipfssh *sh.Shell
 
@@ -686,6 +692,10 @@ func InstallPath(env, relpath string, global bool) (string, error) {
 		return defaultLocalPath, nil
 	}
 
+	if cached, ok := checkInstallPathCache(env, global); ok {
+		return cached, nil
+	}
+
 	binname, err := getSubtoolPath(env)
 	if err != nil {
 		return "", err
@@ -706,8 +716,25 @@ func InstallPath(env, relpath string, global bool) (string, error) {
 		return "", fmt.Errorf("install-path hook failed: %s", err)
 	}
 
-	return strings.Trim(string(out), " \t\n"), nil
+	val := strings.Trim(string(out), " \t\n")
+	setInstallPathCache(env, global, val)
+	return val, nil
+}
 
+func checkInstallPathCache(env string, global bool) (string, bool) {
+	if global {
+		env += " --global"
+	}
+	v, ok := installPathsCache[env]
+	return v, ok
+}
+
+func setInstallPathCache(env string, global bool, val string) {
+	if global {
+		env += " --global"
+	}
+
+	installPathsCache[env] = val
 }
 
 func IsHash(s string) bool {
