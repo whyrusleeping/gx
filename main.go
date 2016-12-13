@@ -225,6 +225,10 @@ var ImportCommand = cli.Command{
 
 EXAMPLE
   > gx import QmUAQaWbKxGCUTuoQVvvicbQNZ9APF5pDGWyAZSe93AtKH
+  > gx import github.com/libp2p/go-libp2p
+
+    In the last example, Gx will check the ".gx/lastpubver"
+    file in the repository to find which hash to import.
 `,
 	Flags: []cli.Flag{
 		cli.BoolTFlag{
