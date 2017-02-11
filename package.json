@@ -2,10 +2,10 @@
   "bugs": {
     "url": "https://github.com/whyrusleeping/gx/issues"
   },
-  "gxVersion": "0.9.1",
+  "gxVersion": "0.11.0",
   "language": "go",
   "license": "",
   "name": "gx",
-  "version": "0.10.0"
+  "version": "0.11.0"
 }
 
