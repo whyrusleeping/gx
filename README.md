@@ -368,20 +368,24 @@ Currently available hooks are:
 
 ## Package directories
 
-Gx by default will install packages 'locally'. This means that it will create a
-folder in the current directory named `vendor` and install things to it. When
-running `gx install` in the directory of your package will recursively fetch
-all of the dependencies specified in the `package.json` and save them to the
-local package directory.
+Gx by default will install packages 'globally' in the global install location
+for your given project type.  Global gx packages are shared across all packages
+that depend on them.  The location of this directory is not set in stone, if
+for your specific environment you'd like it somewhere else, simply add a hook
+to your environments extension tool named `install-path` (see above) and gx
+will use that path instead. If your language does not set a global install
+path, gx will fallback to installing locally as the default.  This means that
+it will create a folder in the current directory named `vendor` and install
+things to it. 
 
-The location of this directory is not set in stone, if for your specific
-environment you'd like it somewhere else, simply add a hook to your environments
-extension tool named `install-path` (see above) and gx will use that path
-instead.
+When running `gx install` in the directory of your package, gx will recursively
+fetch all of the dependencies specified in the `package.json` and save them to
+the install path specified.
 
-Gx also supports a global installation path, to set this one you must handle
-the `--global` flag on your `install-path` hook. Global gx packages are shared
-across all packages that depend on them.
+Gx supports both local and global installation paths. Since the default is
+global, to install locally, use `--local` or `--global=false`.  The global flag
+is passed to the `install-path` hook for your extension code to use in its
+logic.
 
 ## Using gx as a Go package manager
 
