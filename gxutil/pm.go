@@ -710,6 +710,7 @@ func InstallPath(env, relpath string, global bool) (string, error) {
 	}
 	cmd := exec.Command(binname, args...)
 
+	cmd.Stderr = os.Stderr
 	cmd.Dir = relpath
 	out, err := cmd.Output()
 	if err != nil {
