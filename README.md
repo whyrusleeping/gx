@@ -31,7 +31,7 @@ ready for pioneering developers and early users to try out and explore.
 ## Background
 
 gx was originally designed to handle dependencies in Go projects in a
-distributed fashion, and pulls ideas from other beloved package managers (like
+distributed fashion, and pulls ideas from other ~~beloved~~ package managers (like
 [npm](http://npmjs.org/)).
 
 gx was designed with the following major goals in mind:
