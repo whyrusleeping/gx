@@ -111,7 +111,7 @@ func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
 		return "", err
 	}
 
-	final, err := pm.Shell().Patch(pm.blankDir, "add-link", pkg.Name, pkgdir)
+	final, err := pm.Shell().PatchLink(pm.blankDir, pkg.Name, pkgdir, true)
 	if err != nil {
 		return "", err
 	}
