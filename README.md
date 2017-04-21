@@ -3,7 +3,7 @@
 # gx
 > The language-agnostic, universal package manager
 
-[![](https://img.shields.io/badge/made%20by-Protocol%20Labs-blue.svg?style=flat-square)](http://ipn.io) [![](https://img.shields.io/badge/freenode-%23gx-blue.svg?style=flat-square)](http://webchat.freenode.net/?channels=%23ipfs,%23gx)
+[![](https://img.shields.io/badge/made%20by-Protocol%20Labs-blue.svg?style=flat-square)](http://protocol.ai) [![](https://img.shields.io/badge/freenode-%23gx-blue.svg?style=flat-square)](http://webchat.freenode.net/?channels=%23ipfs,%23gx)
 
 gx is a packaging tool built around the distributed, content addressed filesystem
 [IPFS](//github.com/ipfs/ipfs). It aims to be flexible, powerful and simple.
@@ -124,8 +124,8 @@ goprocess           QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP 1.0.0
 mafmt               QmeLQ13LftT9XhNn22piZc3GP56fGqhijuL5Y8KdUaRn1g 1.1.1
 ```
 
-Thats pretty useful, I now know the full set of packages my package depends on.
-But whats difficult now is being able to tell what is imported where. To
+That's pretty useful, I now know the full set of packages my package depends on.
+But what's difficult now is being able to tell what is imported where. To
 address that, gx has a `--tree` option:
 
 ```bash
@@ -208,20 +208,20 @@ widens as a consequence) the tree. For example, in Go, this often times means
 making an interface its own package, and implementations into their own
 separate packages. The benefits here are that flatter trees are far easier to
 update. For every package deep a dependency is, you have to update, test,
-commit, review and merge another package. Thats a lot of work, and also a lot
+commit, review and merge another package. That's a lot of work, and also a lot
 of extra room for problems to sneak in.
 
 #### 2. The width of the tree is minimized, but not at the cost of increasing depth.
 This should be fairly common sense, but striving to import packages only where
 they are actually needed helps to improve code quality. Imagine having a helper
-function in one package, simply because its convenient to have it there, that
-depends on a bunch of other imports from elsewhere in the tree. Sure its nice,
-and doesnt actually increase the 'total' number of packages you depend on. But
+function in one package, simply because it's convenient to have it there, that
+depends on a bunch of other imports from elsewhere in the tree. Sure it's nice,
+and doesn't actually increase the 'total' number of packages you depend on. But
 now you've created an extra batch of work for you to do any time any of these
 are updated, and you also now force anyone who wants to import the package with
 your helper function to also import all those other dependencies.
 
-Adhering to the above two rules should (i'm very open to discussion on this)
+Adhering to the above two rules should (I'm very open to discussion on this)
 improve overall code quality, and make your codebase far easier to navigate and
 work on.
 
@@ -255,7 +255,7 @@ reason so a global find-replace should be just fine.
 ## Publishing and Releasing
 Gx by default will not let you publish a package twice if you haven't updated
 its version. To get around this, you can pass the `-f` flag. Though this is not
-recommended, its still perfectly possible to do.
+recommended, it's still perfectly possible to do.
 
 To update the version easily, use the `gx version` subcommand. You can either set the version manually:
 
@@ -376,7 +376,7 @@ to your environments extension tool named `install-path` (see above) and gx
 will use that path instead. If your language does not set a global install
 path, gx will fallback to installing locally as the default.  This means that
 it will create a folder in the current directory named `vendor` and install
-things to it. 
+things to it.
 
 When running `gx install` in the directory of your package, gx will recursively
 fetch all of the dependencies specified in the `package.json` and save them to
@@ -389,13 +389,13 @@ logic.
 
 ## Using gx as a Go package manager
 
-If you want (like me) to use gx as a package manager for go, its pretty easy.
+If you want (like me) to use gx as a package manager for go, it's pretty easy.
 You will need the gx go extensions before starting your project:
 ```
 $ go get -u github.com/whyrusleeping/gx-go
 ```
 
-Once thats installed, use gx like normal to import dependencies.
+Once that's installed, use gx like normal to import dependencies.
 You can import code from the vendor directory using:
 ```go
 import "gx/ipfs/<hash>/packagename"
