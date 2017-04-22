@@ -9,6 +9,7 @@
 T = $(sort $(wildcard t[0-9][0-9][0-9][0-9]-*.sh))
 BINS = bin/gx bin/ipfs bin/go-sleep bin/pollEndpoint bin/jq bin/gx-test
 SHARNESS = lib/sharness/sharness.sh
+IPFS_VERSION = v0.4.8
 
 find_go_files = $(shell find $(1) -name "*.go")
 
@@ -45,7 +46,7 @@ bin/gx: $(call find_go_files, ../)
 bin/ipfs:
 	mkdir -p bin
 	go get github.com/ipfs/ipfs-update
-	ipfs-update fetch v0.4.0 --output=bin/ipfs
+	ipfs-update fetch $(IPFS_VERSION) --output=bin/ipfs
 
 bin/go-sleep:
 	go get -d github.com/chriscool/go-sleep

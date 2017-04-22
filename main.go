@@ -171,6 +171,10 @@ number. This is a soft requirement and can be skipped by specifying the
 }
 
 func doPublish(pkg *gx.Package) error {
+	if !pm.ShellOnline() {
+		return fmt.Errorf("ipfs daemon isn't running")
+	}
+
 	err := gx.TryRunHook("pre-publish", pkg.Language, pkg.SubtoolRequired)
 	if err != nil {
 		return err
@@ -1181,6 +1185,10 @@ var ReleaseCommand = cli.Command{
 	Action: func(c *cli.Context) error {
 		if c.NArg() < 1 {
 			log.Fatal("must specify release severity (major, minor, patch)")
+		}
+
+		if !pm.ShellOnline() {
+			return fmt.Errorf("ipfs daemon isn't running")
 		}
 
 		pkg, err := LoadPackageFile(PkgFileName)
