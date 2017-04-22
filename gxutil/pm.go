@@ -77,6 +77,11 @@ func (pm *PM) Shell() *sh.Shell {
 	return pm.ipfssh
 }
 
+func (pm *PM) ShellOnline() bool {
+	_, err := pm.Shell().ID()
+	return err == nil
+}
+
 func (pm *PM) SetGlobal(g bool) {
 	pm.global = g
 }
