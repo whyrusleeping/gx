@@ -200,7 +200,7 @@ discrepancy. `gx deps stats` will output the total number of packages imported
 can be used to give you a rough idea of the complexity of your package.
 
 ### The gx dependency graph manifesto
-I firmly beleive that packages are better when:
+I firmly believe that packages are better when:
 
 #### 1. The depth of the dependency tree is minimized.
 This means restructuring your code in such a way that flattens (and perhaps
