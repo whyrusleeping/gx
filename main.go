@@ -362,7 +362,7 @@ var InstallCommand = cli.Command{
 				return err
 			}
 
-			m := prog.NewProgMeter()
+			m := prog.NewProgMeter(false)
 			pm.SetProgMeter(m)
 			err = pm.InstallDeps(pkg, ipath)
 			if err != nil {
