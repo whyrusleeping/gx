@@ -16,6 +16,7 @@ import (
 	"github.com/blang/semver"
 	cli "github.com/codegangsta/cli"
 	gx "github.com/whyrusleeping/gx/gxutil"
+	prog "github.com/whyrusleeping/progmeter"
 	log "github.com/whyrusleeping/stump"
 
 	"github.com/whyrusleeping/json-filter"
@@ -361,6 +362,8 @@ var InstallCommand = cli.Command{
 				return err
 			}
 
+			m := prog.NewProgMeter()
+			pm.SetProgMeter(m)
 			err = pm.InstallDeps(pkg, ipath)
 			if err != nil {
 				return fmt.Errorf("install deps:", err)
