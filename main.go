@@ -332,6 +332,10 @@ var InstallCommand = cli.Command{
 			Name:  "save",
 			Usage: "write installed packages as deps in package.json",
 		},
+		cli.BoolFlag{
+			Name:  "nofancy",
+			Usage: "write minimal output",
+		},
 	},
 	Action: func(c *cli.Context) error {
 		pkg, err := LoadPackageFile(PkgFileName)
@@ -348,7 +352,7 @@ var InstallCommand = cli.Command{
 
 		pm.SetGlobal(global)
 
-		pm.ProgMeter = progmeter.NewProgMeter(false)
+		pm.ProgMeter = progmeter.NewProgMeter(c.Bool("nofancy"))
 
 		if len(c.Args()) == 0 {
 			cwd, err := os.Getwd()
