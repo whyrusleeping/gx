@@ -16,7 +16,7 @@ import (
 	"github.com/blang/semver"
 	cli "github.com/codegangsta/cli"
 	gx "github.com/whyrusleeping/gx/gxutil"
-	prog "github.com/whyrusleeping/progmeter"
+	progmeter "github.com/whyrusleeping/progmeter"
 	log "github.com/whyrusleeping/stump"
 
 	"github.com/whyrusleeping/json-filter"
@@ -247,7 +247,7 @@ EXAMPLE
 	},
 	Action: func(c *cli.Context) error {
 		if len(c.Args()) == 0 {
-			return fmt.Errorf("import requires a package name")
+			return fmt.Errorf("import requires a package reference")
 		}
 
 		global := c.BoolT("global")
@@ -282,6 +282,8 @@ EXAMPLE
 		if err != nil {
 			return fmt.Errorf("(install):", err)
 		}
+
+		pm.ProgMeter.Stop()
 
 		if pkg.FindDep(npkg.Name) != nil {
 			s := fmt.Sprintf("package with name %s already imported, continue?", npkg.Name)
@@ -346,6 +348,8 @@ var InstallCommand = cli.Command{
 
 		pm.SetGlobal(global)
 
+		pm.ProgMeter = progmeter.NewProgMeter(false)
+
 		if len(c.Args()) == 0 {
 			cwd, err := os.Getwd()
 			if err != nil {
@@ -362,8 +366,6 @@ var InstallCommand = cli.Command{
 				return err
 			}
 
-			m := prog.NewProgMeter(false)
-			pm.SetProgMeter(m)
 			err = pm.InstallDeps(pkg, ipath)
 			if err != nil {
 				return fmt.Errorf("install deps:", err)

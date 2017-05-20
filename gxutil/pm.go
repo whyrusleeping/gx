@@ -33,7 +33,7 @@ type PM struct {
 
 	cfg *Config
 
-	progmeter *prog.ProgMeter
+	ProgMeter *prog.ProgMeter
 
 	global bool
 
@@ -154,7 +154,7 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 }
 
 func (pm *PM) SetProgMeter(meter *prog.ProgMeter) {
-	pm.progmeter = meter
+	pm.ProgMeter = meter
 }
 
 func padRight(s string, w int) string {
@@ -173,10 +173,10 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 	errs := make(chan error)
 	ratelim := make(chan struct{}, 2)
 	var count int
-	pm.progmeter.AddTodos(len(pkg.Dependencies) * 2)
+	pm.ProgMeter.AddTodos(len(pkg.Dependencies) * 2)
 	for i, dep := range pkg.Dependencies {
 		if complete[dep.Hash] {
-			pm.progmeter.MarkDone()
+			pm.ProgMeter.MarkDone()
 			continue
 		}
 
@@ -192,7 +192,7 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 			err := FindPackageInDir(cpkg, pkgdir)
 			if err != nil {
 				VLog("  - %s not found locally, fetching into %s", hash, pkgdir)
-				pm.progmeter.AddEntry(dep.Hash, "[fetch]   "+dep.Name, dep.Hash)
+				pm.ProgMeter.AddEntry(dep.Hash, "[fetch]   "+dep.Name, dep.Hash)
 				var final error
 				for i := 0; i < 4; i++ {
 					cpkg, final = pm.GetPackageTo(hash, pkgdir)
@@ -207,11 +207,11 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 					time.Sleep(time.Millisecond * 200 * time.Duration(i+1))
 				}
 				if final != nil {
-					pm.progmeter.Error(dep.Hash, final.Error())
+					pm.ProgMeter.Error(dep.Hash, final.Error())
 					errs <- fmt.Errorf("failed to fetch package: %s: %s", hash, final)
 					return
 				}
-				pm.progmeter.Finish(dep.Hash)
+				pm.ProgMeter.Finish(dep.Hash)
 				VLog("  - fetch %s complete!", hash)
 			}
 
@@ -240,25 +240,25 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 	for i, dep := range pkg.Dependencies {
 		cpkg := packages[i]
 		if cpkg == nil {
-			pm.progmeter.MarkDone()
+			pm.ProgMeter.MarkDone()
 			continue
 		}
 		VLog("  - %s depends on %s (%s)", pkg.Name, dep.Name, dep.Hash)
 		err := pm.installDeps(cpkg, location, complete)
 		if err != nil {
-			pm.progmeter.Error(dep.Hash, err.Error())
+			pm.ProgMeter.Error(dep.Hash, err.Error())
 			return err
 		}
 
 		complete[dep.Hash] = true
 
-		pm.progmeter.AddEntry(dep.Hash, "[install] "+dep.Name, dep.Hash)
-		pm.progmeter.Working(dep.Hash, "work")
+		pm.ProgMeter.AddEntry(dep.Hash, "[install] "+dep.Name, dep.Hash)
+		pm.ProgMeter.Working(dep.Hash, "work")
 		if err := maybeRunPostInstall(cpkg, pkgdirs[i], pm.global); err != nil {
-			pm.progmeter.Error(dep.Hash, err.Error())
+			pm.ProgMeter.Error(dep.Hash, err.Error())
 			return err
 		}
-		pm.progmeter.Finish(dep.Hash)
+		pm.ProgMeter.Finish(dep.Hash)
 	}
 	//Log("installation of dep %s complete!", pkg.Name)
 	return nil
