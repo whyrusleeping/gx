@@ -112,6 +112,8 @@ func main() {
 		ViewCommand,
 		SetCommand,
 		TestCommand,
+		LinkCommand,
+		UnlinkCommand,
 	}
 
 	if err := app.Run(os.Args); err != nil {
