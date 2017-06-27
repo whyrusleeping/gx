@@ -70,18 +70,16 @@ test_expect_success "importing c brought along a and b" '
 '
 
 test_expect_success "install d works" '
-	pkg_run d gx --verbose install > install_out
+	pkg_run d gx --verbose install --nofancy > install_out
 '
 
 test_expect_success "install output looks good" '
-	grep "installing package: d-0.0.0" install_out &&
-	grep "installing package: c-0.0.0" install_out &&
-	grep "installing package: a-0.0.0" install_out &&
-	grep "installing package: b-0.0.0" install_out &&
-	grep "installation of dep a complete!" install_out &&
-	grep "installation of dep b complete!" install_out &&
-	grep "installation of dep c complete!" install_out &&
-	grep "installation of dep d complete!" install_out
+	grep "\[get \] \[install\] a" install_out &&
+	grep "\[get \] \[install\] b" install_out &&
+	grep "\[get \] \[install\] c" install_out &&
+	grep "\[done\] \[install\] a" install_out &&
+	grep "\[done\] \[install\] b" install_out &&
+	grep "\[done\] \[install\] c" install_out
 '
 
 test_expect_success "deps look correct" '

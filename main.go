@@ -16,6 +16,7 @@ import (
 	"github.com/blang/semver"
 	cli "github.com/codegangsta/cli"
 	gx "github.com/whyrusleeping/gx/gxutil"
+	progmeter "github.com/whyrusleeping/progmeter"
 	log "github.com/whyrusleeping/stump"
 
 	"github.com/whyrusleeping/json-filter"
@@ -246,7 +247,7 @@ EXAMPLE
 	},
 	Action: func(c *cli.Context) error {
 		if len(c.Args()) == 0 {
-			return fmt.Errorf("import requires a package name")
+			return fmt.Errorf("import requires a package reference")
 		}
 
 		global := c.BoolT("global")
@@ -281,6 +282,8 @@ EXAMPLE
 		if err != nil {
 			return fmt.Errorf("(install):", err)
 		}
+
+		pm.ProgMeter.Stop()
 
 		if pkg.FindDep(npkg.Name) != nil {
 			s := fmt.Sprintf("package with name %s already imported, continue?", npkg.Name)
@@ -329,6 +332,10 @@ var InstallCommand = cli.Command{
 			Name:  "save",
 			Usage: "write installed packages as deps in package.json",
 		},
+		cli.BoolFlag{
+			Name:  "nofancy",
+			Usage: "write minimal output",
+		},
 	},
 	Action: func(c *cli.Context) error {
 		pkg, err := LoadPackageFile(PkgFileName)
@@ -344,6 +351,8 @@ var InstallCommand = cli.Command{
 		}
 
 		pm.SetGlobal(global)
+
+		pm.ProgMeter = progmeter.NewProgMeter(c.Bool("nofancy"))
 
 		if len(c.Args()) == 0 {
 			cwd, err := os.Getwd()

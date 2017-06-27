@@ -14,6 +14,7 @@ import (
 
 	sh "github.com/ipfs/go-ipfs-api"
 	mh "github.com/multiformats/go-multihash"
+	prog "github.com/whyrusleeping/progmeter"
 	. "github.com/whyrusleeping/stump"
 )
 
@@ -31,6 +32,8 @@ type PM struct {
 	ipfssh *sh.Shell
 
 	cfg *Config
+
+	ProgMeter *prog.ProgMeter
 
 	global bool
 
@@ -150,22 +153,38 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 	return pm.installDeps(pkg, location, make(map[string]bool))
 }
 
+func (pm *PM) SetProgMeter(meter *prog.ProgMeter) {
+	pm.ProgMeter = meter
+}
+
+func padRight(s string, w int) string {
+	if len(s) < w {
+		return s + strings.Repeat(" ", len(s)-w)
+	}
+	return s
+}
+
 func (pm *PM) installDeps(pkg *Package, location string, complete map[string]bool) error {
-	VLog("installing package: %s-%s", pkg.Name, pkg.Version)
+	//VLog("installing package: %s-%s", pkg.Name, pkg.Version)
 
 	packages := make([]*Package, len(pkg.Dependencies))
 	pkgdirs := make([]string, len(pkg.Dependencies))
 	done := make(chan *Dependency)
 	errs := make(chan error)
+	ratelim := make(chan struct{}, 2)
 	var count int
+	pm.ProgMeter.AddTodos(len(pkg.Dependencies) * 2)
 	for i, dep := range pkg.Dependencies {
 		if complete[dep.Hash] {
+			pm.ProgMeter.MarkDone()
 			continue
 		}
 
 		count++
 
 		go func(i int, dep *Dependency) {
+			ratelim <- struct{}{}
+			defer func() { <-ratelim }()
 			hash := dep.Hash
 			pkgdir := filepath.Join(location, "gx", "ipfs", hash)
 			cpkg := new(Package)
@@ -173,6 +192,7 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 			err := FindPackageInDir(cpkg, pkgdir)
 			if err != nil {
 				VLog("  - %s not found locally, fetching into %s", hash, pkgdir)
+				pm.ProgMeter.AddEntry(dep.Hash, "[fetch]   "+dep.Name, dep.Hash)
 				var final error
 				for i := 0; i < 4; i++ {
 					cpkg, final = pm.GetPackageTo(hash, pkgdir)
@@ -187,9 +207,11 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 					time.Sleep(time.Millisecond * 200 * time.Duration(i+1))
 				}
 				if final != nil {
+					pm.ProgMeter.Error(dep.Hash, final.Error())
 					errs <- fmt.Errorf("failed to fetch package: %s: %s", hash, final)
 					return
 				}
+				pm.ProgMeter.Finish(dep.Hash)
 				VLog("  - fetch %s complete!", hash)
 			}
 
@@ -218,21 +240,27 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 	for i, dep := range pkg.Dependencies {
 		cpkg := packages[i]
 		if cpkg == nil {
+			pm.ProgMeter.MarkDone()
 			continue
 		}
 		VLog("  - %s depends on %s (%s)", pkg.Name, dep.Name, dep.Hash)
 		err := pm.installDeps(cpkg, location, complete)
 		if err != nil {
+			pm.ProgMeter.Error(dep.Hash, err.Error())
 			return err
 		}
 
 		complete[dep.Hash] = true
 
+		pm.ProgMeter.AddEntry(dep.Hash, "[install] "+dep.Name, dep.Hash)
+		pm.ProgMeter.Working(dep.Hash, "work")
 		if err := maybeRunPostInstall(cpkg, pkgdirs[i], pm.global); err != nil {
+			pm.ProgMeter.Error(dep.Hash, err.Error())
 			return err
 		}
+		pm.ProgMeter.Finish(dep.Hash)
 	}
-	Log("installation of dep %s complete!", pkg.Name)
+	//Log("installation of dep %s complete!", pkg.Name)
 	return nil
 }
 
