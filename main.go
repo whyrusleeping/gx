@@ -14,7 +14,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/blang/semver"
-	cli "github.com/codegangsta/cli"
+	cli "github.com/urfave/cli"
 	gx "github.com/whyrusleeping/gx/gxutil"
 	progmeter "github.com/whyrusleeping/progmeter"
 	log "github.com/whyrusleeping/stump"
