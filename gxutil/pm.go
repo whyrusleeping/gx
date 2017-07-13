@@ -57,7 +57,7 @@ func GetPackageRoot() (string, error) {
 	}
 
 	for cwd != "/" {
-		_, err := os.Stat(filepath.Join(cwd, "package.json"))
+		_, err := os.Stat(filepath.Join(cwd, PkgFileName))
 		switch {
 		case err == nil:
 			return cwd, nil
