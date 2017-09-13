@@ -60,6 +60,14 @@ func LoadPackageFile(path string) (*gx.Package, error) {
 		}
 	}
 
+	dephashes := make(map[string]string)
+	for _, dep := range pkg.Dependencies {
+		if pkgname := dephashes[dep.Hash]; pkgname != "" {
+			return nil, fmt.Errorf("have two packages with a hash of %s (%s, %s)", dep.Hash, dep.Name, pkgname)
+		}
+		dephashes[dep.Hash] = dep.Name
+	}
+
 	return &pkg, nil
 }
 
