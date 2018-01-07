@@ -668,7 +668,12 @@ func getSubtoolPath(env string) (string, error) {
 		return "", nil
 	}
 
-	binname := "gx-" + env
+	var suffix string
+	if runtime.GOOS == "windows" {
+		suffix = ".exe"
+	}
+
+	binname := "gx-" + env + suffix
 	_, err := exec.LookPath(binname)
 	if err != nil {
 		if !strings.Contains(err.Error(), "file not found") {
@@ -676,7 +681,7 @@ func getSubtoolPath(env string) (string, error) {
 		}
 
 		if strings.HasSuffix(os.Args[0], "/gx") {
-			nearBin := os.Args[0] + "-" + env
+			nearBin := os.Args[0] + "-" + env + suffix
 			if _, err := os.Stat(nearBin); err != nil {
 				VLog("subtool_exec: No gx helper tool found for", env)
 				return "", nil
