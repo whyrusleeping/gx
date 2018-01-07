@@ -143,7 +143,7 @@ var RepoListCommand = cli.Command{
 		rname := c.Args().First()
 		r, ok := cfg.GetRepos()[rname]
 		if !ok {
-			fmt.Errorf("no such repo: %s", rname)
+			return fmt.Errorf("no such repo: %s", rname)
 		}
 
 		repo, err := pm.FetchRepo(r, true)
@@ -158,7 +158,7 @@ var RepoListCommand = cli.Command{
 
 func tabPrintSortedMap(headers []string, m map[string]string) {
 	var names []string
-	for k, _ := range m {
+	for k := range m {
 		names = append(names, k)
 	}
 
@@ -213,7 +213,7 @@ var RepoUpdateCommand = cli.Command{
 		if c.Args().Present() {
 			args = c.Args()
 		} else {
-			for k, _ := range repos {
+			for k := range repos {
 				args = append(args, k)
 			}
 		}
