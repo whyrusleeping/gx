@@ -677,7 +677,11 @@ func getSubtoolPath(env string) (string, error) {
 	binname := "gx-" + env + binarySuffix
 	_, err := exec.LookPath(binname)
 	if err != nil {
-		if !strings.Contains(err.Error(), "file not found") {
+		if eErr, ok := err.(*exec.Error); ok {
+			if eErr.Err != exec.ErrNotFound {
+				return "", err
+			}
+		} else {
 			return "", err
 		}
 
