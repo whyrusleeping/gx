@@ -108,7 +108,7 @@ func maybeRunPostInstall(pkg *Package, pkgdir string, global bool) error {
 		if err != nil {
 			return err
 		}
-		VLog("  - post install finished in ", time.Now().Sub(before))
+		VLog("  - post install finished in ", time.Since(before))
 		err = writePkgHook(dir, "post-install")
 		if err != nil {
 			return fmt.Errorf("error writing hook log: %s", err)
@@ -147,11 +147,7 @@ func (pm *PM) InstallPackage(hash, ipath string) (*Package, error) {
 }
 
 func isTempError(err error) bool {
-	if strings.Contains(err.Error(), "too many open files") {
-		return true
-	}
-
-	return false
+	return strings.Contains(err.Error(), "too many open files")
 }
 
 // InstallDeps recursively installs all dependencies for the given package
@@ -273,11 +269,7 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 func pkgRanHook(dir, hook string) bool {
 	p := filepath.Join(dir, ".gx", hook)
 	_, err := os.Stat(p)
-	if err == nil {
-		return true
-	}
-
-	return false
+	return err == nil
 }
 
 func writePkgHook(dir, hook string) error {
@@ -308,7 +300,7 @@ func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
 	if username == "" {
 		u, err := user.Current()
 		if err != nil {
-			fmt.Errorf("error looking up current user: %s", err)
+			return fmt.Errorf("error looking up current user: %s", err)
 		}
 		username = u.Username
 	}
@@ -337,10 +329,7 @@ func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
 	}
 
 	err = TryRunHook("post-init", lang, pkg.SubtoolRequired, dir)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func CheckForHelperTools(lang string) {
@@ -367,7 +356,7 @@ func (pm *PM) ImportPackage(dir, dephash string) (*Dependency, error) {
 		var pkg Package
 		err := FindPackageInDir(&pkg, pkgpath)
 		if err != nil {
-			return nil, fmt.Errorf("dir for package already exists, but no package found:", err)
+			return nil, fmt.Errorf("dir for package already exists, but no package found:%v", err)
 		}
 
 		return &Dependency{

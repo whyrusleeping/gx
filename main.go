@@ -16,10 +16,9 @@ import (
 	"github.com/blang/semver"
 	cli "github.com/urfave/cli"
 	gx "github.com/whyrusleeping/gx/gxutil"
+	filter "github.com/whyrusleeping/json-filter"
 	progmeter "github.com/whyrusleeping/progmeter"
 	log "github.com/whyrusleeping/stump"
-
-	"github.com/whyrusleeping/json-filter"
 )
 
 var (
@@ -55,7 +54,7 @@ func LoadPackageFile(path string) (*gx.Package, error) {
 			return nil, err
 		}
 		if !found {
-			return nil, fmt.Errorf("package requires a subtool (gx-%s) and none was found.", pkg.Language)
+			return nil, fmt.Errorf("package requires a subtool (gx-%s) and none was found", pkg.Language)
 		}
 	}
 
@@ -201,11 +200,7 @@ func doPublish(pkg *gx.Package) error {
 	}
 
 	err = gx.TryRunHook("post-publish", pkg.Language, pkg.SubtoolRequired, hash)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func writeLastPub(vers string, hash string) error {

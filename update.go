@@ -22,11 +22,7 @@ func RecursiveDepUpdate(pkg *gx.Package, from, to string) error {
 	checked := make(map[string]bool)
 
 	_, err = cascadingUpdate(pkg, cwd, todo, checked)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func cascadingUpdate(cur *gx.Package, dir string, updates map[string]string, checked map[string]bool) (bool, error) {
