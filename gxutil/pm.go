@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -23,9 +24,14 @@ const GxVersion = "0.12.1"
 const PkgFileName = "package.json"
 
 var installPathsCache map[string]string
+var binarySuffix string
 
 func init() {
 	installPathsCache = make(map[string]string)
+
+	if runtime.GOOS == "windows" {
+		binarySuffix = ".exe"
+	}
 }
 
 type PM struct {
@@ -668,15 +674,19 @@ func getSubtoolPath(env string) (string, error) {
 		return "", nil
 	}
 
-	binname := "gx-" + env
+	binname := "gx-" + env + binarySuffix
 	_, err := exec.LookPath(binname)
 	if err != nil {
-		if !strings.Contains(err.Error(), "file not found") {
+		if eErr, ok := err.(*exec.Error); ok {
+			if eErr.Err != exec.ErrNotFound {
+				return "", err
+			}
+		} else {
 			return "", err
 		}
 
-		if strings.HasSuffix(os.Args[0], "/gx") {
-			nearBin := os.Args[0] + "-" + env
+		if calledWithPathSeparator() {
+			nearBin := strings.TrimSuffix(os.Args[0], binarySuffix) + "-" + env + binarySuffix
 			if _, err := os.Stat(nearBin); err != nil {
 				VLog("subtool_exec: No gx helper tool found for", env)
 				return "", nil
@@ -688,6 +698,25 @@ func getSubtoolPath(env string) (string, error) {
 	}
 
 	return binname, nil
+}
+
+func calledWithPathSeparator() bool {
+	trimmedArg := strings.TrimSuffix(os.Args[0], binarySuffix)
+	if trimmedArg == "gx" {
+		return false
+	}
+
+	if runtime.GOOS == "windows" {
+		if strings.HasSuffix(trimmedArg, (string(os.PathSeparator)+"gx")) || strings.HasSuffix(trimmedArg, "/gx") {
+			return true
+		}
+	} else {
+		if strings.HasSuffix(trimmedArg, (string(os.PathSeparator) + "gx")) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func TryRunHook(hook, env string, req bool, args ...string) error {
