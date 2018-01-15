@@ -16,7 +16,7 @@ func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
 		// try appending the package name
 		_, err = os.Stat(filepath.Join(dir, pkg.Name, PkgFileName))
 		if err != nil {
-			return "", fmt.Errorf("%s did not contain a package!")
+			return "", fmt.Errorf("%s did not contain a package!", dir)
 		}
 		dir = filepath.Join(dir, pkg.Name)
 	}

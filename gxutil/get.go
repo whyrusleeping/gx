@@ -75,7 +75,7 @@ func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 			break
 		}
 	}
-	stump.VLog("  - fetch finished in %s", time.Now().Sub(begin))
+	stump.VLog("  - fetch finished in %s", time.Since(begin))
 
 	err = FindPackageInDir(&pkg, out)
 	if err != nil {

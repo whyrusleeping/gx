@@ -143,11 +143,8 @@ func (d *Diff) hasCodeChanges() bool {
 	cmd.Stdout = ioutil.Discard
 	cmd.Stderr = ioutil.Discard
 	err := cmd.Run()
-	if err == nil {
-		return false
-	}
 
-	return true
+	return err != nil
 }
 
 func (d *Diff) PrintCodeChanges() error {

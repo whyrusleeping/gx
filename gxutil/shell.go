@@ -21,7 +21,7 @@ func NewShell() *sh.Shell {
 		return sh.NewShell(apivar)
 	}
 
-	ash, err := getLocalApiShell()
+	ash, err := getLocalAPIShell()
 	if err == nil {
 		return ash
 	}
@@ -32,7 +32,7 @@ func NewShell() *sh.Shell {
 	return sh.NewShell("https://ipfs.io")
 }
 
-func getLocalApiShell() (*sh.Shell, error) {
+func getLocalAPIShell() (*sh.Shell, error) {
 	ipath := os.Getenv("IPFS_PATH")
 	if ipath == "" {
 		home, err := homedir.Dir()
