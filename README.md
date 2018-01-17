@@ -70,6 +70,12 @@ This will output a 'package-hash' which is unique to the exact content of your
 package at the time of publishing. If someone were to download your package and
 republish it, it would produce the *exact* same hash.
 
+### package.json
+
+It should be noted that gx is meant to *work with* existing `package.json` files. If you are adding a package to gx that already has a `packge.json` file in its root, gx will try and work with it. Any shared fields will have the same types, and any fields unique to gx will kept separate. 
+
+E.g. A single `package.json` file could be used to serve both gx and another packaging tool, such as npm. Since gx is **Alpha Quality** there may be some exceptions to the above statements, if you notice one, please file an issue.
+
 ## Installing a gx package
 If you've cloned down a gx package, simply run `gx install` or `gx i` to
 install it (and its dependencies).
