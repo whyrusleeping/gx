@@ -69,7 +69,11 @@ func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 			stump.Log("retrying fetch %s after a second...", hash)
 			time.Sleep(time.Second)
 		} else {
-			if err := rname.Rename(outtemp, out); err != nil {
+			// Remove destination directory (if exists), else remain will fail.
+			if err := os.RemoveAll(out); err != nil {
+				return nil, err
+			}
+			if err = rname.Rename(outtemp, out); err != nil {
 				return nil, err
 			}
 			break
