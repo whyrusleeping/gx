@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"time"
 
-	rname "github.com/jbenet/go-os-rename"
 	stump "github.com/whyrusleeping/stump"
 )
 
@@ -34,6 +33,9 @@ func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 		} else if !os.IsNotExist(err) {
 			return nil, err
 		}
+
+		stump.VLog("Target directory already exists but isn't a valid package, cleaning up...")
+		os.RemoveAll(out)
 	}
 
 	if err != nil && !os.IsNotExist(err) {
@@ -69,7 +71,7 @@ func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 			stump.Log("retrying fetch %s after a second...", hash)
 			time.Sleep(time.Second)
 		} else {
-			if err := rname.Rename(outtemp, out); err != nil {
+			if err := os.Rename(outtemp, out); err != nil {
 				return nil, err
 			}
 			break
