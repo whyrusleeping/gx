@@ -695,12 +695,12 @@ func calledWithPathSeparator() bool {
 		return false
 	}
 
+	if strings.HasSuffix(trimmedArg, string(os.PathSeparator)+"gx") {
+		return true
+	}
+
 	if runtime.GOOS == "windows" {
-		if strings.HasSuffix(trimmedArg, (string(os.PathSeparator)+"gx")) || strings.HasSuffix(trimmedArg, "/gx") {
-			return true
-		}
-	} else {
-		if strings.HasSuffix(trimmedArg, (string(os.PathSeparator) + "gx")) {
+		if strings.HasSuffix(trimmedArg, "/gx") { // forward slash is also a valid separator on Windows
 			return true
 		}
 	}
