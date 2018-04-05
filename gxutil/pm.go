@@ -674,8 +674,10 @@ func getSubtoolPath(env string) (string, error) {
 			return "", err
 		}
 
-		if calledWithPathSeparator() {
-			nearBin := strings.TrimSuffix(os.Args[0], binarySuffix) + "-" + env + binarySuffix
+		if dir, file := filepath.Split(os.Args[0]); dir != "" {
+			fileNoExe := strings.TrimSuffix(file, binarySuffix)
+			nearBin := filepath.Join(dir, fileNoExe+"-"+env+binarySuffix)
+
 			if _, err := os.Stat(nearBin); err != nil {
 				VLog("subtool_exec: No gx helper tool found for", env)
 				return "", nil
@@ -687,25 +689,6 @@ func getSubtoolPath(env string) (string, error) {
 	}
 
 	return binname, nil
-}
-
-func calledWithPathSeparator() bool {
-	trimmedArg := strings.TrimSuffix(os.Args[0], binarySuffix)
-	if trimmedArg == "gx" {
-		return false
-	}
-
-	if runtime.GOOS == "windows" {
-		if strings.HasSuffix(trimmedArg, (string(os.PathSeparator)+"gx")) || strings.HasSuffix(trimmedArg, "/gx") {
-			return true
-		}
-	} else {
-		if strings.HasSuffix(trimmedArg, (string(os.PathSeparator) + "gx")) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func TryRunHook(hook, env string, req bool, args ...string) error {
