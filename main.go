@@ -801,6 +801,27 @@ EXAMPLE:
 	},
 }
 
+var depCheckCommand = cli.Command{
+	Name:  "check",
+	Usage: "perform comprehensive sanity check and note any packaging issues",
+	Action: func(c *cli.Context) error {
+		pkg, err := LoadPackageFile(PkgFileName)
+		if err != nil {
+			return err
+		}
+		success, err := check(pkg)
+		if err != nil {
+			return err
+		}
+		if success {
+			os.Exit(0)
+		} else {
+			os.Exit(1)
+		}
+		return nil
+	},
+}
+
 var CleanCommand = cli.Command{
 	Name:  "clean",
 	Usage: "cleanup unused packages in vendor directory",
@@ -908,6 +929,7 @@ var DepsCommand = cli.Command{
 		depFindCommand,
 		depStatsCommand,
 		depDupesCommand,
+		depCheckCommand,
 	},
 	Action: func(c *cli.Context) error {
 		rec := c.Bool("r")
