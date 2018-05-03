@@ -82,15 +82,10 @@ func check(pkg *gx.Package) (bool, error) {
 				jh := hashes[j]
 				iv := pkgVersions[ih].version
 				jv := pkgVersions[jh].version
-				switch iv.Compare(jv) {
-				case -1:
-					return true
-				case 1:
-					return false
-				case 0:
-					return ih < jh
+				if res := iv.Compare(jv); res != 0 {
+					return res < 0
 				}
-				panic("bad compare function")
+				return ih < jh
 			})
 
 			fmt.Printf("package %s imported as:\n", name)
