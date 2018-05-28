@@ -24,6 +24,7 @@ ready for pioneering developers and early users to try out and explore.
 - [Hooks](#hooks)
 - [The vendor directory](#the-vendor-directory)
 - [Using gx as a Go package manager](#using-gx-as-a-go-package-manager)
+- [Using gx as a Javascript package manager](#using-gx-as-a-javascrit-package-manager)
 - [Using gx as a package manager for language/environment X](#using-gx-as-a-package-manager-for-languageenvironment-x)
 - [Why is it called gx?](#why-is-it-called-gx)
 - [License](#license)
@@ -424,7 +425,14 @@ environment variable part.
 
 See [the gx-go repo](https://github.com/whyrusleeping/gx-go) for more details.
 
+## Using gx as a Javascript package manager
+
+Please take a look at [gx-js](https://github.com/sterpe/gx-js).
+
 ## Using gx as a package manager for language/environment X
+
+If you want to use gx with a big bunch of repositories/packages please
+take a look at [gx-workspace](https://github.com/ipfs/gx-workspace).
 
 If you want to extend gx to work with any other language or environment, you
 can implement the relevant hooks in a binary named `gx-X` where the 'X' is the
@@ -433,6 +441,8 @@ will call out to that tools hooks during normal `gx` operations. For example, a
 'go' package would call `gx-go hook pre-publish` during a `gx publish`
 invocation before the package is actually published.  For more information on
 hooks, check out the hooks section above.
+
+See also the `examples` directory.
 
 ## Why is it called gx?
 
