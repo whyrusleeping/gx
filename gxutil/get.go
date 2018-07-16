@@ -30,12 +30,13 @@ func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 		err := FindPackageInDir(&pkg, out)
 		if err == nil {
 			return &pkg, nil
-		} else if !os.IsNotExist(err) {
-			return nil, err
 		}
 
 		stump.VLog("Target directory already exists but isn't a valid package, cleaning up...")
-		os.RemoveAll(out)
+		if oErr := os.RemoveAll(out); oErr != nil {
+			stump.Error("cannot purge existing target directory:", oErr)
+			return nil, oErr
+		}
 	}
 
 	if err != nil && !os.IsNotExist(err) {
