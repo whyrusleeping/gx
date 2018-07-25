@@ -194,7 +194,7 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 			err := FindPackageInDir(cpkg, pkgdir)
 			if err != nil {
 				VLog("  - %s not found locally, fetching into %s", hash, pkgdir)
-				pm.ProgMeter.AddEntry(dep.Hash, "[fetch]   "+dep.Name, dep.Hash)
+				pm.ProgMeter.AddEntry(dep.Hash, dep.Name, "[fetch]   <ELAPSED>"+dep.Hash)
 				var final error
 				for i := 0; i < 4; i++ {
 					cpkg, final = pm.GetPackageTo(hash, pkgdir)
@@ -254,7 +254,7 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 
 		complete[dep.Hash] = true
 
-		pm.ProgMeter.AddEntry(dep.Hash, "[install] "+dep.Name, dep.Hash)
+		pm.ProgMeter.AddEntry(dep.Hash, dep.Name, "[install] <ELAPSED>"+dep.Hash)
 		pm.ProgMeter.Working(dep.Hash, "work")
 		if err := maybeRunPostInstall(cpkg, pkgdirs[i], pm.global); err != nil {
 			pm.ProgMeter.Error(dep.Hash, err.Error())
