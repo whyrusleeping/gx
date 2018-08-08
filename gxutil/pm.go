@@ -152,7 +152,12 @@ func isTempError(err error) bool {
 
 // InstallDeps recursively installs all dependencies for the given package
 func (pm *PM) InstallDeps(pkg *Package, location string) error {
-	return pm.installDeps(pkg, location, make(map[string]bool))
+	err := pm.fetchDependencies(pkg, location, make(map[string]bool))
+	if err != nil {
+		return err
+	}
+
+	return pm.dependenciesPostInstall(pkg, location, make(map[string]bool))
 }
 
 func (pm *PM) SetProgMeter(meter *prog.ProgMeter) {
@@ -166,18 +171,17 @@ func padRight(s string, w int) string {
 	return s
 }
 
-func (pm *PM) installDeps(pkg *Package, location string, complete map[string]bool) error {
+func (pm *PM) fetchDependencies(pkg *Package, location string, fetched map[string]bool) error {
 	//VLog("installing package: %s-%s", pkg.Name, pkg.Version)
 
 	packages := make([]*Package, len(pkg.Dependencies))
-	pkgdirs := make([]string, len(pkg.Dependencies))
 	done := make(chan *Dependency)
 	errs := make(chan error)
 	ratelim := make(chan struct{}, 2)
 	var count int
 	pm.ProgMeter.AddTodos(len(pkg.Dependencies) * 2)
 	for i, dep := range pkg.Dependencies {
-		if complete[dep.Hash] {
+		if fetched[dep.Hash] {
 			pm.ProgMeter.MarkDone()
 			continue
 		}
@@ -217,7 +221,6 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 				VLog("  - fetch %s complete!", hash)
 			}
 
-			pkgdirs[i] = pkgdir
 			packages[i] = cpkg
 			done <- dep
 		}(i, dep)
@@ -228,6 +231,7 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 		select {
 		case dep := <-done:
 			VLog("[%d / %d] fetched dep: %s", i+1, len(pkg.Dependencies), dep.Name)
+			fetched[dep.Hash] = true
 		case err := <-errs:
 			Error("[%d / %d ] parallel fetch: %s", i+1, len(pkg.Dependencies), err)
 			failed = true
@@ -246,9 +250,34 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 			continue
 		}
 		VLog("  - %s depends on %s (%s)", pkg.Name, dep.Name, dep.Hash)
-		err := pm.installDeps(cpkg, location, complete)
+		err := pm.fetchDependencies(cpkg, location, fetched)
 		if err != nil {
 			pm.ProgMeter.Error(dep.Hash, err.Error())
+			return err
+		}
+
+	}
+	return nil
+}
+
+func (pm *PM) dependenciesPostInstall(pkg *Package, location string, complete map[string]bool) error {
+	for _, dep := range pkg.Dependencies {
+		if complete[dep.Hash] {
+			continue
+		}
+
+		hash := dep.Hash
+		pkgdir := filepath.Join(location, "gx", "ipfs", hash)
+		// TODO: Encapsulate in a function.
+
+		cpkg := new(Package)
+		err := FindPackageInDir(cpkg, pkgdir)
+		if err != nil {
+			return err
+		}
+
+		err = pm.dependenciesPostInstall(cpkg, location, complete)
+		if err != nil {
 			return err
 		}
 
@@ -256,7 +285,7 @@ func (pm *PM) installDeps(pkg *Package, location string, complete map[string]boo
 
 		pm.ProgMeter.AddEntry(dep.Hash, dep.Name, "[install] <ELAPSED>"+dep.Hash)
 		pm.ProgMeter.Working(dep.Hash, "work")
-		if err := maybeRunPostInstall(cpkg, pkgdirs[i], pm.global); err != nil {
+		if err := maybeRunPostInstall(cpkg, pkgdir, pm.global); err != nil {
 			pm.ProgMeter.Error(dep.Hash, err.Error())
 			return err
 		}
