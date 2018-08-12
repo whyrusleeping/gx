@@ -73,13 +73,15 @@ test_expect_success "install d works" '
 	pkg_run d gx --verbose install --nofancy > install_out
 '
 
+# Example output: `[done] [install] 0s    Qmemb8MUvUJC1VRDh8NrpovYJCEGXFfyXGbxccabXXY8G9 b`,
+# match elapsed time with `[0-9]\+\(.[0-9]\+\)\?[a-z]\+\s\+`.
 test_expect_success "install output looks good" '
-	grep "\[get \] \[install\] a" install_out &&
-	grep "\[get \] \[install\] b" install_out &&
-	grep "\[get \] \[install\] c" install_out &&
-	grep "\[done\] \[install\] a" install_out &&
-	grep "\[done\] \[install\] b" install_out &&
-	grep "\[done\] \[install\] c" install_out
+	grep "\[get \] \[install\] \s\+$pkgA a" install_out &&
+	grep "\[get \] \[install\] \s\+$pkgB b" install_out &&
+	grep "\[get \] \[install\] \s\+$pkgC c" install_out &&
+	grep "\[done\] \[install\] [0-9]\+\(.[0-9]\+\)\?[a-z]\+\s\+$pkgA a" install_out &&
+	grep "\[done\] \[install\] [0-9]\+\(.[0-9]\+\)\?[a-z]\+\s\+$pkgB b" install_out &&
+	grep "\[done\] \[install\] [0-9]\+\(.[0-9]\+\)\?[a-z]\+\s\+$pkgC c" install_out
 '
 
 test_expect_success "deps look correct" '
