@@ -84,11 +84,6 @@ func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
 			return nil
 		}
 
-		// dont publish vendored code
-		if strings.HasPrefix(rel, "vendor") {
-			return nil
-		}
-
 		// dont publish gx repo files
 		if strings.HasPrefix(rel, ".gx/") || strings.HasSuffix(rel, ".gxrc") {
 			return nil
