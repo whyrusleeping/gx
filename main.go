@@ -27,6 +27,26 @@ var (
 )
 
 const PkgFileName = gx.PkgFileName
+const LckFileName = gx.LckFileName
+
+func LoadLockFile(path string) (*gx.LockFile, error) {
+	if path == LckFileName {
+		root, err := gx.GetPackageRoot()
+		if err != nil {
+			return nil, err
+		}
+
+		path = filepath.Join(root, LckFileName)
+	}
+
+	var lck gx.LockFile
+	err := gx.LoadLockFile(&lck, path)
+	if err != nil {
+		return nil, err
+	}
+
+	return &lck, nil
+}
 
 func LoadPackageFile(path string) (*gx.Package, error) {
 	if path == PkgFileName {
@@ -111,6 +131,7 @@ func main() {
 		DiffCommand,
 		InitCommand,
 		InstallCommand,
+		LockInstallCommand,
 		PublishCommand,
 		ReleaseCommand,
 		RepoCommand,
@@ -818,6 +839,35 @@ var depCheckCommand = cli.Command{
 		} else {
 			os.Exit(1)
 		}
+		return nil
+	},
+}
+
+var LockInstallCommand = cli.Command{
+	Name:  "lock-install",
+	Usage: "Install deps from lockfile into vendor",
+	Action: func(c *cli.Context) error {
+		lck, err := LoadLockFile(LckFileName)
+		if err != nil {
+			return err
+		}
+
+		pm.ProgMeter = progmeter.NewProgMeter(c.Bool("nofancy"))
+
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		ipath, err := gx.InstallPath(lck.Language, cwd, false)
+		if err != nil {
+			return err
+		}
+
+		if err := pm.InstallLock(lck, ipath); err != nil {
+			return fmt.Errorf("install deps: %s", err)
+		}
+
 		return nil
 	},
 }

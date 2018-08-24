@@ -22,6 +22,7 @@ import (
 const GxVersion = "0.12.1"
 
 const PkgFileName = "package.json"
+const LckFileName = "gx-lock.json"
 
 var installPathsCache map[string]string
 var binarySuffix string
@@ -153,6 +154,73 @@ func isTempError(err error) bool {
 // InstallDeps recursively installs all dependencies for the given package
 func (pm *PM) InstallDeps(pkg *Package, location string) error {
 	return pm.installDeps(pkg, location, make(map[string]bool))
+}
+
+// InstallDeps recursively installs all dependencies for the given package
+func (pm *PM) InstallLock(lck *LockFile, location string) error {
+	return pm.installLock(lck, location, make(map[string]bool))
+}
+
+func (pm *PM) installLock(lck *LockFile, location string, complete map[string]bool) error {
+	done := make(chan LockDep)
+	errs := make(chan error)
+	ratelim := make(chan struct{}, 2)
+	var count int
+	pm.ProgMeter.AddTodos(len(lck.Deps))
+	for dvcsPath, dep := range lck.Deps {
+		if complete[dvcsPath] {
+			pm.ProgMeter.MarkDone()
+			continue
+		}
+
+		count++
+
+		go func(i int, dep LockDep, dvcsPath string) {
+			ratelim <- struct{}{}
+			VLog("installing %s", dvcsPath)
+			defer func() { <-ratelim }()
+			pm.ProgMeter.AddEntry(dep.Ref, dvcsPath, "[fetch]   <ELAPSED>"+dep.Ref)
+
+			var final error
+			for i := 0; i < 4; i++ {
+				_, final = pm.GetPackageTo(dep.Ref, fmt.Sprintf("%s/%s", location, dvcsPath))
+				if final == nil {
+					break
+				}
+
+				if !isTempError(final) {
+					break
+				}
+
+				time.Sleep(time.Millisecond * 200 * time.Duration(i+1))
+			}
+			if final != nil {
+				pm.ProgMeter.Error(dep.Ref, final.Error())
+				errs <- fmt.Errorf("failed to fetch package: %s: %s", dep.Ref, final)
+				return
+			}
+
+			pm.ProgMeter.Finish(dep.Ref)
+
+			done <- dep
+		}(count, dep, dvcsPath)
+	}
+
+	var failed bool
+	for i := 0; i < count; i++ {
+		select {
+		case <-done:
+		case err := <-errs:
+			Error("[%d / %d ] parallel fetch: %s", i+1, len(lck.Deps), err)
+			failed = true
+		}
+	}
+
+	if failed {
+		return errors.New("failed to fetch dependencies")
+	}
+
+	return nil
 }
 
 func (pm *PM) SetProgMeter(meter *prog.ProgMeter) {
