@@ -156,7 +156,7 @@ func (pm *PM) InstallDeps(pkg *Package, location string) error {
 	return pm.installDeps(pkg, location, make(map[string]bool))
 }
 
-// InstallDeps recursively installs all dependencies for the given package
+// InstallLock recursively installs all dependencies for the given lockfile
 func (pm *PM) InstallLock(lck *LockFile, location string) error {
 	return pm.installLock(lck, location, make(map[string]bool))
 }
