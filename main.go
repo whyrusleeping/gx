@@ -173,34 +173,41 @@ number. This is a soft requirement and can be skipped by specifying the
 			}
 		}
 
-		return doPublish(pkg)
+		if _, err := doPublish(pkg); err != nil {
+			return err
+		}
+
+		return nil
 	},
 }
 
-func doPublish(pkg *gx.Package) error {
+func doPublish(pkg *gx.Package) (string, error) {
 	if !pm.ShellOnline() {
-		return fmt.Errorf("ipfs daemon isn't running")
+		return "", fmt.Errorf("ipfs daemon isn't running")
 	}
 
 	err := gx.TryRunHook("pre-publish", pkg.Language, pkg.SubtoolRequired)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	hash, err := pm.PublishPackage(cwd, &pkg.PackageBase)
 	if err != nil {
-		return fmt.Errorf("publishing: %s", err)
+		return "", fmt.Errorf("publishing: %s", err)
 	}
 	log.Log("package %s published with hash: %s", pkg.Name, hash)
 
 	// write out version hash
 	err = writeLastPub(pkg.Version, hash)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	err = gx.TryRunHook("post-publish", pkg.Language, pkg.SubtoolRequired, hash)
-	return err
+	if err := gx.TryRunHook("post-publish", pkg.Language, pkg.SubtoolRequired, hash); err != nil {
+		return "", err
+	}
+
+	return hash, nil
 }
 
 func writeLastPub(vers string, hash string) error {
@@ -1235,12 +1242,12 @@ var ReleaseCommand = cli.Command{
 		}
 
 		fmt.Printf("publishing package...\r")
-		err = doPublish(pkg)
+		hash, err := doPublish(pkg)
 		if err != nil {
 			return err
 		}
 
-		return runRelease(pkg)
+		return runRelease(pkg, hash)
 	},
 }
 
@@ -1313,20 +1320,44 @@ func splitArgs(in string) []string {
 	return out
 }
 
-func escapeReleaseCmd(pkg *gx.Package, cmd string) string {
-	cmd = strings.Replace(cmd, "$VERSION", pkg.Version, -1)
+func escapeReleaseCmd(cmd, version, hash string) string {
+	cmd = strings.Replace(cmd, "$VERSION", version, -1)
+	cmd = strings.Replace(cmd, "$HASH", hash, -1)
 
 	return cmd
 }
 
-func runRelease(pkg *gx.Package) error {
+func runRelease(pkg *gx.Package, hash string) error {
 	if pkg.ReleaseCmd == "" {
+		fmt.Println("no release command defined, skipping")
 		return nil
 	}
 
-	replaced := escapeReleaseCmd(pkg, pkg.ReleaseCmd)
+	commitCmd := escapeReleaseCmd(pkg.ReleaseCmd, pkg.Version, hash)
 
-	parts := splitArgs(replaced)
+	if err := runCmd(commitCmd); err != nil {
+		return fmt.Errorf("failed to commit release: %s", err)
+	}
+
+	tagCmd := pkg.TagCmd
+	if tagCmd == "" {
+		// TODO: maybe don't do this? but otherwise we run into the issue that all existing
+		// gx configs don't have this defined, and would not start using tags :(
+		fmt.Println("no tag command defined, using default")
+		tagCmd = gx.DefaultTagCmd
+	}
+
+	tagCmd = escapeReleaseCmd(tagCmd, pkg.Version, hash)
+	if err := runCmd(tagCmd); err != nil {
+		return fmt.Errorf("failed to tag release: %s", err)
+	}
+
+	return nil
+}
+
+func runCmd(command string) error {
+	parts := splitArgs(command)
+
 	cmd := exec.Command(parts[0], parts[1:]...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout

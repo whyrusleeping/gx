@@ -21,6 +21,7 @@ type PackageBase struct {
 	Build           string        `json:"build,omitempty"`
 	Test            string        `json:"test,omitempty"`
 	ReleaseCmd      string        `json:"releaseCmd,omitempty"`
+	TagCmd          string        `json:"tagCmd,omitempty"`
 	SubtoolRequired bool          `json:"subtoolRequired,omitempty"`
 	Language        string        `json:"language,omitempty"`
 	License         string        `json:"license"`
