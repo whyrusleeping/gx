@@ -2,27 +2,39 @@ package gxutil
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"os"
 )
+
+const LockVersion = 1
 
 type LockDep struct {
 	// full ipfs path /ipfs/<hash>/foo
-	Ref string
+	Ref string `json:"ref"`
 
 	// Mapping of dvcs import paths to LockData
-	Deps map[string]LockDep
+	Deps map[string]LockDep `json:"deps"`
 }
 
 type LockFile struct {
-	Language string
-	Deps     map[string]LockDep
+	Language    string             `json:"language"`
+	LockVersion int                `json:"lockVersion"`
+	Deps        map[string]LockDep `json:"deps"`
 }
 
 func LoadLockFile(lck *LockFile, fname string) error {
-	data, err := ioutil.ReadFile(fname)
+	fi, err := os.Open(fname)
 	if err != nil {
 		return err
 	}
 
-	return json.Unmarshal(data, lck)
+	if err := json.NewDecoder(fi).Decode(lck); err != nil {
+		return err
+	}
+
+	if lck.LockVersion != LockVersion {
+		return fmt.Errorf("unsupported lockfile version: %d", lck.LockVersion)
+	}
+
+	return nil
 }
