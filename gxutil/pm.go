@@ -150,11 +150,6 @@ func isTempError(err error) bool {
 	return strings.Contains(err.Error(), "too many open files")
 }
 
-// InstallDeps recursively installs all dependencies for the given package
-func (pm *PM) InstallDeps(pkg *Package, location string) error {
-	return pm.installDeps(pkg, location, make(map[string]bool))
-}
-
 func (pm *PM) SetProgMeter(meter *prog.ProgMeter) {
 	pm.ProgMeter = meter
 }
@@ -164,106 +159,6 @@ func padRight(s string, w int) string {
 		return s + strings.Repeat(" ", len(s)-w)
 	}
 	return s
-}
-
-func (pm *PM) installDeps(pkg *Package, location string, complete map[string]bool) error {
-	//VLog("installing package: %s-%s", pkg.Name, pkg.Version)
-
-	packages := make([]*Package, len(pkg.Dependencies))
-	pkgdirs := make([]string, len(pkg.Dependencies))
-	done := make(chan *Dependency)
-	errs := make(chan error)
-	ratelim := make(chan struct{}, 2)
-	var count int
-	pm.ProgMeter.AddTodos(len(pkg.Dependencies) * 2)
-	for i, dep := range pkg.Dependencies {
-		if complete[dep.Hash] {
-			pm.ProgMeter.MarkDone()
-			continue
-		}
-
-		count++
-
-		go func(i int, dep *Dependency) {
-			ratelim <- struct{}{}
-			defer func() { <-ratelim }()
-			hash := dep.Hash
-			pkgdir := filepath.Join(location, "gx", "ipfs", hash)
-			cpkg := new(Package)
-
-			err := FindPackageInDir(cpkg, pkgdir)
-			if err != nil {
-				VLog("  - %s not found locally, fetching into %s", hash, pkgdir)
-				pm.ProgMeter.AddEntry(dep.Hash, dep.Name, "[fetch]   <ELAPSED>"+dep.Hash)
-				var final error
-				for i := 0; i < 4; i++ {
-					cpkg, final = pm.GetPackageTo(hash, pkgdir)
-					if final == nil {
-						break
-					}
-
-					if !isTempError(final) {
-						break
-					}
-
-					time.Sleep(time.Millisecond * 200 * time.Duration(i+1))
-				}
-				if final != nil {
-					pm.ProgMeter.Error(dep.Hash, final.Error())
-					errs <- fmt.Errorf("failed to fetch package: %s: %s", hash, final)
-					return
-				}
-				pm.ProgMeter.Finish(dep.Hash)
-				VLog("  - fetch %s complete!", hash)
-			}
-
-			pkgdirs[i] = pkgdir
-			packages[i] = cpkg
-			done <- dep
-		}(i, dep)
-	}
-
-	var failed bool
-	for i := 0; i < count; i++ {
-		select {
-		case dep := <-done:
-			VLog("[%d / %d] fetched dep: %s", i+1, len(pkg.Dependencies), dep.Name)
-		case err := <-errs:
-			Error("[%d / %d ] parallel fetch: %s", i+1, len(pkg.Dependencies), err)
-			failed = true
-		}
-	}
-
-	if failed {
-		return errors.New("failed to fetch dependencies")
-	}
-	VLog("successfully found all deps for %s", pkg.Name)
-
-	for i, dep := range pkg.Dependencies {
-		cpkg := packages[i]
-		if cpkg == nil {
-			pm.ProgMeter.MarkDone()
-			continue
-		}
-		VLog("  - %s depends on %s (%s)", pkg.Name, dep.Name, dep.Hash)
-		err := pm.installDeps(cpkg, location, complete)
-		if err != nil {
-			pm.ProgMeter.Error(dep.Hash, err.Error())
-			return err
-		}
-
-		complete[dep.Hash] = true
-
-		pm.ProgMeter.AddEntry(dep.Hash, dep.Name, "[install] <ELAPSED>"+dep.Hash)
-		pm.ProgMeter.Working(dep.Hash, "work")
-		if err := maybeRunPostInstall(cpkg, pkgdirs[i], pm.global); err != nil {
-			pm.ProgMeter.Error(dep.Hash, err.Error())
-			return err
-		}
-		pm.ProgMeter.Finish(dep.Hash)
-	}
-	//Log("installation of dep %s complete!", pkg.Name)
-	return nil
 }
 
 func pkgRanHook(dir, hook string) bool {
@@ -774,4 +669,237 @@ func setInstallPathCache(env string, global bool, val string) {
 
 func IsHash(s string) bool {
 	return strings.HasPrefix(s, "Qm") && len(s) == 46
+}
+
+// InstallDeps fetches all dependencies for the given package (in parallel)
+// and then calls the `post-install` hook on each one. Those two processes
+// are not combined because the rewrite process in the `post-install` hook
+// needs all of the dependencies (directs and transitives) of a package to
+// compute the rewrite map which enforces a particular order in the traversal
+// of the dependency graph and that constraint invalidates the parallel fetch
+// in `fetchDependencies` (where the dependencies are processes in the random
+// order they are fetched, without consideration for their order in the
+// dependency graph).
+func (pm *PM) InstallDeps(pkg *Package, location string) error {
+	err := pm.fetchDependencies(pkg, location)
+	if err != nil {
+		return err
+	}
+
+	return pm.dependenciesPostInstall(pkg, location)
+}
+
+// Queue of dependency packages to install. Supported by a slice,
+// it's not very performant but the main bottleneck here is the
+// fetch operation (`GetPackageTo`).
+type DependencyQueue struct {
+	// Slice that supports the queue.
+	queue []*Dependency
+	// Map that keeps track of the dependencies already added to
+	// the queue (at some point, may not be in the queue at the
+	// moment), accessed by the `Dependency.Hash` (set to `true`
+	// if the dependency has already been added).
+	added map[string]bool
+}
+
+// NewDependencyQueue creates a new `DependencyQueue` with
+// the specified `initialCapacity` for the slice.
+func NewDependencyQueue(initialCapacity int) *DependencyQueue {
+	return &DependencyQueue{
+		queue: make([]*Dependency, 0, initialCapacity),
+		added: make(map[string]bool),
+	}
+}
+
+// AddPackageDependencies adds all of the dependencies of `pkg`
+// to the queue that had not been already added. Return the
+// actual number of dependencies added to the queue.
+func (dq *DependencyQueue) AddPackageDependencies(pkg *Package) int {
+	addedDepCount := 0
+	for _, dep := range pkg.Dependencies {
+		if dq.added[dep.Hash] == false {
+			dq.queue = append(dq.queue, dep)
+			addedDepCount++
+			dq.added[dep.Hash] = true
+		}
+	}
+	return addedDepCount
+}
+
+// Len returns the number of dependencies currently stored in the queue.
+func (dq *DependencyQueue) Len() int {
+	return len(dq.queue)
+}
+
+// Pop the first dependency in the queue and return it
+// (or `nil` if the queue is empty).
+func (dq *DependencyQueue) Pop() *Dependency {
+	if dq.Len() == 0 {
+		return nil
+	}
+
+	dep := dq.queue[0]
+	dq.queue = dq.queue[1:]
+	return dep
+}
+
+// Fetch all of the dependencies of this package (direct and transitive
+// ones). Use (if possible) `maxGoroutines` goroutines working in parallel
+// (coordinated by this function). Each new dependency fetched is another
+// package with more (potentially new) dependencies that may also be fetched.
+//
+// TODO: Depending on the perspective sometimes we use the *package*
+// term and others *dependency* (of another package), that should
+// be unified and clarified as much as possible (not just in this function).
+func (pm *PM) fetchDependencies(pkg *Package, location string) error {
+
+	// Maximum number of goroutines allowed to run in parallel fetching
+	// packages.
+	const maxGoroutines = 20
+	// TODO: Consider making this value a parameter of the function
+	// (or an attribute of the `PM` structure).
+
+	// Central queue of dependencies that need to be fetched. Handled only
+	// by this function. Created with an initial a capacity on the rough
+	// estimate of twice the maximum goroutines running.
+	depQueue := NewDependencyQueue(maxGoroutines * 2)
+
+	// List of channels for each spawned goroutine to store either the
+	// fetched package or an error. To ensure they are non blocking the
+	// maximum number of goroutines it's assigned for their capacity
+	// (worst case scenario).
+	fetchedPackages := make(chan *Package, maxGoroutines)
+	fetchErrs := make(chan error, maxGoroutines)
+
+	// Save the first fetch error as the function return value,
+	// if more errors come after that they will be logged but not
+	// returned.
+	var firstFetchErr error
+
+	// To start the process add the dependencies of the root package.
+	addedDepCount := depQueue.AddPackageDependencies(pkg)
+	pm.ProgMeter.AddTodos(addedDepCount)
+
+	// Counter to keep track of spawned goroutines, it's not locked as it's
+	// only handled by this function. Decremented any time a message is received
+	// on the above channels, which indicates that the goroutine has finished.
+	activeGoroutines := 0
+
+	// Main loop of the function.
+	for {
+		// If there are no more dependencies to install and there aren't any
+		// goroutines running (which could potentially add new dependencies
+		// to the queue) we're finished.
+		if depQueue.Len() == 0 && activeGoroutines == 0 {
+			return nil
+		}
+
+		// Keep spawning goroutines until the allowed maximum or until
+		// there are no new dependencies to fetch at the moment.
+		for activeGoroutines < maxGoroutines && depQueue.Len() > 0 {
+			// TODO: Use the worker pattern here (https://gobyexample.com/worker-pools),
+			// instead of counting active goroutines we should be counting active jobs.
+
+			// Goroutine that only calls `GetPackageTo` to fetch the dependency,
+			// it either returns it or returns an error.
+			go func(dep *Dependency) {
+
+				pkgDir := filepath.Join(location, "gx", "ipfs", dep.Hash)
+				// TODO: Encapsulate in a function. Used in too many places
+				// and is part of the standard.
+
+				pm.ProgMeter.AddEntry(dep.Hash, dep.Name, "[fetch]   <ELAPSED>"+dep.Hash)
+				pkg, err := pm.GetPackageTo(dep.Hash, pkgDir)
+
+				// Either with error or with the package the goroutine ends here.
+				if err != nil {
+					fetchErrs <- fmt.Errorf("failed to fetch package: %s: %s", dep.Hash, err)
+					pm.ProgMeter.Error(dep.Hash, err.Error())
+				} else {
+					fetchedPackages <- pkg
+					pm.ProgMeter.Finish(dep.Hash)
+				}
+			}(depQueue.Pop())
+
+			activeGoroutines++
+		}
+
+		// Once all the possible goroutines have been spawned wait
+		// for anyone to finish and analyze (restart loop) if more
+		// goroutines can be called.
+		select {
+		case fetchedPkg := <-fetchedPackages:
+			VLog("fetched dep: %s", fetchedPkg.Name)
+			addedDepCount := depQueue.AddPackageDependencies(fetchedPkg)
+			pm.ProgMeter.AddTodos(addedDepCount)
+		case firstFetchErr = <-fetchErrs:
+			Error("parallel fetch: %s", firstFetchErr)
+		}
+		activeGoroutines--
+
+		if firstFetchErr != nil {
+			break
+			// An error happened inside a fetch goroutine, stop the main `for`,
+			// do not order more fetches.
+			// TODO: If `GetPackageTo` or the `shell.Get()` function had a `Context`
+			// it would be useful to issue a `cancel()` here before returning.
+		}
+	}
+
+	// We broke out of the `for`, at least one error was detected in the
+	// fetch operations, wait for the rest of the goroutines to finish.
+	for activeGoroutines > 0 {
+		select {
+		case err := <-fetchErrs:
+			Error("parallel fetch: %s", err)
+		case _ = <-fetchedPackages:
+		}
+		activeGoroutines--
+	}
+
+	return firstFetchErr
+}
+
+// Call the `post-install` hook on each of the dependencies of this package
+// (direct or transitive).
+//
+// TODO: This function could also use the same parallel goroutine processing
+// structure of `fetchDependencies` but right now the `post-install` hook
+// of the only sub-tool (`gx-go rewrite`) already does a parallel processing
+// of its own, so there's little to gain here.
+func (pm *PM) dependenciesPostInstall(pkg *Package, location string) error {
+	depQueue := NewDependencyQueue(len(pkg.Dependencies) * 2)
+
+	addedDepCount := depQueue.AddPackageDependencies(pkg)
+	pm.ProgMeter.AddTodos(addedDepCount)
+
+	for {
+		dep := depQueue.Pop()
+		if dep == nil {
+			return nil
+			// No more dependencies to process
+		}
+
+		hash := dep.Hash
+		pkgdir := filepath.Join(location, "gx", "ipfs", hash)
+		// TODO: Encapsulate in a function.
+
+		pkg := new(Package)
+		err := FindPackageInDir(pkg, pkgdir)
+		if err != nil {
+			return err
+		}
+
+		pm.ProgMeter.AddEntry(dep.Hash, dep.Name, "[install] <ELAPSED>"+dep.Hash)
+		pm.ProgMeter.Working(dep.Hash, "work")
+		if err := maybeRunPostInstall(pkg, pkgdir, pm.global); err != nil {
+			pm.ProgMeter.Error(dep.Hash, err.Error())
+			return err
+		}
+		pm.ProgMeter.Finish(dep.Hash)
+
+		// Add the dependencies of this package to the queue.
+		addedDepCount := depQueue.AddPackageDependencies(pkg)
+		pm.ProgMeter.AddTodos(addedDepCount)
+	}
 }
