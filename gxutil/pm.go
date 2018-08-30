@@ -183,7 +183,8 @@ func (pm *PM) installLock(lck *LockFile, location string, complete map[string]bo
 
 			var final error
 			for i := 0; i < 4; i++ {
-				_, final = pm.GetPackageTo(dep.Ref, fmt.Sprintf("%s/%s", location, dvcsPath))
+				//_, final = pm.GetPackageTo(dep.Ref, fmt.Sprintf("%s/%s", location, dvcsPath))
+				final = pm.CacheAndLinkPackage(dep.Ref, location, fmt.Sprintf("%s/%s", location, dvcsPath))
 				if final == nil {
 					break
 				}

@@ -846,6 +846,12 @@ var depCheckCommand = cli.Command{
 var LockInstallCommand = cli.Command{
 	Name:  "lock-install",
 	Usage: "Install deps from lockfile into vendor",
+	Flags: []cli.Flag{
+		cli.BoolFlag{
+			Name:  "nofancy",
+			Usage: "write minimal output",
+		},
+	},
 	Action: func(c *cli.Context) error {
 		lck, err := LoadLockFile(LckFileName)
 		if err != nil {
