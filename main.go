@@ -31,12 +31,12 @@ const LckFileName = gx.LckFileName
 
 func LoadLockFile(path string) (*gx.LockFile, error) {
 	if path == LckFileName {
-		root, err := gx.GetPackageRoot()
+		cwd, err := os.Getwd()
 		if err != nil {
 			return nil, err
 		}
 
-		path = filepath.Join(root, LckFileName)
+		path = filepath.Join(cwd, LckFileName)
 	}
 
 	var lck gx.LockFile
@@ -865,12 +865,7 @@ var LockInstallCommand = cli.Command{
 			return err
 		}
 
-		ipath, err := gx.InstallPath(lck.Language, cwd, false)
-		if err != nil {
-			return err
-		}
-
-		if err := pm.InstallLock(lck, ipath); err != nil {
+		if err := pm.InstallLock((*lck).Lock, cwd); err != nil {
 			return fmt.Errorf("install deps: %s", err)
 		}
 

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	sh "github.com/ipfs/go-ipfs-api"
@@ -151,72 +152,95 @@ func isTempError(err error) bool {
 	return strings.Contains(err.Error(), "too many open files")
 }
 
-// InstallLock recursively installs all dependencies for the given lockfile
-func (pm *PM) InstallLock(lck *LockFile, location string) error {
-	return pm.installLock(lck, location, make(map[string]bool))
+type DepWork struct {
+	CacheDir string
+	LinkDir  string
+	Dep      string
+	Ref      string
 }
 
-func (pm *PM) installLock(lck *LockFile, location string, complete map[string]bool) error {
-	done := make(chan LockDep)
-	errs := make(chan error)
-	ratelim := make(chan struct{}, 2)
-	var count int
-	pm.ProgMeter.AddTodos(len(lck.Deps))
-	for dvcsPath, dep := range lck.Deps {
-		if complete[dvcsPath] {
-			pm.ProgMeter.MarkDone()
-			continue
-		}
+// InstallLock recursively installs all dependencies for the given lockfile
+func (pm *PM) InstallLock(lck Lock, cwd string) error {
+	lockList := []Lock{lck}
 
-		count++
+	maxWorkers := 20
+	workers := make(chan DepWork, maxWorkers)
 
-		go func(i int, dep LockDep, dvcsPath string) {
-			ratelim <- struct{}{}
-			VLog("installing %s", dvcsPath)
-			defer func() { <-ratelim }()
-			pm.ProgMeter.AddEntry(dep.Ref, dvcsPath, "[fetch]   <ELAPSED>"+dep.Ref)
+	var wg sync.WaitGroup
 
-			var final error
-			for i := 0; i < 4; i++ {
-				//_, final = pm.GetPackageTo(dep.Ref, fmt.Sprintf("%s/%s", location, dvcsPath))
-				final = pm.CacheAndLinkPackage(dep.Ref, location, fmt.Sprintf("%s/%s", location, dvcsPath))
-				if final == nil {
-					break
+	for i := 0; i < maxWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			for work := range workers {
+				pm.ProgMeter.AddEntry(work.Ref, work.Dep, "[fetch]   <ELAPSED>"+work.Ref)
+
+				cacheloc := filepath.Join(work.CacheDir, work.Ref)
+				linkloc := filepath.Join(work.LinkDir, work.Dep)
+
+				if err := pm.CacheAndLinkPackage(work.Ref, cacheloc, linkloc); err != nil {
+					pm.ProgMeter.Error(work.Ref, err.Error())
+					continue
 				}
 
-				if !isTempError(final) {
-					break
-				}
-
-				time.Sleep(time.Millisecond * 200 * time.Duration(i+1))
-			}
-			if final != nil {
-				pm.ProgMeter.Error(dep.Ref, final.Error())
-				errs <- fmt.Errorf("failed to fetch package: %s: %s", dep.Ref, final)
-				return
+				pm.ProgMeter.Finish(work.Ref)
 			}
 
-			pm.ProgMeter.Finish(dep.Ref)
-
-			done <- dep
-		}(count, dep, dvcsPath)
+			wg.Done()
+		}()
 	}
 
-	var failed bool
-	for i := 0; i < count; i++ {
-		select {
-		case <-done:
-		case err := <-errs:
-			Error("[%d / %d ] parallel fetch: %s", i+1, len(lck.Deps), err)
-			failed = true
+	for {
+		if len(lockList) == 0 {
+			break
 		}
+
+		curr := lockList[0]
+		lockList = lockList[1:]
+
+		newLocks, err := pm.installLock(curr, cwd, workers)
+		if err != nil {
+			return err
+		}
+
+		lockList = append(lockList, newLocks...)
 	}
 
-	if failed {
-		return errors.New("failed to fetch dependencies")
-	}
+	close(workers)
+	wg.Wait()
 
 	return nil
+}
+
+func (pm *PM) installLock(lck Lock, cwd string, workers chan<- DepWork) ([]Lock, error) {
+	// Install all the direct dependencies for this lock
+
+	// Each lock contains a mapping of languages to their own dependencies
+	returnList := []Lock{}
+
+	for lang, langdeps := range lck.Deps {
+		ipath, err := InstallPath(lang, cwd, false)
+		if err != nil {
+			return []Lock{}, err
+		}
+
+		pm.ProgMeter.AddTodos(len(langdeps))
+
+		for dep, deplock := range langdeps {
+			if deplock.Deps != nil {
+				returnList = append(returnList, deplock)
+			}
+
+			workers <- DepWork{
+				CacheDir: filepath.Join(cwd, ".gx", "cache"),
+				LinkDir:  ipath,
+				Dep:      dep,
+				Ref:      deplock.Ref,
+			}
+
+		}
+	}
+
+	return returnList, nil
 }
 
 func (pm *PM) SetProgMeter(meter *prog.ProgMeter) {

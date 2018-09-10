@@ -8,18 +8,16 @@ import (
 
 const LockVersion = 1
 
-type LockDep struct {
-	// full ipfs path /ipfs/<hash>/foo
-	Ref string `json:"ref"`
-
-	// Mapping of dvcs import paths to LockData
-	Deps map[string]LockDep `json:"deps"`
+type LockFile struct {
+	Lock
+	LockVersion int `json:"lockVersion"`
 }
 
-type LockFile struct {
-	Language    string             `json:"language"`
-	LockVersion int                `json:"lockVersion"`
-	Deps        map[string]LockDep `json:"deps"`
+type Lock struct {
+	Language string `json:"language,omitempty"`
+
+	Ref  string                     `json:"ref,omitempty"`
+	Deps map[string]map[string]Lock `json:"deps,omitempty"`
 }
 
 func LoadLockFile(lck *LockFile, fname string) error {
