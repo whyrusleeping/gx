@@ -167,6 +167,8 @@ func (pm *PM) InstallLock(lck Lock, cwd string) error {
 	workers := make(chan DepWork, maxWorkers)
 
 	var wg sync.WaitGroup
+	var lk sync.Mutex
+	var firstError error
 
 	for i := 0; i < maxWorkers; i++ {
 		wg.Add(1)
@@ -179,6 +181,13 @@ func (pm *PM) InstallLock(lck Lock, cwd string) error {
 
 				if err := pm.CacheAndLinkPackage(work.Ref, cacheloc, linkloc); err != nil {
 					pm.ProgMeter.Error(work.Ref, err.Error())
+
+					lk.Lock()
+					if firstError == nil {
+						firstError = err
+					}
+					lk.Unlock()
+
 					continue
 				}
 
@@ -202,13 +211,15 @@ func (pm *PM) InstallLock(lck Lock, cwd string) error {
 			return err
 		}
 
-		lockList = append(lockList, newLocks...)
+		if firstError == nil {
+			lockList = append(lockList, newLocks...)
+		}
 	}
 
 	close(workers)
 	wg.Wait()
 
-	return nil
+	return firstError
 }
 
 func (pm *PM) installLock(lck Lock, cwd string, workers chan<- DepWork) ([]Lock, error) {
