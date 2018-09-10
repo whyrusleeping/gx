@@ -97,8 +97,15 @@ func (pm *PM) CacheAndLinkPackage(ref, cacheloc, out string) error {
 func (pm *PM) tryFetch(hash, target string) error {
 	temp := target + ".part"
 
+	// check if already downloaded
+	_, err := os.Stat(target)
+	if err == nil {
+		stump.VLog("already fetched %s", target)
+		return nil
+	}
+
 	// check if a fetch was previously started and failed, cleanup if found
-	_, err := os.Stat(temp)
+	_, err = os.Stat(temp)
 	if err == nil {
 		stump.VLog("Found previously failed fetch, cleaning up...")
 		if err := os.RemoveAll(temp); err != nil {
