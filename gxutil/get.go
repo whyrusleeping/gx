@@ -134,9 +134,11 @@ func (pm *PM) tryFetch(hash, target string) error {
 			stump.Log("retrying fetch %s after a second...", hash)
 			time.Sleep(time.Second)
 		} else {
-			if err := chmodR(temp, 0444); err != nil {
-				return err
-			}
+			/*
+				if err := chmodR(temp, 0444); err != nil {
+					return err
+				}
+			*/
 			return os.Rename(temp, target)
 		}
 	}
