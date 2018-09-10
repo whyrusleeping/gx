@@ -73,6 +73,9 @@ func (pm *PM) CacheAndLinkPackage(ref, cacheloc, out string) error {
 			if target != cacheloc {
 				panic("not handling dep changes yet")
 			}
+
+			// Link already exists
+			return nil
 		} else {
 			// TODO: should we force these to be links?
 			// we want to support people just cloning packages into place here, so how should we handle it here?
