@@ -55,8 +55,10 @@ func (pm *PM) GetPackageTo(hash, out string) (*Package, error) {
 	return &pkg, nil
 }
 
-func (pm *PM) CacheAndLinkPackage(ref, cachedir, out string) error {
-	cacheloc := filepath.Join(cachedir, "gx", ref)
+func (pm *PM) CacheAndLinkPackage(ref, cacheloc, out string) error {
+	if err := pm.tryFetch(ref, cacheloc); err != nil {
+		return err
+	}
 
 	finfo, err := os.Lstat(out)
 	switch {
@@ -79,10 +81,6 @@ func (pm *PM) CacheAndLinkPackage(ref, cachedir, out string) error {
 	case os.IsNotExist(err):
 		// ok
 	default:
-		return err
-	}
-
-	if err := pm.tryFetch(ref, cacheloc); err != nil {
 		return err
 	}
 
