@@ -111,6 +111,7 @@ func main() {
 		DiffCommand,
 		InitCommand,
 		InstallCommand,
+		LockInstallCommand,
 		PublishCommand,
 		ReleaseCommand,
 		RepoCommand,
@@ -818,6 +819,36 @@ var depCheckCommand = cli.Command{
 		} else {
 			os.Exit(1)
 		}
+		return nil
+	},
+}
+
+var LockInstallCommand = cli.Command{
+	Name:  "lock-install",
+	Usage: "Install deps from lockfile into vendor",
+	Flags: []cli.Flag{
+		cli.BoolFlag{
+			Name:  "nofancy",
+			Usage: "write minimal output",
+		},
+	},
+	Action: func(c *cli.Context) error {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		var lck gx.LockFile
+		if err := gx.LoadLockFile(&lck, filepath.Join(cwd, gx.LckFileName)); err != nil {
+			return err
+		}
+
+		pm.ProgMeter = progmeter.NewProgMeter(c.Bool("nofancy"))
+
+		if err := pm.InstallLock(lck.Lock, cwd); err != nil {
+			return fmt.Errorf("install deps: %s", err)
+		}
+
 		return nil
 	},
 }

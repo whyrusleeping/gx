@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	sh "github.com/ipfs/go-ipfs-api"
@@ -22,6 +23,7 @@ import (
 const GxVersion = "0.12.1"
 
 const PkgFileName = "package.json"
+const LckFileName = "gx-lock.json"
 
 var installPathsCache map[string]string
 var binarySuffix string
@@ -148,6 +150,108 @@ func (pm *PM) InstallPackage(hash, ipath string) (*Package, error) {
 
 func isTempError(err error) bool {
 	return strings.Contains(err.Error(), "too many open files")
+}
+
+type DepWork struct {
+	CacheDir string
+	LinkDir  string
+	Dep      string
+	Ref      string
+}
+
+// InstallLock recursively installs all dependencies for the given lockfile
+func (pm *PM) InstallLock(lck Lock, cwd string) error {
+	lockList := []Lock{lck}
+
+	maxWorkers := 20
+	workers := make(chan DepWork, maxWorkers)
+
+	var wg sync.WaitGroup
+	var lk sync.Mutex
+	var firstError error
+
+	for i := 0; i < maxWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			for work := range workers {
+				pm.ProgMeter.AddEntry(work.Ref, work.Dep, "[fetch]   <ELAPSED>"+work.Ref)
+
+				cacheloc := filepath.Join(work.CacheDir, work.Ref)
+				linkloc := filepath.Join(work.LinkDir, work.Dep)
+
+				if err := pm.CacheAndLinkPackage(work.Ref, cacheloc, linkloc); err != nil {
+					pm.ProgMeter.Error(work.Ref, err.Error())
+
+					lk.Lock()
+					if firstError == nil {
+						firstError = err
+					}
+					lk.Unlock()
+
+					continue
+				}
+
+				pm.ProgMeter.Finish(work.Ref)
+			}
+
+			wg.Done()
+		}()
+	}
+
+	for {
+		if len(lockList) == 0 {
+			break
+		}
+
+		curr := lockList[0]
+		lockList = lockList[1:]
+
+		newLocks, err := pm.installLock(curr, cwd, workers)
+		if err != nil {
+			return err
+		}
+
+		if firstError == nil {
+			lockList = append(lockList, newLocks...)
+		}
+	}
+
+	close(workers)
+	wg.Wait()
+
+	return firstError
+}
+
+func (pm *PM) installLock(lck Lock, cwd string, workers chan<- DepWork) ([]Lock, error) {
+	// Install all the direct dependencies for this lock
+
+	// Each lock contains a mapping of languages to their own dependencies
+	returnList := []Lock{}
+
+	for lang, langdeps := range lck.Deps {
+		ipath, err := InstallPath(lang, cwd, false)
+		if err != nil {
+			return []Lock{}, err
+		}
+
+		pm.ProgMeter.AddTodos(len(langdeps))
+
+		for dep, deplock := range langdeps {
+			if deplock.Deps != nil {
+				returnList = append(returnList, deplock)
+			}
+
+			workers <- DepWork{
+				CacheDir: filepath.Join(cwd, ".gx", "cache"),
+				LinkDir:  ipath,
+				Dep:      dep,
+				Ref:      deplock.Ref,
+			}
+
+		}
+	}
+
+	return returnList, nil
 }
 
 func (pm *PM) SetProgMeter(meter *prog.ProgMeter) {
