@@ -401,7 +401,15 @@ var InstallCommand = cli.Command{
 			}
 
 			if save {
-				pkg.Dependencies = append(pkg.Dependencies, ndep)
+				foundPackage := false
+				for _, d := range pkg.Dependencies {
+					if d.Hash == ndep.Hash {
+						foundPackage = true
+					}
+				}
+				if !foundPackage {
+					pkg.Dependencies = append(pkg.Dependencies, ndep)
+				}
 			}
 		}
 
