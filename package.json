@@ -1,11 +1,84 @@
 {
+  "author": "whyrusleeping",
   "bugs": {
     "url": "https://github.com/whyrusleeping/gx/issues"
   },
-  "gxVersion": "0.11.0",
+  "gx": {
+    "dvcsimport": "github.com/whyrusleeping/gx"
+  },
+  "gxDependencies": [
+    {
+      "author": "ipfs",
+      "hash": "QmR8y7XSkmWSpae9vm7YRES6Bz93pTXX1abeSVKDuNEFeq",
+      "name": "go-ipfs-api",
+      "version": "1.3.6"
+    },
+    {
+      "author": "blang",
+      "hash": "QmYRGECuvQnRX73fcvPnGbYijBcGN2HbKZQ7jh26qmLiHG",
+      "name": "semver",
+      "version": "3.5.1"
+    },
+    {
+      "author": "urfave",
+      "hash": "Qmc1AtgBdoUHP8oYSqU81NRYdzohmF45t5XNwVMvhCxsBA",
+      "name": "cli",
+      "version": "1.19.1"
+    },
+    {
+      "author": "multiformats",
+      "hash": "QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7",
+      "name": "go-multiaddr",
+      "version": "1.3.0"
+    },
+    {
+      "author": "multiformats",
+      "hash": "QmV6FjemM1K8oXjrvuq3wuVWWoU2TLDPmNnKrxHzY3v6Ai",
+      "name": "go-multiaddr-net",
+      "version": "1.6.3"
+    },
+    {
+      "author": "multiformats",
+      "hash": "QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8",
+      "name": "go-multihash",
+      "version": "1.0.8"
+    },
+    {
+      "author": "whyrusleeping",
+      "hash": "QmaEEadncs3wu8nMNC6tcUDxHrH8UH8Ly94b1MohGybF1a",
+      "name": "json-filter",
+      "version": "0.0.0"
+    },
+    {
+      "author": "whyrusleeping",
+      "hash": "QmRnp6zcXZhouavFRj8PPaMdneL6x9cG2DLEV9Q1ZT6YvJ",
+      "name": "progmeter",
+      "version": "0.0.1"
+    },
+    {
+      "author": "whyrusleeping",
+      "hash": "QmZLUtHGe9HDQrreAYkXCzzK6mHVByV4MRd8heXAtV5wyS",
+      "name": "stump",
+      "version": "0.0.0"
+    },
+    {
+      "author": "hsanjuan",
+      "hash": "QmU3k5ifTEzPyEXmTWLZTYSD24u7konYg9Gxf5ngzkN4NF",
+      "name": "go-gitignore",
+      "version": "1.0.2"
+    },
+    {
+      "author": "mitchellh",
+      "hash": "QmdcULN1WCzgoQmcCaUAmEhwcxHYsDrbZ2LvRJKCL8dMrK",
+      "name": "go-homedir",
+      "version": "1.0.0"
+    }
+  ],
+  "gxVersion": "0.12.1",
   "language": "go",
   "license": "MIT",
   "name": "gx",
-  "version": "0.12.1"
+  "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
+  "version": "0.13.0"
 }
 

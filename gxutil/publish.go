@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	homedir "github.com/mitchellh/go-homedir"
-	gi "github.com/sabhiram/go-git-ignore"
+	gi "github.com/sabhiram/go-gitignore"
 )
 
 func (pm *PM) PublishPackage(dir string, pkg *PackageBase) (string, error) {
