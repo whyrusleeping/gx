@@ -20,7 +20,7 @@ import (
 	. "github.com/whyrusleeping/stump"
 )
 
-const GxVersion = "0.12.1"
+const GxVersion = "0.14.0"
 
 const PkgFileName = "package.json"
 const LckFileName = "gx-lock.json"
