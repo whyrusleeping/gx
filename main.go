@@ -1074,25 +1074,61 @@ var depDupesCommand = cli.Command{
 	Name:  "dupes",
 	Usage: "print out packages with same names, but different hashes",
 	Action: func(c *cli.Context) error {
-		pkg, err := LoadPackageFile(PkgFileName)
+		root, err := LoadPackageFile(PkgFileName)
 		if err != nil {
 			return err
 		}
+		pkgs := []*gx.Package{root}
 
-		depmap, err := pm.EnumerateDependencies(pkg)
-		if err != nil {
-			return err
-		}
+		// name -> hash -> importer
+		set := make(map[string]map[string][]string)
 
-		byname := make(map[string]string)
-		for hash, name := range depmap {
-			h, ok := byname[name]
-			if ok {
-				fmt.Printf("package %s imported as both %s and %s\n", name, h, hash)
-				continue
+		for len(pkgs) > 0 {
+			for _, d := range pkgs[0].Dependencies {
+				if set[d.Name] == nil {
+					set[d.Name] = map[string][]string{}
+				}
+				_, load := set[d.Name][d.Hash]
+				set[d.Name][d.Hash] = append(set[d.Name][d.Hash], pkgs[0].Name)
+
+				if load {
+					continue
+				}
+
+				var depkg gx.Package
+				err := gx.LoadPackage(&depkg, pkgs[0].Language, d.Hash)
+				if err != nil {
+					if os.IsNotExist(err) {
+						return fmt.Errorf("package %s (%s) not found", d.Name, d.Hash)
+					}
+					return err
+				}
+
+				pkgs = append(pkgs, &depkg)
 			}
+			pkgs = pkgs[1:]
+		}
 
-			byname[name] = hash
+		for name, hashes := range set {
+			if len(hashes) > 1 {
+				mostImporters := make([]string, 0, len(hashes))
+				for hash := range hashes {
+					mostImporters = append(mostImporters, hash)
+				}
+				sort.Slice(mostImporters, func(i, j int) bool {
+					return len(hashes[mostImporters[i]]) >= len(hashes[mostImporters[j]])
+				})
+				fmt.Printf("package %s imported with multiple hashes (mostly as %s):\n", name, mostImporters[0])
+				for _, hash := range mostImporters[1:] {
+					//only print a few first since it's likely where the problem is
+					n := len(hashes[hash])
+					if n > 3 {
+						n = 3
+					}
+					fmt.Printf("\tas %s by %s\n", hash, strings.Join(hashes[hash][:n], ", "))
+				}
+
+			}
 		}
 
 		return nil
