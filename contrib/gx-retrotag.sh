@@ -6,6 +6,9 @@ branch=${2:-master}
 echo "fetching $remote"
 git fetch "$remote"
 
+# Register the created tags to push
+tags=""
+
 for h in $(git log "$remote/$branch" --format=format:'%H' .gx/lastpubver); do
     # get the gx version at this point
     ver="$(git show $h:.gx/lastpubver 2>/dev/null | cut -d: -f1)" || continue
@@ -22,12 +25,12 @@ for h in $(git log "$remote/$branch" --format=format:'%H' .gx/lastpubver); do
     # tag it.
     echo "tagging $ver ($h)"
     git tag -s -m "release $ver" "v$ver" $h
-    changed=true
+    tags="$tags tag v$ver"
 done
 
-if [[ -n "$changed" ]]; then
+if [[ ! -z "$tags" ]]; then
     echo "pushing tags to $remote"
-    git push --tags --repo="$remote"
+    git push "$remote" $tags
 else
     echo "nothing to do"
 fi
