@@ -91,7 +91,14 @@ func (pm *PM) CacheAndLinkPackage(ref, cacheloc, out string) error {
 		return err
 	}
 
-	return os.Symlink(cacheloc, out)
+	// dir where the link goes
+	linkloc, _ := filepath.Split(out)
+	// relative path from link to cache
+	rel, err := filepath.Rel(linkloc, cacheloc)
+	if err != nil {
+		return err
+	}
+	return os.Symlink(rel, out)
 }
 
 func (pm *PM) tryFetch(hash, target string) error {
