@@ -810,6 +810,88 @@ EXAMPLE:
 	},
 }
 
+var depDotCommand = cli.Command{
+	Name:  "dot",
+	Usage: "generate dot graph of the package tree",
+	Action: func(c *cli.Context) error {
+		pkg, err := LoadPackageFile(PkgFileName)
+		if err != nil {
+			return err
+		}
+		dt, err := genDepsTree(pm, pkg)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		toProcess := make([]*depTreeNode, 0, 32)
+		rank := make(map[string]int)
+
+		name := func(d *gx.Dependency) string {
+			hash := d.Hash
+			if len(hash) > 6 {
+				hash = hash[0:6]
+			}
+			return fmt.Sprintf("\"%s@%s\"", d.Name, hash)
+		}
+
+		bfs := func(dt *depTreeNode, depth int) {
+			toProcess = append(toProcess, dt.children...)
+			rank[name(dt.this)] = depth
+		}
+		depth := 0
+		bfs(dt, depth)
+		for len(toProcess) > 0 {
+			depth++
+			current := toProcess
+			toProcess = make([]*depTreeNode, 0, 32)
+			for _, dt := range current {
+				bfs(dt, depth)
+			}
+		}
+
+		fmt.Println("digraph G {")
+		fmt.Println("rankdir = TB;")
+		fmt.Println("subgraph {")
+
+		toPrint := make([]*depTreeNode, 0, 32)
+		printed := make(map[string]struct{})
+		printNode := func(dt *depTreeNode) {
+			if _, ok := printed[dt.this.Hash]; ok {
+				return
+			}
+			printed[dt.this.Hash] = struct{}{}
+			toPrint = append(toPrint, dt.children...)
+			for _, c := range dt.children {
+				fmt.Printf("%s -> %s\n", name(dt.this), name(c.this))
+			}
+		}
+
+		printNode(dt)
+		for len(toPrint) > 0 {
+			current := toPrint
+			toPrint = make([]*depTreeNode, 0, 32)
+			for _, dt := range current {
+				printNode(dt)
+			}
+		}
+		reverseRank := make([][]string, depth+1)
+		for n, r := range rank {
+			reverseRank[r] = append(reverseRank[r], n)
+		}
+		for _, r := range reverseRank {
+			fmt.Printf("{rank = same;")
+			for _, n := range r {
+				fmt.Printf(" %s;", n)
+			}
+			fmt.Printf("}\n")
+		}
+		fmt.Println("}")
+		fmt.Println("}")
+		return nil
+
+	},
+}
+
 var depCheckCommand = cli.Command{
 	Name:  "check",
 	Usage: "perform comprehensive sanity check and note any packaging issues",
@@ -969,6 +1051,7 @@ var DepsCommand = cli.Command{
 		depStatsCommand,
 		depDupesCommand,
 		depCheckCommand,
+		depDotCommand,
 	},
 	Action: func(c *cli.Context) error {
 		rec := c.Bool("r")
