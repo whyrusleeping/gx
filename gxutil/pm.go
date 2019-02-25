@@ -25,6 +25,8 @@ const GxVersion = "0.14.0"
 const PkgFileName = "package.json"
 const LckFileName = "gx-lock.json"
 
+const DefaultTagCmd = "git tag -a \"v$VERSION\" -m \"gx release published as $HASH\""
+
 var installPathsCache map[string]string
 var binarySuffix string
 
@@ -312,6 +314,7 @@ func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
 			Version:    "0.0.0",
 			GxVersion:  GxVersion,
 			ReleaseCmd: "git commit -a -m \"gx publish $VERSION\"",
+			TagCmd:     DefaultTagCmd,
 		},
 	}
 
