@@ -174,34 +174,35 @@ number. This is a soft requirement and can be skipped by specifying the
 			}
 		}
 
-		return doPublish(pkg)
+		_, err = doPublish(pkg)
+		return err
 	},
 }
 
-func doPublish(pkg *gx.Package) error {
+func doPublish(pkg *gx.Package) (string, error) {
 	if !pm.ShellOnline() {
-		return fmt.Errorf("ipfs daemon isn't running")
+		return "", fmt.Errorf("ipfs daemon isn't running")
 	}
 
 	err := gx.TryRunHook("pre-publish", pkg.Language, pkg.SubtoolRequired)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	hash, err := pm.PublishPackage(cwd, &pkg.PackageBase)
 	if err != nil {
-		return fmt.Errorf("publishing: %s", err)
+		return hash, fmt.Errorf("publishing: %s", err)
 	}
 	log.Log("package %s published with hash: %s", pkg.Name, hash)
 
 	// write out version hash
 	err = writeLastPub(pkg.Version, hash)
 	if err != nil {
-		return err
+		return hash, err
 	}
 
 	err = gx.TryRunHook("post-publish", pkg.Language, pkg.SubtoolRequired, hash)
-	return err
+	return hash, err
 }
 
 func writeLastPub(vers string, hash string) error {
@@ -1310,12 +1311,12 @@ var ReleaseCommand = cli.Command{
 		}
 
 		fmt.Printf("publishing package...\r")
-		err = doPublish(pkg)
+		hash, err := doPublish(pkg)
 		if err != nil {
 			return err
 		}
 
-		return runRelease(pkg)
+		return runRelease(pkg, hash)
 	},
 }
 
@@ -1351,13 +1352,22 @@ var TestCommand = cli.Command{
 	},
 }
 
-func runRelease(pkg *gx.Package) error {
+func runRelease(pkg *gx.Package, hash string) error {
 	if pkg.ReleaseCmd == "" {
 		return nil
 	}
 
 	cmd := exec.Command("sh", "-c", pkg.ReleaseCmd)
-	cmd.Env = append(os.Environ(), "VERSION="+pkg.Version)
+	cmd.Env = append(
+		os.Environ(),
+		"VERSION="+pkg.Version, // deprecated.
+		"GX_VERSION="+pkg.Version,
+		"GX_NAME="+pkg.Name,
+		"GX_LANGUAGE="+pkg.Language,
+		"GX_LICENSE="+pkg.License,
+		"GX_AUTHOR="+pkg.Author,
+		"GX_HASH="+hash,
+	)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
