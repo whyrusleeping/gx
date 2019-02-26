@@ -1351,58 +1351,13 @@ var TestCommand = cli.Command{
 	},
 }
 
-func splitArgs(in string) []string {
-	var out []string
-
-	var inquotes bool
-	cur := 0
-	for i, c := range in {
-		switch {
-		case c == '"':
-			if inquotes {
-				out = append(out, in[cur:i])
-				inquotes = false
-			} else {
-				inquotes = true
-			}
-			cur = i + 1
-		case c == ' ':
-			if inquotes {
-				continue
-			}
-			if i == cur {
-				cur++
-				continue
-			}
-
-			out = append(out, in[cur:i])
-			cur = i + 1
-		}
-	}
-
-	final := in[cur:]
-	if final != "" {
-		out = append(out, final)
-	}
-
-	return out
-}
-
-func escapeReleaseCmd(pkg *gx.Package, cmd string) string {
-	cmd = strings.Replace(cmd, "$VERSION", pkg.Version, -1)
-
-	return cmd
-}
-
 func runRelease(pkg *gx.Package) error {
 	if pkg.ReleaseCmd == "" {
 		return nil
 	}
 
-	replaced := escapeReleaseCmd(pkg, pkg.ReleaseCmd)
-
-	parts := splitArgs(replaced)
-	cmd := exec.Command(parts[0], parts[1:]...)
+	cmd := exec.Command("sh", "-c", pkg.ReleaseCmd)
+	cmd.Env = append(os.Environ(), "VERSION="+pkg.Version)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
