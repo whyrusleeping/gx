@@ -67,6 +67,7 @@ func genDepsTree(pm *gx.PM, pkg *gx.Package) (*depTreeNode, error) {
 	rec = func(pkg *gx.Package) (*depTreeNode, error) {
 		cur := new(depTreeNode)
 		cur.this = new(gx.Dependency)
+		cur.this.Name = pkg.Name
 
 		err := pkg.ForEachDep(func(dep *gx.Dependency, dpkg *gx.Package) error {
 			sub := complete[dep.Hash]
