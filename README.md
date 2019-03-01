@@ -45,7 +45,7 @@ gx was designed with the following major goals in mind:
 ## Requirements
 Users are encouraged to have a running [IPFS daemon](//github.com/ipfs/go-ipfs) of at least version 0.4.2 on their machines.
 If not present, gx will use the public gateway.
-If you wish to publish a package, a local running daemon is a hard requirement.
+If you wish to publish a package, a local running daemon is a hard requirement. Environment variables such as IPFS_PATH may be necessary for gx to find a local IPFS node.
 
 
 ## Installation
