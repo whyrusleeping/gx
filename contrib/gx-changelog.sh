@@ -81,7 +81,7 @@ release_log() {
                 git -C "$dir" diff-tree --no-commit-id --name-only "$commit^" "$commit" |
                         grep -v "${IGNORED_FILES}" >/dev/null || continue
 
-                local desc=$(git -C "$dir" show --summary --format='tformat:%b' "$commit")
+                local desc="$(git -C "$dir" show --summary --format='tformat:%b' "$commit" | head -1)"
                 printf "- %s ([%s#%s](https://%s/pull/%s))\n" "$desc" "$ghname" "$prnum" "$repo" "$prnum"
             done
 }
