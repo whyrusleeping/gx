@@ -79,6 +79,6 @@
   "license": "MIT",
   "name": "gx",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "0.14.1"
+  "version": "0.14.2"
 }
 
