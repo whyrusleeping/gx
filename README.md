@@ -8,9 +8,9 @@
 gx is a packaging tool built around the distributed, content addressed filesystem
 [IPFS](//github.com/ipfs/ipfs). It aims to be flexible, powerful and simple.
 
-gx is **Alpha Quality**. It's not perfect yet, but it's proven dependable enough
-for managing dependencies in [go-ipfs](https://github.com/ipfs/go-ipfs/) and
-ready for pioneering developers and early users to try out and explore.
+gx is **Alpha Quality**. While not perfect yet, it is reliable enough
+to manage dependencies in [go-ipfs](https://github.com/ipfs/go-ipfs/) and
+ready for use by developers of all skill levels.
 
 ## Table of Contents
 - [Background](#background)
@@ -67,9 +67,9 @@ $ gx init
 $ gx publish
 ```
 
-This will output a 'package-hash' which is unique to the exact content of your
-package at the time of publishing. If someone were to download your package and
-republish it, it would produce the *exact* same hash.
+This will output a 'package-hash' unique to the content of the
+package at the time of publishing. If someone downloads the package and
+republishes it, it would produce the *exact* same hash.
 
 ### package.json
 
@@ -199,12 +199,12 @@ end in the selected package.
 
 The gx deps command also has two other smaller subcommands, `dupes` and
 `stats`. `gx deps dupes` will print out packages that are imported multiple
-times with the same name, but different hashes. This can be useful to see if
+times with the same name, but different hashes. This is useful to see if
 different versions of the same package have been imported in different places
-in the dependency tree. Allowing the user to more easily go and address the
+in the dependency tree. Allowing the user to more easily address the
 discrepancy. `gx deps stats` will output the total number of packages imported
 (total and unique) as well as the average depth of imports in the tree. This
-can be used to give you a rough idea of the complexity of your package.
+gives you a rough idea of the complexity of your package.
 
 ### The gx dependency graph manifesto
 I firmly believe that packages are better when:
@@ -293,8 +293,8 @@ $ git commit -a -m "gx publish 6.1.0"
  2 files changed, 3 insertions(+), 2 deletions(-)
 ```
 
-To automate this, you can use the `release` subcommand. `gx release <version>`
-will automatically do a version update (using the same inputs as the normal
+The `release` subcommand can be used to automate the above process. `gx release <version>`
+will do a version update (using the same inputs as the normal
 `version` command), run a `gx publish`, and then execute whatever you have set
 in your `package.json` as your `releaseCmd`. To get the above git commit flow,
 you can set it to: `git commit -a -m \"gx publish $VERSION\"` and gx will
@@ -341,12 +341,12 @@ $ gx repo import events
 ```
 
 ## Hooks
-gx can support a wide array of use cases by having sane defaults that are
-extensible based on the scenario you are in. To this end, gx has hooks that
+gx supports a wide array of use cases by having sane defaults that are
+extensible based on the scenario the user is in. To this end, gx has hooks that
 get called during certain operations.
 
 These hooks are language specific, and gx will attempt to make calls to a
-helper binary matching your language to execute the hooks, for example, when
+helper binary matching your language to execute the hooks. For example, when
 writing go, gx calls `gx-go hook <hookname> <args>` for any given hook.
 
 Currently available hooks are:
@@ -377,8 +377,7 @@ Currently available hooks are:
 
 Gx by default will install packages 'globally' in the global install location
 for your given project type.  Global gx packages are shared across all packages
-that depend on them.  The location of this directory is not set in stone, if
-for your specific environment you'd like it somewhere else, simply add a hook
+that depend on them.  The location of this directory can be changed if desired. Add a hook
 to your environments extension tool named `install-path` (see above) and gx
 will use that path instead. If your language does not set a global install
 path, gx will fallback to installing locally as the default.  This means that
