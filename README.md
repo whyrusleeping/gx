@@ -8,9 +8,9 @@
 gx is a packaging tool built around the distributed, content addressed filesystem
 [IPFS](//github.com/ipfs/ipfs). It aims to be flexible, powerful and simple.
 
-gx is **Alpha Quality**. While not perfect yet, it is reliable enough
+gx is **Alpha Quality**. While not perfect, gx is reliable enough
 to manage dependencies in [go-ipfs](https://github.com/ipfs/go-ipfs/) and
-ready for use by developers of all skill levels.
+is ready for use by developers of all skill levels.
 
 ## Table of Contents
 - [Background](#background)
@@ -69,7 +69,7 @@ $ gx publish
 
 This will output a 'package-hash' unique to the content of the
 package at the time of publishing. If someone downloads the package and
-republishes it, it would produce the *exact* same hash.
+republishes it, the *exact* same hash will be produced.
 
 ### package.json
 
