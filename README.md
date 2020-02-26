@@ -51,12 +51,11 @@ If you wish to publish a package, a local running daemon is a hard requirement. 
 ## Installation
 
 ```
-$ go get -u github.com/whyrusleeping/gx
+$ (cd ~ && go get github.com/whyrusleeping/gx)
 ```
 
-This will download the source into `$GOPATH/src/github.com/whyrusleeping/gx`
-and build and install a binary to `$GOPATH/bin`. To modify gx, just change
-the source in that directory, and run `go build`.
+This will download, build, and install a binary to `$GOPATH/bin`. To modify gx,
+just change the source in that directory, and run `go build`.
 
 ## Usage
 
