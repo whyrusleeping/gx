@@ -14,7 +14,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/blang/semver"
-	cli "github.com/urfave/cli"
+	cli "github.com/urfave/cli/v2"
 	gx "github.com/whyrusleeping/gx/gxutil"
 	filter "github.com/whyrusleeping/json-filter"
 	progmeter "github.com/whyrusleeping/progmeter"
@@ -81,10 +81,14 @@ func main() {
 	}
 
 	app := cli.NewApp()
-	app.Author = "whyrusleeping"
+	app.Authors = []*cli.Author{
+		&cli.Author{
+			Name: "whyrusleeping",
+		},
+	}
 	app.Version = gx.GxVersion
 	app.Flags = []cli.Flag{
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "verbose",
 			Usage: "print verbose logging information",
 		},
@@ -103,23 +107,23 @@ func main() {
 
 	app.Usage = "gx is a packaging tool that uses ipfs"
 
-	app.Commands = []cli.Command{
-		CleanCommand,
-		DepsCommand,
-		GetCommand,
-		ImportCommand,
-		DiffCommand,
-		InitCommand,
-		InstallCommand,
-		LockInstallCommand,
-		PublishCommand,
-		ReleaseCommand,
-		RepoCommand,
-		UpdateCommand,
-		VersionCommand,
-		ViewCommand,
-		SetCommand,
-		TestCommand,
+	app.Commands = []*cli.Command{
+		&CleanCommand,
+		&DepsCommand,
+		&GetCommand,
+		&ImportCommand,
+		&DiffCommand,
+		&InitCommand,
+		&InstallCommand,
+		&LockInstallCommand,
+		&PublishCommand,
+		&ReleaseCommand,
+		&RepoCommand,
+		&UpdateCommand,
+		&VersionCommand,
+		&ViewCommand,
+		&SetCommand,
+		&TestCommand,
 	}
 
 	if err := app.Run(os.Args); err != nil {
@@ -151,7 +155,7 @@ number. This is a soft requirement and can be skipped by specifying the
 -f or --force flag.
 `,
 	Flags: []cli.Flag{
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "force,f",
 			Usage: "allow publishing without bumping version",
 		},
@@ -240,21 +244,22 @@ EXAMPLE
     file in the repository to find which hash to import.
 `,
 	Flags: []cli.Flag{
-		cli.BoolTFlag{
+		&cli.BoolFlag{
 			Name:  "global",
+			Value: true,
 			Usage: "download imported package to global store",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "local",
 			Usage: "install packages locally (equal to --global=false)",
 		},
 	},
 	Action: func(c *cli.Context) error {
-		if len(c.Args()) == 0 {
+		if c.NArg() == 0 {
 			return fmt.Errorf("import requires a package reference")
 		}
 
-		global := c.BoolT("global")
+		global := c.Bool("global")
 		if c.Bool("local") {
 			global = false
 		}
@@ -324,19 +329,20 @@ var InstallCommand = cli.Command{
 	Usage:   "install this package",
 	Aliases: []string{"i"},
 	Flags: []cli.Flag{
-		cli.BoolTFlag{
+		&cli.BoolFlag{
 			Name:  "global",
+			Value: true,
 			Usage: "install package in global namespace",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "local",
 			Usage: "install packages locally (equal to --global=false)",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "save",
 			Usage: "write installed packages as deps in package.json",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "nofancy",
 			Usage: "write minimal output",
 		},
@@ -349,7 +355,7 @@ var InstallCommand = cli.Command{
 
 		save := c.Bool("save")
 
-		global := c.BoolT("global")
+		global := c.Bool("global")
 		if c.Bool("local") {
 			global = false
 		}
@@ -358,7 +364,7 @@ var InstallCommand = cli.Command{
 
 		pm.ProgMeter = progmeter.NewProgMeter(c.Bool("nofancy"))
 
-		if len(c.Args()) == 0 {
+		if c.NArg() == 0 {
 			cwd, err := os.Getwd()
 			if err != nil {
 				return err
@@ -386,7 +392,7 @@ var InstallCommand = cli.Command{
 			return err
 		}
 
-		for _, p := range c.Args() {
+		for _, p := range c.Args().Slice() {
 			phash, err := pm.ResolveDepName(p)
 			if err != nil {
 				return fmt.Errorf("resolving package '%s': %s", p, err)
@@ -429,7 +435,7 @@ var GetCommand = cli.Command{
 	Name:  "get",
 	Usage: "download a package",
 	Flags: []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "o",
 			Usage: "specify output dir name",
 		},
@@ -462,14 +468,14 @@ var InitCommand = cli.Command{
 	Name:  "init",
 	Usage: "initialize a package in the current working directory",
 	Flags: []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "lang",
 			Usage: "specify primary language of new package",
 		},
 	},
 	Action: func(c *cli.Context) error {
 		var pkgname string
-		if len(c.Args()) > 0 {
+		if c.NArg() > 0 {
 			pkgname = c.Args().First()
 		} else {
 			pkgname = filepath.Base(cwd)
@@ -511,15 +517,16 @@ EXAMPLE:
    $ gx update $OLDHASH $NEWHASH
 `,
 	Flags: []cli.Flag{
-		cli.BoolTFlag{
+		&cli.BoolFlag{
 			Name:  "global",
+			Value: true,
 			Usage: "install new package in global namespace",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "local",
 			Usage: "install packages locally (equal to --global=false)",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "with-deps",
 			Usage: "experimental feature to recursively update child deps too",
 		},
@@ -531,16 +538,16 @@ EXAMPLE:
 		}
 
 		var existing, target string
-		switch len(c.Args()) {
+		switch c.NArg() {
 		case 0:
 			log.Fatal("update requires two arguments, current and target")
 		case 1:
-			target = c.Args()[0]
+			target = c.Args().Get(0)
 		case 2:
-			existing = c.Args()[0]
-			target = c.Args()[1]
+			existing = c.Args().Get(0)
+			target = c.Args().Get(1)
 		default:
-			log.Log("ignoring extra arguments: %s", c.Args()[2:])
+			log.Log("ignoring extra arguments: %s", c.Args().Slice()[2:])
 		}
 
 		trgthash, err := pm.ResolveDepName(target)
@@ -548,7 +555,7 @@ EXAMPLE:
 			return err
 		}
 
-		global := c.BoolT("global")
+		global := c.Bool("global")
 		if c.Bool("local") {
 			global = false
 		}
@@ -773,13 +780,13 @@ EXAMPLE:
 		}
 
 		var cfg map[string]interface{}
-		if len(c.Args()) == 2 {
+		if c.NArg() == 2 {
 			pkg, err := LoadPackageFile(gx.PkgFileName)
 			if err != nil {
 				return err
 			}
 
-			ref := c.Args()[0]
+			ref := c.Args().Get(0)
 			dep := pkg.FindDep(ref)
 			if dep == nil {
 				return fmt.Errorf("no dep referenced by %s", ref)
@@ -800,7 +807,7 @@ EXAMPLE:
 			}
 		}
 
-		queryStr := c.Args()[len(c.Args())-1]
+		queryStr := c.Args().Get(c.NArg() - 1)
 		val, err := filter.Get(cfg, queryStr)
 		if err != nil {
 			return err
@@ -918,7 +925,7 @@ var LockInstallCommand = cli.Command{
 	Name:  "lock-install",
 	Usage: "Install deps from lockfile into vendor",
 	Flags: []cli.Flag{
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "nofancy",
 			Usage: "write minimal output",
 		},
@@ -954,7 +961,7 @@ var CleanCommand = cli.Command{
    removing them.
    `,
 	Flags: []cli.Flag{
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "dry-run",
 			Usage: "print out things to be removed without removing them",
 		},
@@ -1021,38 +1028,39 @@ var DepsCommand = cli.Command{
    to show which packages are dependent on which other.
 `,
 	Flags: []cli.Flag{
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "r",
 			Usage: "print deps recursively",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "q",
 			Usage: "only print hashes",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "tree",
 			Usage: "print deps as a tree",
 		},
-		cli.BoolTFlag{
+		&cli.BoolFlag{
 			Name:  "s,sort",
+			Value: true,
 			Usage: "sort output by package name",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "highlight",
 			Usage: "for tree printing, prune branches unrelated to arg",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "collapse",
 			Usage: "for tree printing, prune branches already printed",
 		},
 	},
-	Subcommands: []cli.Command{
-		depBundleCommand,
-		depFindCommand,
-		depStatsCommand,
-		depDupesCommand,
-		depCheckCommand,
-		depDotCommand,
+	Subcommands: []*cli.Command{
+		&depBundleCommand,
+		&depFindCommand,
+		&depStatsCommand,
+		&depDupesCommand,
+		&depCheckCommand,
+		&depDotCommand,
 	},
 	Action: func(c *cli.Context) error {
 		rec := c.Bool("r")
@@ -1131,7 +1139,7 @@ var depFindCommand = cli.Command{
 	Usage: "print hash of a given dependency",
 	Action: func(c *cli.Context) error {
 
-		if len(c.Args()) != 1 {
+		if c.NArg() != 1 {
 			return fmt.Errorf("must be passed exactly one argument")
 		}
 
@@ -1140,7 +1148,7 @@ var depFindCommand = cli.Command{
 			return err
 		}
 
-		dep := c.Args()[0]
+		dep := c.Args().Get(0)
 
 		for _, d := range pkg.Dependencies {
 			if d.Name == dep {
@@ -1310,11 +1318,11 @@ var DiffCommand = cli.Command{
 	Usage:       "gx diff <old> <new>",
 	Description: "gx diff prints the changes between two given packages",
 	Action: func(c *cli.Context) error {
-		if len(c.Args()) != 2 {
+		if c.NArg() != 2 {
 			return fmt.Errorf("gx diff takes two arguments")
 		}
-		a := c.Args()[0]
-		b := c.Args()[1]
+		a := c.Args().Get(0)
+		b := c.Args().Get(1)
 
 		diff, err := DiffPackages(a, b)
 		if err != nil {
@@ -1335,7 +1343,7 @@ EXAMPLE:
    > gx set license MIT
 `,
 	Flags: []cli.Flag{
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "in-json",
 			Usage: "Interpret input as json",
 		},
@@ -1423,7 +1431,7 @@ var TestCommand = cli.Command{
 		if pkg.Test != "" {
 			testErr = fmt.Errorf("don't support running custom test script yet, bug whyrusleeping")
 		} else {
-			testErr = gx.TryRunHook("test", pkg.Language, pkg.SubtoolRequired, c.Args()...)
+			testErr = gx.TryRunHook("test", pkg.Language, pkg.SubtoolRequired, c.Args().Slice()...)
 		}
 
 		err = gx.TryRunHook("post-test", pkg.Language, pkg.SubtoolRequired)
