@@ -156,8 +156,9 @@ number. This is a soft requirement and can be skipped by specifying the
 `,
 	Flags: []cli.Flag{
 		&cli.BoolFlag{
-			Name:  "force,f",
-			Usage: "allow publishing without bumping version",
+			Name:    "force",
+			Aliases: []string{"f"},
+			Usage:   "allow publishing without bumping version",
 		},
 	},
 	Action: func(c *cli.Context) error {
