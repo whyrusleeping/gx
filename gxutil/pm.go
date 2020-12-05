@@ -306,12 +306,15 @@ func (pm *PM) InitPkg(dir, name, lang string, setup func(*Package)) error {
 
 	pkg := &Package{
 		PackageBase: PackageBase{
-			Name:       name,
-			Author:     username,
-			Language:   lang,
-			Version:    "0.0.0",
-			GxVersion:  GxVersion,
-			ReleaseCmd: "git commit -a -m \"gx publish $VERSION\"",
+			Name:      name,
+			Author:    username,
+			Language:  lang,
+			Version:   "0.0.0",
+			GxVersion: GxVersion,
+			ReleaseCmd: "MESSAGE=\"gx publish $GX_VERSION\n\nReleased as $GX_HASH\"" +
+				"&& git commit -a -m \"$MESSAGE\"" +
+				"&& git tag -as -m \"$MESSAGE\" \"v$GX_VERSION\"" +
+				"&& echo 'Please remember to push tags with --tags'",
 		},
 	}
 
